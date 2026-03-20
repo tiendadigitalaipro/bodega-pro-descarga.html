@@ -272,6 +272,7 @@ tbody tr:hover td{background:rgba(124,58,237,0.04)}
 .modal-footer{padding:0 24px 20px;display:flex;gap:10px;justify-content:flex-end}
 .btn-close{background:transparent;border:none;color:var(--text2);font-size:20px;padding:4px;cursor:pointer;line-height:1;position:relative;z-index:20000!important;pointer-events:auto!important}
 .btn-close:hover{color:var(--danger)}
+.modal-footer .btn,.modal-footer button{position:relative;z-index:20000!important;pointer-events:auto!important}
 
 /* ═══════════════════════════════════════════════
    ALERTS
@@ -2098,19 +2099,29 @@ window.onload = function() {
   checkMobile();
   window.addEventListener('resize', checkMobile);
 
-  // ── LISTENER GLOBAL DE CIERRE — FUERZA BRUTA ──
-  // Captura cualquier clic en .btn-close usando fase de captura (ignora stopPropagation)
+  // ── LISTENER GLOBAL DE CIERRE — FUERZA BRUTA v2 ──
+  // Captura .btn-close Y botones Cancelar/Cerrar en modal-footer (fase de captura, ignora stopPropagation)
   window.addEventListener('click', function(e) {
-    var btn = e.target.closest('.btn-close');
+    var btn = e.target.closest('.btn-close, .modal-footer .btn, .modal-footer button');
     if (!btn) return;
-    // 1. Cerrar overlay padre más cercano con clase modal-overlay
+    // Si el botón tiene onclick con closeModal, dejarlo ejecutar normalmente
+    var oc = btn.getAttribute('onclick') || '';
+    if (oc.indexOf('closeModal') !== -1) {
+      // El onclick llamará a closeModal — solo garantizamos que el overlay cierre también
+      var overlay2 = btn.closest('.modal-overlay');
+      if (overlay2) {
+        setTimeout(function(){ overlay2.style.setProperty('display','none','important'); overlay2.classList.remove('open'); }, 0);
+      }
+      return; // dejar que el onclick original corra
+    }
+    // Para .btn-close sin onclick explícito: cerrar overlay padre
     var overlay = btn.closest('.modal-overlay');
     if (overlay) {
       overlay.style.setProperty('display', 'none', 'important');
       overlay.classList.remove('open');
       return;
     }
-    // 2. Si no tiene .modal-overlay padre (modal dinámico sin clase), subir al parentNode
+    // Fallback: subir al parentNode buscando elemento fixed
     var parent = btn.parentNode;
     while (parent && parent !== document.body) {
       if (parent.style && (parent.style.position === 'fixed' || window.getComputedStyle(parent).position === 'fixed')) {
@@ -3202,7 +3213,7 @@ function imprimirRecibo() {
 
 function closeModal(id) {
   var el = document.getElementById(id);
-  if (el) { el.style.display = 'none'; el.classList.remove('open'); }
+  if (el) { el.style.setProperty('display','none','important'); el.classList.remove('open'); }
 }
 
 function fmt(n) {
