@@ -2334,11 +2334,12 @@ function initOfflineMode() {
 
 // ─── APP INIT ─────────────────────────────────────────────────
 function startApp() {
-  // Verificar demo vencida — checkDemoExpiry retorna TRUE si vencida
+  // Verificar demo vencida — con tolerancia 48h para relojes atrasados
   if (typeof checkDemoExpiry === 'function') {
     var _lic = DB.get('license');
     if (_lic && _lic.esDemo && _lic.venceEn) {
-      var _vencida = new Date() > new Date(_lic.venceEn);
+      var _TOL = 48 * 60 * 60 * 1000; // 48h tolerancia reloj laptop
+      var _vencida = new Date() > new Date(new Date(_lic.venceEn).getTime() + _TOL);
       if (_vencida) { mostrarPantallaBloqueo(_lic, new Date(_lic.venceEn)); return; }
     }
   }
@@ -4892,7 +4893,8 @@ function generateDemoCode(neg, dias) {
   return 'DEMO-' + s1 + '-' + s2;
 }
 function verifyDemoSignature(code) {
-  var p = code.split('-');
+  // Normalizar: mayúsculas + sin espacios (case-insensitive, trim-safe)
+  var p = (code || '').trim().toUpperCase().split('-');
   if (p[0] !== 'DEMO' || p.length < 3) return false;
   // Verificar con dias 1-7 (nuevo formato con dias embebidos)
   for (var d = 1; d <= 7; d++) {
@@ -4908,7 +4910,10 @@ function saveLicenses(l){DB.set('licenses_issued',l);}
 function checkDemoExpiry() {
   var lic = DB.get('license');
   if(!lic||!lic.esDemo||!lic.venceEn) return false;
-  return new Date()>new Date(lic.venceEn);
+  // Tolerancia de 48h para relojes atrasados (laptop sin sincronizar)
+  // Solo se considera vencida si pasaron MÁS de 48h después de venceEn
+  var TOLERANCIA_MS = 48 * 60 * 60 * 1000; // 48 horas en ms
+  return new Date() > new Date(new Date(lic.venceEn).getTime() + TOLERANCIA_MS);
 }
 
 function mostrarPantallaBloqueo(lic, vence) {
@@ -5889,7 +5894,8 @@ function generateLicenseCode(neg, meses) {
 
 // Verificar firma — soporta formato viejo (3 partes) y nuevo (4 partes)
 function verifyLicenseSignature(code) {
-  var p = code.split('-');
+  // Normalizar: mayúsculas + sin espacios (case-insensitive, trim-safe)
+  var p = (code || '').trim().toUpperCase().split('-');
   if (p[0] !== 'BPRO') return false;
   if (p.length === 4) {
     // Nuevo: BPRO-s1-sv-s2
