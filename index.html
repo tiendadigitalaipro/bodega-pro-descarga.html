@@ -656,7 +656,7 @@ canvas{max-width:100%!important}
         </div>
         <div class="form-group">
           <label class="form-label">Código de Activación</label>
-          <input type="text" id="ln-code" class="form-input" placeholder="BPRO-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:2px">
+          <input type="text" id="ln-code" class="form-input" placeholder="BPRO-XXXX-XXXX o DEMO-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:2px" oninput="var v=this.value.trim().toUpperCase();var al=document.getElementById('loginAlert');if(al&&v.length>=8){al.innerHTML='';}" onkeydown="if(event.key==='Enter')doLogin()">
           <div class="license-info">
             Tu código de activación es único y está ligado a este dispositivo.<br>
             <strong>No es transferible ni puede revenderse.</strong><br>
@@ -2199,8 +2199,9 @@ function doLogin() {
   const issuedLic = issuedLicenses.find(function(l){ return l.code === code && l.activo; });
 
   // Verificar firma matemática (cliente en otra PC)
-  const hasFirma = verifyLicenseSignature(code);
-  if (!isMaster && !issuedLic && !hasFirma) {
+  const hasFirma     = verifyLicenseSignature(code);   // Verifica PRO: BPRO-xxxx
+  const hasFirmaDemo = (typeof verifyDemoSignature === 'function') && verifyDemoSignature(code); // Verifica DEMO: DEMO-xxxx
+  if (!isMaster && !issuedLic && !hasFirma && !hasFirmaDemo) {
     return showLoginAlert('❌ Código de activación inválido. Verifica e intenta de nuevo.', 'error');
   }
   // Verificar estado: bloqueada, pausada o vencida PRO
