@@ -2278,13 +2278,12 @@ function doLogout() {
 function confirmarLogout() {
   closeModal('modalLogout');
 
-  // ══ RESET TOTAL — SIN EXCEPCIONES ════════════════════════════
-  // Limpiar TODO el localStorage del navegador (sesión, licencia temporal, carrito, etc.)
-  try { localStorage.clear(); } catch(e) {}
-  // Limpiar sessionStorage completo
+  // ══ CERRAR SESIÓN — Solo limpiar datos de sesión, NUNCA los datos del negocio ══
+  // Solo se elimina la sesión activa. Los datos del negocio (productos, ventas,
+  // clientes, caja, proveedores, config) se conservan intactos en localStorage.
+  DB.del('session');
   try { sessionStorage.clear(); } catch(e) {}
-  // Recargar la página desde cero — el Iron Lock tomará control
-  // y mostrará el Login automáticamente
+  // Recargar la página — el Iron Lock tomará control y mostrará el Login
   location.reload(true);
   // (el código de abajo es un respaldo si reload falla)
   try {
