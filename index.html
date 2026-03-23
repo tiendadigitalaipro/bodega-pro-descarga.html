@@ -1618,6 +1618,21 @@ canvas{max-width:100%!important}
   </div>
 </div>
 
+<!-- MODAL: FIADO (detalle y abono de cliente) -->
+<div class="modal-overlay" id="modalFiado">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title" id="modalFiadoTitle">💳 Fiado</span>
+      <button type="button" class="btn-close" onclick="closeModal('modalFiado')">✕</button>
+    </div>
+    <div class="modal-body" id="modalFiadoBody"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalFiado')">Cancelar</button>
+      <button class="btn btn-primary" onclick="registrarPago()">💰 Registrar Abono</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: COBRO -->
 <div class="modal-overlay" id="modalCobro">
   <div class="modal" style="max-width:420px">
@@ -3861,28 +3876,68 @@ function verFiado(id) {
   var c = (DB.get('clientes') || []).find(function(x){ return x.id === id; });
   if (!c) return;
   var ventas = (DB.get('ventas') || []).filter(function(v){ return v.cliente === id; });
-  stext('modalFiadoTitle', 'Fiado — ' + c.nombre);
+  var deuda = c.deuda || 0;
+  var limite = c.limite || 50;
+  var colorDeuda = deuda > limite ? 'var(--danger)' : deuda > 0 ? 'var(--warn)' : 'var(--neon)';
+  stext('modalFiadoTitle', '💳 Fiado — ' + c.nombre);
   document.getElementById('modalFiadoBody').innerHTML =
-    '<div class="alert ' + ((c.deuda||0) > 0 ? 'alert-warn' : 'alert-success') + '">' +
-      '<strong>Deuda actual: $' + (c.deuda||0).toFixed(2) + '</strong> · Límite: $' + c.limite +
+    // ── Resumen de deuda ──
+    '<div style="background:var(--bg2);border:2px solid ' + colorDeuda + ';border-radius:12px;padding:14px;margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+        '<span style="color:var(--text2);font-size:13px">Deuda actual:</span>' +
+        '<strong style="color:' + colorDeuda + ';font-size:20px;font-family:var(--mono)">$' + deuda.toFixed(2) + '</strong>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<span style="color:var(--text3);font-size:11px">Límite de crédito:</span>' +
+        '<span style="color:var(--text2);font-size:12px">$' + limite.toFixed(2) + '</span>' +
+      '</div>' +
+      (deuda > limite ? '<div style="color:var(--danger);font-size:11px;margin-top:6px;font-weight:700">⚠️ Límite de crédito excedido</div>' : '') +
     '</div>' +
-    '<div class="form-group"><label class="form-label">Registrar Pago ($)</label>' +
-      '<input type="number" id="pago-monto" class="form-input" step="0.01" placeholder="0.00"></div>' +
-    '<div class="form-group"><label class="form-label">Método de Pago</label>' +
-      '<select id="pago-metodo" class="form-select">' +
-        '<option>Efectivo $</option><option>Efectivo Bs</option>' +
-        '<option>Punto Crédito</option><option>Zelle</option><option>Pago Móvil</option>' +
-      '</select></div>' +
-    '<div class="card-title mb-2 mt-3">Historial de compras fiadas</div>' +
+    // ── Abono ──
+    '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">' +
+      '<div style="color:var(--neon);font-weight:700;font-size:13px;margin-bottom:12px">💰 Registrar Abono</div>' +
+      '<div class="form-group" style="margin-bottom:10px">' +
+        '<label class="form-label">Monto del Abono ($)</label>' +
+        '<input type="number" id="pago-monto" class="form-input" step="0.01" placeholder="0.00" oninput="calcRestoFiado(' + deuda + ')" style="font-size:18px;font-weight:700;color:var(--neon)">' +
+      '</div>' +
+      '<div class="form-group" style="margin-bottom:10px">' +
+        '<label class="form-label">Método de Pago</label>' +
+        '<select id="pago-metodo" class="form-select">' +
+          '<option>Efectivo $</option><option>Efectivo Bs</option>' +
+          '<option>Zelle</option><option>Pago Móvil</option><option>Punto Crédito</option><option>Punto Débito</option>' +
+        '</select>' +
+      '</div>' +
+      '<div style="height:1px;background:var(--border);margin:10px 0"></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<span style="color:var(--text2);font-size:13px;font-weight:700">Lo que resta después:</span>' +
+        '<strong id="fiado-resto-display" style="font-size:18px;font-family:var(--mono);color:var(--neon)">$' + deuda.toFixed(2) + '</strong>' +
+      '</div>' +
+    '</div>' +
+    // ── Historial ──
+    '<div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--text2)">📋 Últimas compras fiadas</div>' +
     (ventas.length
       ? ventas.slice(-5).reverse().map(function(v){
-          return '<div class="flex justify-between" style="padding:6px 0;border-bottom:1px solid var(--border)">' +
-            '<span style="font-size:12px">' + new Date(v.fecha).toLocaleDateString('es-VE') + '</span>' +
-            '<span class="text-accent font-bold">$' + v.totalUSD.toFixed(2) + '</span></div>';
+          return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">' +
+            '<div>' +
+              '<div style="font-size:12px;color:var(--text2)">' + new Date(v.fecha).toLocaleDateString('es-VE') + '</div>' +
+              '<div style="font-size:11px;color:var(--text3)">' + (v.items||[]).map(function(i){ return i.nombre; }).join(', ').substring(0,40) + '</div>' +
+            '</div>' +
+            '<span style="color:var(--warn);font-weight:700;font-family:var(--mono)">$' + v.totalUSD.toFixed(2) + '</span>' +
+          '</div>';
         }).join('')
-      : '<p class="text-muted text-sm">Sin ventas fiadas</p>');
+      : '<p style="color:var(--text3);font-size:13px;text-align:center;padding:10px">Sin compras fiadas registradas</p>');
   document.getElementById('modalFiado').dataset.clienteId = id;
   openModal('modalFiado');
+}
+
+function calcRestoFiado(deudaActual) {
+  var abonoEl = document.getElementById('pago-monto');
+  var abono = abonoEl ? (parseFloat(abonoEl.value) || 0) : 0;
+  var resto = Math.max(0, deudaActual - abono);
+  var el = document.getElementById('fiado-resto-display');
+  if (!el) return;
+  el.textContent = '$' + resto.toFixed(2);
+  el.style.color = resto === 0 ? 'var(--neon)' : resto < deudaActual ? 'var(--warn)' : 'var(--danger)';
 }
 
 function registrarPago() {
@@ -6365,6 +6420,7 @@ window.eliminarLicencia = eliminarLicencia;
 window.eliminarProveedor = eliminarProveedor;
 window.actualizarInfoFiado = actualizarInfoFiado;
 window.calcNuevaDeuda = calcNuevaDeuda;
+window.calcRestoFiado = calcRestoFiado;
 window.exportarClientesExcel = exportarClientesExcel;
 window.exportarClientesWA = exportarClientesWA;
 window.exportarHistorial = exportarHistorial;
