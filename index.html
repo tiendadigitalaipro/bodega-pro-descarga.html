@@ -1399,6 +1399,27 @@ canvas{max-width:100%!important}
               <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍗&#39;">🍗</button>
               <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🧹&#39;">🧹</button>
               <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🪣&#39;">🪣</button>
+              <!-- ── Farmacia ── -->
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;💊&#39;" title="Cápsulas / Pastillas">💊</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;💉&#39;" title="Inyectable">💉</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🩹&#39;" title="Curita / Vendaje">🩹</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🩺&#39;" title="Consultorio / Médico">🩺</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌡️&#39;" title="Termómetro">🌡️</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🧪&#39;" title="Jarabe / Solución">🧪</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🔬&#39;" title="Laboratorio">🔬</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🫀&#39;" title="Cardiología">🫀</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🩻&#39;" title="Radiografía">🩻</button>
+              <!-- ── Hierbas e Infusiones ── -->
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌿&#39;" title="Hierba medicinal">🌿</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍃&#39;" title="Hojas / Infusión">🍃</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌱&#39;" title="Planta / Hierba fresca">🌱</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌾&#39;" title="Manzanilla / Cereal">🌾</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🫖&#39;" title="Tetera / Infusión">🫖</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍵&#39;" title="Té / Tisana">🍵</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌸&#39;" title="Flor de tilo / Rosa">🌸</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌺&#39;" title="Cayena / Hibisco">🌺</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌻&#39;" title="Girasol">🌻</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍀&#39;" title="Trébol / Hierba medicinal">🍀</button>
             </div>
           </div>
         </div>
@@ -1427,6 +1448,8 @@ canvas{max-width:100%!important}
             <option value="Electrónica">📱 Electrónica y Accesorios</option>
             <option value="Papelería">📝 Papelería y Útiles</option>
             <option value="Mascotas">🐾 Mascotas</option>
+            <option value="Farmacia">💊 Farmacia y Medicamentos</option>
+            <option value="Hierbas">🌿 Hierbas e Infusiones</option>
             <option value="Otros">📦 Otros</option>
           </select>
         </div>
@@ -5843,6 +5866,7 @@ var EMOJI_CAT = {
   'Higiene':'🧼','Limpieza':'🧹','Otros':'📦','Carnes':'🥩',
   'Frutas':'🍎','Verduras':'🥦','Panadería':'🍞','Confitería':'🍬',
   'Electrodomésticos':'🔌','Ferretería':'🔧','Mascotas':'🐾',
+  'Farmacia':'💊','Hierbas':'🌿',
 };
 function autoEmojiCategoria(select) {
   var cat = select ? select.value : '';
