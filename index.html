@@ -925,9 +925,13 @@ canvas{max-width:100%!important}
             <div class="cart-header">
               <div class="flex justify-between items-center">
                 <h3>🛒 Carrito</h3>
-                <button class="btn btn-sm btn-ghost" onclick="clearCart()">Limpiar</button>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <button class="btn btn-sm" style="background:var(--warn);color:#000;font-weight:700;border:none;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer" onclick="pausarVenta()" title="Pausar venta y atender otro cliente">⏸️ Pausar</button>
+                  <button class="btn btn-sm btn-ghost" onclick="clearCart()">Limpiar</button>
+                </div>
               </div>
               <div style="font-size:11px;color:var(--text2);margin-top:4px" id="cartCount">0 productos</div>
+              <div id="pausedCartsBar" style="display:none;margin-top:6px"></div>
             </div>
             <div class="cart-items" id="cartItems">
               <div class="section-empty"><div class="e-icon">🛒</div><p>Agrega productos al carrito</p></div>
@@ -957,6 +961,7 @@ canvas{max-width:100%!important}
           </div>
           <div class="flex gap-2">
             <button class="btn btn-ghost btn-sm" onclick="exportarInventarioExcel()" title="Exportar a Excel/CSV">📊 Excel</button>
+            <button class="btn btn-ghost btn-sm" onclick="abrirEtiquetas()" title="Imprimir etiquetas de productos">🏷️ Etiquetas</button>
             <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:700;border:none;border-radius:8px;padding:6px 12px;cursor:pointer" onclick="exportarInventarioWA()" title="Compartir por WhatsApp">📲 WhatsApp</button>
             <button class="btn btn-primary" onclick="openAddProduct()">+ Nuevo Producto</button>
           </div>
@@ -1102,7 +1107,10 @@ canvas{max-width:100%!important}
 
       <!-- ═══ REPORTES ═══ -->
       <div id="page-reportes" style="display:none">
-        <div class="section-title mb-4">Reportes y Análisis</div>
+        <div class="flex justify-between items-center mb-4" style="flex-wrap:wrap;gap:8px">
+          <div class="section-title" style="margin-bottom:0">Reportes y Análisis</div>
+          <button class="btn btn-ghost btn-sm" onclick="exportarReportePDF()" title="Exportar resumen a PDF">📄 Exportar PDF</button>
+        </div>
         <div class="grid-4 mb-4" id="reporteStats"></div>
         <div class="grid-2 mb-4">
           <div class="card">
@@ -1602,6 +1610,11 @@ canvas{max-width:100%!important}
           </div>
         </div>
       </div>
+      <!-- PRECIO FIJO -->
+      <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px">
+        <input type="checkbox" id="prod-precio-fijo" style="width:16px;height:16px;accent-color:var(--warn);cursor:pointer">
+        <label for="prod-precio-fijo" style="font-size:12px;color:var(--warn);cursor:pointer;font-weight:600">🔒 Precio Fijo — No recalcular con % ganancia ni tasa</label>
+      </div>
       <div class="grid-2">
         <div class="form-group">
           <label class="form-label">Stock Actual</label>
@@ -1682,6 +1695,34 @@ canvas{max-width:100%!important}
     <div class="modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeModal('modalFiado')">Cancelar</button>
       <button class="btn btn-primary" onclick="registrarPago()">💰 Registrar Abono</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ETIQUETAS -->
+<div class="modal-overlay" id="modalEtiquetas">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title">🏷️ Etiquetas de Productos</span>
+      <button type="button" class="btn-close" onclick="closeModal('modalEtiquetas')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <select id="etiqueta-cat-filter" class="form-select" style="flex:1;min-width:160px" onchange="renderEtiquetasPreview()">
+          <option value="">📦 Todas las categorías</option>
+        </select>
+        <select id="etiqueta-size" class="form-select" style="width:140px">
+          <option value="small">Pequeña (5×3cm)</option>
+          <option value="medium" selected>Mediana (7×4cm)</option>
+          <option value="large">Grande (10×6cm)</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="imprimirEtiquetas()">🖨️ Imprimir</button>
+      </div>
+      <div id="etiquetasPreview" style="display:flex;flex-wrap:wrap;gap:8px;max-height:420px;overflow-y:auto;padding:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalEtiquetas')">Cerrar</button>
+      <button class="btn btn-primary" onclick="imprimirEtiquetas()">🖨️ Imprimir Etiquetas</button>
     </div>
   </div>
 </div>
@@ -2102,6 +2143,7 @@ let STATE = {
   simboloLocal: 'Bs',
   simboloRef: '$',
   cart: [],
+  pausedCarts: [],
   payMethod: 'Efectivo $',
   charts: {},
   currentPage: 'dashboard',
@@ -3420,6 +3462,7 @@ function openAddProduct(id) {
     document.getElementById('prod-stock').value = p.stock;
     document.getElementById('prod-stockMin').value = p.stockMin;
     document.getElementById('prod-unidad').value = p.unidad;
+    var pfEl = document.getElementById('prod-precio-fijo'); if(pfEl) pfEl.checked = p.precioFijo||false;
   } else {
     ['prod-id','prod-nombre','prod-emoji','prod-codigo','prod-costo','prod-precio','prod-stock','prod-stockMin','prod-costo-bulto','prod-unidades-bulto','prod-cant-bultos','prod-ganancia-pct','calc-total-unidades'].forEach(function(fid){
       var el = document.getElementById(fid); if(el) el.value = '';
@@ -3429,6 +3472,7 @@ function openAddProduct(id) {
     document.getElementById('prod-unidad').value = 'und';
     var res = document.getElementById('calc-resultado'); if(res) res.style.display='none';
     var iva = document.getElementById('prod-iva'); if(iva) iva.checked = false;
+    var pfEl2 = document.getElementById('prod-precio-fijo'); if(pfEl2) pfEl2.checked = false;
     // Auto-emoji para Bebidas al abrir
     var emojiEl = document.getElementById('prod-emoji');
     if (emojiEl && !emojiEl.value.trim()) emojiEl.value = CAT_ICONS['Bebidas'] || '🥤';
@@ -3537,6 +3581,7 @@ function calcPrecioUnitario() {
 }
 
 function setPct(pct) {
+  if(document.getElementById('prod-precio-fijo')&&document.getElementById('prod-precio-fijo').checked) return showToast('🔒 Precio fijo activo — desactívalo para recalcular','warn');
   if (pct >= 100) { showToast('El margen no puede ser 100% o mas','warn'); return; }
   var el = document.getElementById('prod-ganancia-pct');
   if (el) el.value = pct;
@@ -3549,6 +3594,7 @@ function setPct(pct) {
 }
 
 function calcPrecioAutomatico() {
+  if(document.getElementById('prod-precio-fijo')&&document.getElementById('prod-precio-fijo').checked) return;
   var _cb  = document.getElementById('prod-costo-bulto');
   var _ub  = document.getElementById('prod-unidades-bulto');
   var _qb  = document.getElementById('prod-cant-bultos');
@@ -3673,6 +3719,7 @@ function saveProduct() {
     stock: parseInt(document.getElementById('prod-stock').value) || 0,
     stockMin: parseInt(document.getElementById('prod-stockMin').value) || 5,
     unidad: document.getElementById('prod-unidad').value,
+    precioFijo: document.getElementById('prod-precio-fijo') ? document.getElementById('prod-precio-fijo').checked : false,
   };
 
   if (existingId) {
@@ -3695,6 +3742,140 @@ function saveProduct() {
   showToast('✅ Producto guardado en inventario','success');
   renderInventario();
   if (STATE.currentPage === 'pos') renderPosProducts();
+}
+
+// ═══ PAUSAR VENTAS ═══
+function pausarVenta() {
+  if (!STATE.cart || !STATE.cart.length) return showToast('El carrito está vacío','warn');
+  if ((STATE.pausedCarts||[]).length >= 5) return showToast('Máximo 5 ventas pausadas a la vez','warn');
+  if (!STATE.pausedCarts) STATE.pausedCarts = [];
+  STATE.pausedCarts.push({
+    id: Date.now(),
+    cart: STATE.cart.slice(),
+    payMethod: STATE.payMethod || 'Efectivo $',
+    hora: new Date().toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'})
+  });
+  STATE.cart = [];
+  STATE.payMethod = 'Efectivo $';
+  renderCart();
+  renderPausedCarts();
+  showToast('⏸️ Venta pausada — Puedes atender otro cliente','success');
+}
+
+function reanudarVenta(id) {
+  if (!STATE.pausedCarts) return;
+  var idx = STATE.pausedCarts.findIndex(function(c){ return c.id === id; });
+  if (idx === -1) return;
+  if (STATE.cart && STATE.cart.length > 0) {
+    if (!window.confirm('¿Descartar el carrito actual y reanudar la venta pausada?')) return;
+  }
+  var paused = STATE.pausedCarts.splice(idx, 1)[0];
+  STATE.cart = paused.cart || [];
+  STATE.payMethod = paused.payMethod || 'Efectivo $';
+  renderCart();
+  renderPausedCarts();
+  showToast('▶️ Venta reanudada','success');
+}
+
+function descartarPausa(id) {
+  if (!STATE.pausedCarts) return;
+  STATE.pausedCarts = STATE.pausedCarts.filter(function(c){ return c.id !== id; });
+  renderPausedCarts();
+  showToast('🗑️ Venta pausada descartada','warn');
+}
+
+function renderPausedCarts() {
+  var bar = document.getElementById('pausedCartsBar');
+  if (!bar) return;
+  var paused = STATE.pausedCarts || [];
+  if (!paused.length) { bar.style.display = 'none'; return; }
+  bar.style.display = 'block';
+  bar.innerHTML = '<div style="font-size:10px;color:var(--warn);font-weight:700;margin-bottom:4px">⏸️ VENTAS EN PAUSA:</div>' +
+    paused.map(function(c){
+      var total = c.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
+      var nitems = c.cart.length;
+      return '<div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--warn);border-radius:8px;padding:5px 8px;margin-bottom:4px">' +
+        '<span style="font-size:11px;flex:1;color:var(--text)">'+c.hora+' · '+nitems+' prod · <strong style="color:var(--neon)">$'+total.toFixed(2)+'</strong></span>' +
+        '<button onclick="reanudarVenta('+c.id+')" style="background:var(--neon);color:#000;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer">▶️</button>' +
+        '<button onclick="descartarPausa('+c.id+')" style="background:var(--danger);color:#fff;border:none;border-radius:6px;padding:3px 6px;font-size:11px;cursor:pointer">✕</button>' +
+      '</div>';
+    }).join('');
+}
+
+// ═══ ETIQUETAS ═══
+function abrirEtiquetas() {
+  var prods = DB.get('productos') || [];
+  var cats = [];
+  prods.forEach(function(p){ if(p.categoria && cats.indexOf(p.categoria)===-1) cats.push(p.categoria); });
+  cats.sort();
+  var sel = document.getElementById('etiqueta-cat-filter');
+  if (sel) {
+    sel.innerHTML = '<option value="">📦 Todas las categorías</option>' +
+      cats.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  }
+  openModal('modalEtiquetas');
+  renderEtiquetasPreview();
+}
+
+function renderEtiquetasPreview() {
+  var prods = DB.get('productos') || [];
+  var cat = document.getElementById('etiqueta-cat-filter');
+  if (cat && cat.value) prods = prods.filter(function(p){ return p.categoria === cat.value; });
+  var tasa = STATE.tasa || 1;
+  var simbolo = STATE.simboloLocal || 'Bs';
+  var container = document.getElementById('etiquetasPreview');
+  if (!container) return;
+  if (!prods.length) { container.innerHTML = '<p style="color:var(--text3);padding:20px">No hay productos en esta categoría</p>'; return; }
+  container.innerHTML = prods.map(function(p){
+    var bs = (p.precio * tasa).toFixed(2);
+    return '<div style="background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;width:140px;text-align:center;font-family:var(--body)">' +
+      '<div style="font-size:28px;margin-bottom:4px">'+(p.emoji||'📦')+'</div>' +
+      '<div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:4px;min-height:28px">'+(p.nombre||'')+'</div>' +
+      '<div style="font-size:10px;color:var(--text3);margin-bottom:4px">'+(p.categoria||'')+'</div>' +
+      '<div style="font-size:16px;font-weight:900;color:var(--neon);font-family:var(--mono)">$'+p.precio.toFixed(2)+'</div>' +
+      '<div style="font-size:11px;color:var(--warn);font-family:var(--mono)">'+simbolo+' '+bs+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+function imprimirEtiquetas() {
+  var prods = DB.get('productos') || [];
+  var cat = document.getElementById('etiqueta-cat-filter');
+  if (cat && cat.value) prods = prods.filter(function(p){ return p.categoria === cat.value; });
+  if (!prods.length) return showToast('No hay productos para imprimir','warn');
+  var tasa = STATE.tasa || 1;
+  var simbolo = STATE.simboloLocal || 'Bs';
+  var nombre_tienda = (DB.get('config')||{}).nombre || 'Mi Bodega';
+  var etiquetasHtml = prods.map(function(p){
+    return '<div class="etq">'+
+      '<div class="etq-emoji">'+(p.emoji||'📦')+'</div>'+
+      '<div class="etq-nombre">'+(p.nombre||'')+'</div>'+
+      '<div class="etq-cat">'+(p.categoria||'')+'</div>'+
+      '<div class="etq-precio">$'+p.precio.toFixed(2)+'</div>'+
+      '<div class="etq-bs">'+simbolo+' '+(p.precio*tasa).toFixed(2)+'</div>'+
+      '<div class="etq-tienda">'+nombre_tienda+'</div>'+
+    '</div>';
+  }).join('');
+  var w = window.open('','_blank','width=900,height=700');
+  if (!w) return showToast('Permite ventanas emergentes en el navegador','warn');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Etiquetas — '+nombre_tienda+'</title>'+
+  '<style>'+
+  'body{margin:10px;font-family:Arial,sans-serif;background:#fff}'+
+  '.etq-grid{display:flex;flex-wrap:wrap;gap:8px}'+
+  '.etq{border:1.5px dashed #333;border-radius:8px;padding:8px;width:130px;text-align:center;page-break-inside:avoid}'+
+  '.etq-emoji{font-size:26px;margin-bottom:2px}'+
+  '.etq-nombre{font-size:11px;font-weight:700;line-height:1.2;margin-bottom:2px;min-height:24px}'+
+  '.etq-cat{font-size:9px;color:#666;margin-bottom:2px}'+
+  '.etq-precio{font-size:18px;font-weight:900;color:#00aa44}'+
+  '.etq-bs{font-size:11px;color:#cc7700;font-weight:700}'+
+  '.etq-tienda{font-size:8px;color:#999;margin-top:4px;border-top:1px solid #eee;padding-top:2px}'+
+  '@media print{body{margin:4mm} .etq{width:120px;border-style:dashed}}'+
+  '</style></head><body>'+
+  '<div style="text-align:center;margin-bottom:12px;font-weight:700;font-size:14px">🏷️ Etiquetas — '+nombre_tienda+' · Tasa '+tasa+'</div>'+
+  '<div class="etq-grid">'+etiquetasHtml+'</div>'+
+  '<script>setTimeout(function(){window.print();},400);<\/script>'+
+  '</body></html>');
+  w.document.close();
 }
 
 function deleteProduct(id) {
@@ -3820,6 +4001,72 @@ function verDetalleVenta(id) {
 function reimprimirRecibo(id) {
   var v = (DB.get('ventas') || []).find(function(x){ return x.id === id; });
   if (v) showRecibo(v);
+}
+
+function exportarReportePDF() {
+  var ventas = DB.get('ventas') || [];
+  var cfg = DB.get('config') || {};
+  var nombre = cfg.nombre || 'Mi Bodega';
+  var tasa = STATE.tasa || 1;
+  var simbolo = STATE.simboloLocal || 'Bs';
+  var hoy = new Date(); var hoyStr = hoy.toLocaleDateString('es-VE');
+  // Stats generales
+  var totalVentas = ventas.length;
+  var totalUSD = ventas.reduce(function(s,v){ return s+(v.totalUSD||0); }, 0);
+  // Hoy
+  var ventasHoy = ventas.filter(function(v){ return new Date(v.fecha).toDateString()===hoy.toDateString(); });
+  var totalHoy = ventasHoy.reduce(function(s,v){ return s+(v.totalUSD||0); }, 0);
+  // Métodos de pago
+  var metodos = {};
+  ventas.forEach(function(v){ var m=v.metodo||v.metodoPago||'N/A'; metodos[m]=(metodos[m]||0)+(v.totalUSD||0); });
+  var metodosRows = Object.keys(metodos).map(function(m){
+    return '<tr><td>'+m+'</td><td style="text-align:right;color:#00aa44">$'+metodos[m].toFixed(2)+'</td></tr>';
+  }).join('');
+  // Top productos
+  var prodCount = {};
+  ventas.forEach(function(v){(v.items||[]).forEach(function(i){ prodCount[i.nombre]=(prodCount[i.nombre]||0)+i.qty; });});
+  var topProds = Object.keys(prodCount).map(function(k){return{n:k,q:prodCount[k]};}).sort(function(a,b){return b.q-a.q;}).slice(0,10);
+  var topRows = topProds.map(function(p){ return '<tr><td>'+p.n+'</td><td style="text-align:right">'+p.q+'</td></tr>'; }).join('');
+  // Inventario
+  var prods = DB.get('productos') || [];
+  var invRows = prods.map(function(p){
+    return '<tr><td>'+(p.emoji||'')+'</td><td>'+p.nombre+'</td><td>'+p.categoria+'</td><td style="text-align:right;color:#00aa44">$'+p.precio.toFixed(2)+'</td><td style="text-align:right;color:#cc7700">'+simbolo+' '+(p.precio*tasa).toFixed(2)+'</td><td style="text-align:right;color:'+(p.stock<=p.stockMin?'#ef4444':'#10b981')+'">'+p.stock+'</td></tr>';
+  }).join('');
+  var w = window.open('','_blank','width=900,height=700');
+  if (!w) return showToast('Permite ventanas emergentes para exportar PDF','warn');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte — '+nombre+'</title>'+
+  '<style>'+
+  'body{font-family:Arial,sans-serif;margin:20px;color:#111;font-size:13px}'+
+  'h1{font-size:20px;color:#111;margin-bottom:4px}'+
+  '.sub{color:#666;font-size:12px;margin-bottom:20px}'+
+  '.stats{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}'+
+  '.stat{background:#f5f5f5;border-radius:8px;padding:12px 18px;flex:1;min-width:140px}'+
+  '.stat-val{font-size:22px;font-weight:900;color:#00aa44}'+
+  '.stat-lbl{font-size:11px;color:#666;margin-top:2px}'+
+  'table{width:100%;border-collapse:collapse;margin-bottom:20px}'+
+  'th{background:#111;color:#fff;padding:6px 10px;text-align:left;font-size:12px}'+
+  'td{padding:5px 10px;border-bottom:1px solid #eee;font-size:12px}'+
+  'tr:nth-child(even){background:#fafafa}'+
+  'h2{font-size:14px;font-weight:700;margin:20px 0 8px;border-bottom:2px solid #00aa44;padding-bottom:4px}'+
+  '@media print{body{margin:5mm}}'+
+  '</style></head><body>'+
+  '<h1>📊 Reporte — '+nombre+'</h1>'+
+  '<div class="sub">Generado el '+hoyStr+' · Tasa BCV: '+tasa+' '+simbolo+'/$</div>'+
+  '<div class="stats">'+
+  '<div class="stat"><div class="stat-val">'+totalVentas+'</div><div class="stat-lbl">Total Ventas</div></div>'+
+  '<div class="stat"><div class="stat-val">$'+totalUSD.toFixed(2)+'</div><div class="stat-lbl">Total Ingresos USD</div></div>'+
+  '<div class="stat"><div class="stat-val">'+ventasHoy.length+'</div><div class="stat-lbl">Ventas Hoy</div></div>'+
+  '<div class="stat"><div class="stat-val">$'+totalHoy.toFixed(2)+'</div><div class="stat-lbl">Ingresos Hoy</div></div>'+
+  '</div>'+
+  '<h2>💳 Ingresos por Método de Pago</h2>'+
+  '<table><thead><tr><th>Método</th><th style="text-align:right">Total USD</th></tr></thead><tbody>'+metodosRows+'</tbody></table>'+
+  '<h2>🏆 Top 10 Productos más Vendidos</h2>'+
+  '<table><thead><tr><th>Producto</th><th style="text-align:right">Unidades</th></tr></thead><tbody>'+topRows+'</tbody></table>'+
+  '<h2>📦 Inventario Completo</h2>'+
+  '<table><thead><tr><th></th><th>Producto</th><th>Categoría</th><th style="text-align:right">Precio $</th><th style="text-align:right">Precio '+simbolo+'</th><th style="text-align:right">Stock</th></tr></thead><tbody>'+invRows+'</tbody></table>'+
+  '<script>setTimeout(function(){window.print();},500);<\/script>'+
+  '</body></html>');
+  w.document.close();
 }
 
 function exportarHistorial() {
@@ -6463,6 +6710,10 @@ window.confirmarVenta = confirmarVenta;
 window.copiarCodigo = copiarCodigo;
 window.deleteCliente = deleteCliente;
 window.deleteProduct = deleteProduct;
+window.pausarVenta = pausarVenta;
+window.reanudarVenta = reanudarVenta;
+window.descartarPausa = descartarPausa;
+window.renderPausedCarts = renderPausedCarts;
 window.desconectarBalanza = desconectarBalanza;
 window.detenerDemoWatchdog = detenerDemoWatchdog;
 window.djb2 = djb2;
@@ -6478,8 +6729,12 @@ window.calcRestoFiado = calcRestoFiado;
 window.exportarClientesExcel = exportarClientesExcel;
 window.exportarClientesWA = exportarClientesWA;
 window.exportarHistorial = exportarHistorial;
+window.exportarReportePDF = exportarReportePDF;
 window.exportarInventarioExcel = exportarInventarioExcel;
 window.exportarInventarioWA = exportarInventarioWA;
+window.abrirEtiquetas = abrirEtiquetas;
+window.renderEtiquetasPreview = renderEtiquetasPreview;
+window.imprimirEtiquetas = imprimirEtiquetas;
 window.extraerVenceEnDeDemo = extraerVenceEnDeDemo;
 window.extraerVenceEnDePRO = extraerVenceEnDePRO;
 window.fmt = fmt;
