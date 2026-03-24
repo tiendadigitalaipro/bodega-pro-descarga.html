@@ -1359,8 +1359,14 @@ canvas{max-width:100%!important}
 
                   <!-- LISTA DE LICENCIAS -->
                   <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
-                    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">📋 HISTORIAL DE LICENCIAS</div>
-                    <div id="licTable"></div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+                      <div style="font-size:12px;font-weight:700;color:var(--text2)">📋 HISTORIAL DE LICENCIAS <span id="licTableCount" style="background:var(--accent);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:4px">0</span></div>
+                      <div style="display:flex;gap:6px;align-items:center">
+                        <input type="text" id="licTableSearch" class="form-input" placeholder="🔍 Buscar..." style="width:140px;font-size:11px;padding:4px 8px;height:28px" oninput="renderLicTable()">
+                        <button class="btn btn-ghost btn-sm" onclick="exportarLicencias()" title="Exportar lista de licencias" style="font-size:11px;padding:4px 8px;height:28px">📤 Exportar</button>
+                      </div>
+                    </div>
+                    <div id="licTable" style="max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:4px"></div>
                   </div>
                 </div>
               </div></div>
@@ -6446,6 +6452,30 @@ function _mostrarAvisoDemoMinutos(minutos) {
   if (minutos > 1) setTimeout(function(){ if(t.parentNode) t.remove(); }, 8000);
 }
 
+function exportarLicencias() {
+  var lics = getLicenses();
+  if (!lics.length) return showToast('No hay licencias para exportar','warn');
+  var csv = 'Negocio,Código,Tipo,Estado,Fecha Generación,Vencimiento\n';
+  lics.forEach(function(l){
+    var tipo = l.tipo || (l.code && l.code.startsWith('DEMO') ? 'DEMO' : 'PRO');
+    var estado = l.bloqueada ? 'BLOQUEADA' : l.pausada ? 'PAUSADA' : !l.activo ? 'INACTIVA' : 'ACTIVA';
+    var fechaGen = l.creadoEn ? new Date(l.creadoEn).toLocaleDateString('es-VE') : '-';
+    var vence = '-';
+    if (tipo === 'DEMO' && l.venceEn) vence = new Date(l.venceEn).toLocaleDateString('es-VE');
+    else if (tipo === 'PRO') {
+      var vp = extraerVenceEnDePRO(l.code);
+      vence = vp ? vp.toLocaleDateString('es-VE') : 'Permanente';
+    }
+    csv += '"'+(l.negocio||'')+'","'+(l.code||'')+'","'+tipo+'","'+estado+'","'+fechaGen+'","'+vence+'"\n';
+  });
+  var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'licencias-bodega-pro-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('📤 Licencias exportadas ('+lics.length+' registros)','success');
+}
+
 function detenerDemoWatchdog() {
   if (_demoWatchdogId) {
     clearInterval(_demoWatchdogId);
@@ -6642,11 +6672,21 @@ function renderLicTable() {
   var el = document.getElementById('licTable');
   if (!el) return;
   var lics = getLicenses();
-  if (!lics.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">Sin licencias generadas</div>';
+  // Filtro de búsqueda
+  var q = (document.getElementById('licTableSearch') || {value:''}).value.trim().toUpperCase();
+  var licsFiltradas = q ? lics.filter(function(l){
+    return (l.code||'').toUpperCase().includes(q) ||
+           (l.negocio||'').toUpperCase().includes(q) ||
+           (l.tipo||'').toUpperCase().includes(q);
+  }) : lics;
+  // Actualizar contador
+  var countEl = document.getElementById('licTableCount');
+  if (countEl) countEl.textContent = lics.length + (q ? ' · ' + licsFiltradas.length + ' filtradas' : '');
+  if (!licsFiltradas.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">' + (q ? 'Sin resultados para "'+q+'"' : 'Sin licencias generadas') + '</div>';
     return;
   }
-  el.innerHTML = lics.slice().reverse().map(function(l) {
+  el.innerHTML = licsFiltradas.slice().reverse().map(function(l) {
     var tipo = l.tipo || (l.code && l.code.startsWith('DEMO') ? 'DEMO' : 'PRO');
     // Estado
     var estado = 'ACTIVA';
@@ -6872,6 +6912,7 @@ window.renderHistStats = renderHistStats;
 window.renderHistorial = renderHistorial;
 window.renderInventario = renderInventario;
 window.renderLicTable = renderLicTable;
+window.exportarLicencias = exportarLicencias;
 window.renderPayMethodsConfig = renderPayMethodsConfig;
 window.renderPaymentBtns = renderPaymentBtns;
 window.renderPosProducts = renderPosProducts;
