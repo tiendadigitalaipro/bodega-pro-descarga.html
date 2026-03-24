@@ -2324,7 +2324,12 @@ function doLogin() {
         var issuedAll2 = getLicenses();
         var demoLic2 = issuedAll2.find(function(l){ return l.code===code && l.tipo==='DEMO'; });
         if (demoLic2) { venceEn = demoLic2.venceEn; }
-        else { var vd2=new Date(); vd2.setDate(vd2.getDate()+5); venceEn=vd2.toISOString(); }
+        else {
+          // Intentar extraer vencimiento del código (nuevo formato 4 partes)
+          var embExp2 = (typeof extractDemoExpiry==='function') ? extractDemoExpiry(code) : null;
+          if (embExp2) { venceEn = embExp2.toISOString(); }
+          else { var vd2=new Date(); vd2.setDate(vd2.getDate()+5); venceEn=vd2.toISOString(); }
+        }
       }
       DB.set('license', {
         code: code, deviceId: DEVICE_ID,
@@ -2391,8 +2396,10 @@ function doLogin() {
     if (demoLic && demoLic.venceEn) {
       venceEn = demoLic.venceEn;
     } else {
-      // No está en la lista — dar 3 días desde hoy (demo desconocida)
-      var vd=new Date(); vd.setDate(vd.getDate()+5); venceEn=vd.toISOString();
+      // Intentar extraer vencimiento del código (nuevo formato 4 partes)
+      var embExp = (typeof extractDemoExpiry==='function') ? extractDemoExpiry(code) : null;
+      if (embExp) { venceEn = embExp.toISOString(); }
+      else { var vd=new Date(); vd.setDate(vd.getDate()+5); venceEn=vd.toISOString(); }
     }
   }
 
@@ -2491,7 +2498,7 @@ function startApp() {
   if (typeof checkDemoExpiry === 'function') {
     var _lic = DB.get('license');
     if (_lic && _lic.esDemo && _lic.venceEn) {
-      var _TOL = 48 * 60 * 60 * 1000; // 48h tolerancia reloj laptop
+      var _TOL = 2 * 60 * 60 * 1000; // 2h tolerancia reloj
       var _vencida = new Date() > new Date(new Date(_lic.venceEn).getTime() + _TOL);
       if (_vencida) { mostrarPantallaBloqueo(_lic, new Date(_lic.venceEn)); return; }
     }
@@ -5438,23 +5445,38 @@ var SECRET_DEMO='BPD3MO2026';
 var SECRET_DEVICE='BDEV2026A2K';
 function djb2(s){var h=5381;for(var i=0;i<s.length;i++){h=((h<<5)+h)^s.charCodeAt(i);h=h>>>0;}return h;}
 function toB(n,len){var r='',b=CHARS.length;for(var i=0;i<len;i++){r=CHARS[n%b]+r;n=Math.floor(n/b);}return r;}
+function fromB(s){var r=0,b=CHARS.length;for(var i=0;i<(s||'').length;i++){var idx=CHARS.indexOf(s[i]);if(idx<0)return 0;r=r*b+idx;}return r;}
 
 
 function generateDemoCode(neg, dias) {
-  dias = dias || 3;
-  var s1 = toB(djb2(neg.toUpperCase() + Date.now().toString()), 4);
-  var s2 = toB(djb2(s1 + SECRET_DEMO + String(dias)), 4);
-  return 'DEMO-' + s1 + '-' + s2;
+  dias = dias || 5;
+  // Calcular día absoluto de vencimiento (días desde epoch Unix)
+  var expDay = Math.floor((Date.now() + dias * 86400000) / 86400000);
+  var sv = toB(expDay % (CHARS.length*CHARS.length*CHARS.length*CHARS.length), 4); // día codificado
+  var s1 = toB(djb2((neg||'').toUpperCase() + Date.now().toString()), 4);
+  var s2 = toB(djb2(s1 + SECRET_DEMO + sv), 4); // firma incluye el día de vencimiento
+  return 'DEMO-' + s1 + '-' + s2 + '-' + sv; // 4 partes: prefijo-hash-firma-expDay
+}
+function extractDemoExpiry(code) {
+  // Extrae la fecha de vencimiento del código DEMO de 4 partes
+  var p = (code || '').trim().toUpperCase().split('-');
+  if (p[0] !== 'DEMO' || p.length < 4) return null;
+  var expDay = fromB(p[3]);
+  if (!expDay || expDay < 19000) return null; // sanidad: > año 2022
+  return new Date(expDay * 86400000);
 }
 function verifyDemoSignature(code) {
-  // Normalizar: mayúsculas + sin espacios (case-insensitive, trim-safe)
   var p = (code || '').trim().toUpperCase().split('-');
   if (p[0] !== 'DEMO' || p.length < 3) return false;
-  // Verificar con dias 1-7 (nuevo formato con dias embebidos)
+  // Nuevo formato de 4 partes: DEMO-S1-SIG-EXPDAY (firma cubre el día)
+  if (p.length >= 4) {
+    if (p[2] === toB(djb2(p[1] + SECRET_DEMO + p[3]), 4)) return true;
+  }
+  // Formato legado 3 partes con dias 1-7
   for (var d = 1; d <= 7; d++) {
     if (p[2] === toB(djb2(p[1] + SECRET_DEMO + String(d)), 4)) return true;
   }
-  // Formato clásico sin dias
+  // Formato más antiguo sin dias
   if (p[2] === toB(djb2(p[1] + SECRET_DEMO), 4)) return true;
   return false;
 }
@@ -5464,9 +5486,8 @@ function saveLicenses(l){DB.set('licenses_issued',l);}
 function checkDemoExpiry() {
   var lic = DB.get('license');
   if(!lic||!lic.esDemo||!lic.venceEn) return false;
-  // Tolerancia de 48h para relojes atrasados (laptop sin sincronizar)
-  // Solo se considera vencida si pasaron MÁS de 48h después de venceEn
-  var TOLERANCIA_MS = 48 * 60 * 60 * 1000; // 48 horas en ms
+  // Tolerancia de 2h para relojes levemente desincronizados
+  var TOLERANCIA_MS = 2 * 60 * 60 * 1000; // 2 horas (reducido de 48h)
   return new Date() > new Date(new Date(lic.venceEn).getTime() + TOLERANCIA_MS);
 }
 
@@ -6793,6 +6814,8 @@ window.abrirEtiquetas = abrirEtiquetas;
 window.renderEtiquetasPreview = renderEtiquetasPreview;
 window.imprimirEtiquetas = imprimirEtiquetas;
 window.extraerVenceEnDeDemo = extraerVenceEnDeDemo;
+window.extractDemoExpiry = extractDemoExpiry;
+window.fromB = fromB;
 window.extraerVenceEnDePRO = extraerVenceEnDePRO;
 window.fmt = fmt;
 window.fmtLocal = fmtLocal;
