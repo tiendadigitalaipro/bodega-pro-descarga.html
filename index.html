@@ -3347,8 +3347,40 @@ function showRecibo(venta) {
   var body = document.createElement('div');
   body.style.cssText = 'padding:16px;overflow-y:auto;flex:1;background:var(--bg3)';
   body.innerHTML = reciboHTML;
+  /* ── Selector de tamaño de papel ── */
+  var selectorRow = document.createElement('div');
+  selectorRow.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 16px 0;background:var(--card);flex-shrink:0';
+  var lblPapel = document.createElement('span');
+  lblPapel.textContent = '🖨️ Papel:';
+  lblPapel.style.cssText = 'font-size:12px;color:var(--text2);font-family:var(--font);white-space:nowrap';
+  var pill58 = document.createElement('button');
+  pill58.textContent = '58 mm';
+  pill58.dataset.mm = '58';
+  pill58.style.cssText = 'padding:5px 14px;border-radius:20px;border:2px solid var(--neon);background:var(--neon);color:#000;cursor:pointer;font-size:12px;font-weight:800;font-family:var(--font);transition:all .18s';
+  var pill80 = document.createElement('button');
+  pill80.textContent = '80 mm';
+  pill80.dataset.mm = '80';
+  pill80.style.cssText = 'padding:5px 14px;border-radius:20px;border:2px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:12px;font-weight:700;font-family:var(--font);transition:all .18s';
+  var _mmSeleccionado = '58';
+  function _setPill(mm) {
+    _mmSeleccionado = mm;
+    if (mm==='58') {
+      pill58.style.background='var(--neon)'; pill58.style.borderColor='var(--neon)'; pill58.style.color='#000';
+      pill80.style.background='transparent'; pill80.style.borderColor='var(--border)'; pill80.style.color='var(--text2)';
+    } else {
+      pill80.style.background='var(--accent)'; pill80.style.borderColor='var(--accent)'; pill80.style.color='#fff';
+      pill58.style.background='transparent'; pill58.style.borderColor='var(--border)'; pill58.style.color='var(--text2)';
+    }
+    btnI.innerHTML = '🖨️ Imprimir '+mm+'mm';
+  }
+  pill58.onclick = function(){ _setPill('58'); };
+  pill80.onclick = function(){ _setPill('80'); };
+  selectorRow.appendChild(lblPapel);
+  selectorRow.appendChild(pill58);
+  selectorRow.appendChild(pill80);
+  /* ── Footer de botones ── */
   var footer = document.createElement('div');
-  footer.style.cssText = 'display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;background:var(--card)';
+  footer.style.cssText = 'display:flex;gap:8px;padding:10px 16px 12px;border-top:1px solid var(--border);flex-shrink:0;background:var(--card)';
   var btnC = document.createElement('button');
   btnC.textContent = 'Cerrar';
   btnC.style.cssText = 'padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;font-family:var(--font)';
@@ -3356,7 +3388,7 @@ function showRecibo(venta) {
   var btnI = document.createElement('button');
   btnI.innerHTML = '🖨️ Imprimir 58mm';
   btnI.style.cssText = 'flex:1;padding:10px;border-radius:10px;border:none;background:var(--neon);color:#000;cursor:pointer;font-size:13px;font-weight:800;font-family:var(--font)';
-  btnI.onclick = function(){ STATE._ventaActual = venta; imprimirRecibo(); };
+  btnI.onclick = function(){ STATE._ventaActual = venta; imprimirRecibo(_mmSeleccionado); };
   var btnWA = document.createElement('button');
   btnWA.innerHTML = '📱 WhatsApp';
   btnWA.style.cssText = 'flex:1;padding:10px;border-radius:10px;border:none;background:#25d366;color:#fff;cursor:pointer;font-size:13px;font-weight:800;font-family:var(--font)';
@@ -3366,6 +3398,7 @@ function showRecibo(venta) {
   footer.appendChild(btnWA);
   box.appendChild(header);
   box.appendChild(body);
+  box.appendChild(selectorRow);
   box.appendChild(footer);
   overlay.appendChild(box);
   overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
@@ -3373,25 +3406,29 @@ function showRecibo(venta) {
   STATE._ventaActual = venta;
 }
 
-function imprimirRecibo() {
+function imprimirRecibo(mm) {
   // Usar venta guardada al confirmar, o buscar la última
+  var mmPapel = (mm === '80' || mm === 80) ? '80' : '58';
   var venta = STATE._ventaActual || null;
   if (!venta && STATE.ultimaVentaId) {
     venta = (DB.get('ventas') || []).find(function(v){ return v.id === STATE.ultimaVentaId; }) || null;
   }
   if (venta) {
-    imprimirReciboTermico(venta);
+    imprimirReciboTermico(venta, mmPapel);
     return;
   }
   // Fallback: capturar contenido actual del modal
+  var anchoPage = mmPapel === '80' ? '80mm' : '58mm';
+  var anchoBody = mmPapel === '80' ? '76mm' : '54mm';
+  var winW      = mmPapel === '80' ? '340'  : '280';
   var reciboInner = document.getElementById('reciboInnerContent') || document.getElementById('reciboContent');
   var html = '<html><head><style>'
-    + '@page{size:58mm auto;margin:1mm 2mm}'
-    + 'body{font-family:"Courier New",monospace;font-size:11px;width:54mm;margin:0;padding:0;color:#000}'
+    + '@page{size:'+anchoPage+' auto;margin:1mm 2mm}'
+    + 'body{font-family:"Courier New",monospace;font-size:11px;width:'+anchoBody+';margin:0;padding:0;color:#000}'
     + '</style></head><body>'
     + (reciboInner ? reciboInner.innerHTML : '<p>Sin datos de venta</p>')
     + '</body></html>';
-  var w = window.open('', '_blank', 'width=280,height=650,toolbar=0,menubar=0');
+  var w = window.open('', '_blank', 'width='+winW+',height=650,toolbar=0,menubar=0');
   if (w) { w.document.write(html); w.document.close(); setTimeout(function(){ w.print(); }, 400); }
 }
 
@@ -5349,9 +5386,13 @@ function renderFacturaPreview() {
     +'</div>';
 }
 
-// ── IMPRESION TERMICA 80mm ──
-function imprimirReciboTermico(venta) {
+// ── IMPRESION TERMICA (58mm / 80mm) ──
+function imprimirReciboTermico(venta, mm) {
   if(!venta) return;
+  var mmPapel   = (mm === '80' || mm === 80) ? '80' : '58';
+  var anchoPage = mmPapel === '80' ? '80mm' : '58mm';
+  var anchoBody = mmPapel === '80' ? '76mm' : '54mm';
+  var winW      = mmPapel === '80' ? '340'  : '280';
   var cfg = DB.get('config')||{};
   var fc  = cfg.factura||{};
   var tasa = venta.tasa||STATE.tasa;
@@ -5383,8 +5424,8 @@ function imprimirReciboTermico(venta) {
   var ctrl = fc.numControlActivo?_siguienteNumControl():null;
   var ctrlHtml = ctrl?'<div style="text-align:center;font-size:10px">Control: N-'+ctrl+'</div>':'';
   var html='<html><head><style>'
-    +'@page{size:58mm auto;margin:1mm 2mm}'
-    +'body{font-family:"Courier New",monospace;font-size:11px;width:54mm;margin:0;padding:0;color:#000}'
+    +'@page{size:'+anchoPage+' auto;margin:1mm 2mm}'
+    +'body{font-family:"Courier New",monospace;font-size:11px;width:'+anchoBody+';margin:0;padding:0;color:#000}'
     +'</style></head><body>'
     +logoHtml
     +'<div style="text-align:center;font-weight:900;font-size:13px">'+negocioNombre+'</div>'
@@ -5406,7 +5447,7 @@ function imprimirReciboTermico(venta) {
     +'<div style="border-top:1px dashed #000;margin:6px 0 4px"></div>'
     +'<div style="text-align:center;font-size:10px">'+(fc.mensajePie||'¡Gracias por su compra!')+'</div>'
     +'</body></html>';
-  var w = window.open('','_blank','width=280,height=650,toolbar=0,menubar=0');
+  var w = window.open('','_blank','width='+winW+',height=650,toolbar=0,menubar=0');
   if(w){ w.document.write(html); w.document.close(); setTimeout(function(){w.print();},400); }
   abrirGavetaDinero();
 }
