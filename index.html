@@ -1787,7 +1787,7 @@ canvas{max-width:100%!important}
       <!-- PAGO SIMPLE -->
       <div id="pagoSimpleSection">
         <div class="form-group">
-          <label class="form-label">Monto Recibido ($) <span style="color:var(--text3);font-size:11px">para calcular vuelto</span></label>
+          <label class="form-label"><span id="labelMontoRecibidoTxt">Monto Recibido ($)</span> <span id="hintMontoRecibido" style="color:var(--text3);font-size:11px">para calcular vuelto</span></label>
           <input type="number" id="montoRecibido" class="form-input" step="0.01" placeholder="0.00" oninput="calcVuelto()">
         </div>
         <div id="vueltoInfo" style="display:none;border-radius:8px;padding:10px 12px;margin-top:4px;text-align:center"></div>
@@ -3008,26 +3008,49 @@ function calcMixtoRemanente() {
 }
 
 function calcVuelto() {
-  var total = STATE.cart ? STATE.cart.reduce(function(s,i){ return s + (i.subtotal||0); }, 0) : 0;
+  var total    = STATE.cart ? STATE.cart.reduce(function(s,i){ return s + (i.subtotal||0); }, 0) : 0;
   var montoEl  = document.getElementById('montoRecibido');
   var vueltoEl = document.getElementById('vueltoInfo');
   var recibido = montoEl ? (parseFloat(montoEl.value) || 0) : 0;
+  var simb     = STATE.simboloLocal || 'Bs';
+  var esEfBs   = (STATE.payMethod||'') === 'Efectivo Bs';
   if (!vueltoEl) return;
   if (recibido > 0) {
-    var vuelto = recibido - total;
     vueltoEl.style.display = 'block';
-    if (vuelto >= 0) {
-      vueltoEl.style.background = 'rgba(6,214,160,0.08)';
-      vueltoEl.style.border = '1px solid rgba(6,214,160,0.3)';
-      vueltoEl.innerHTML = '<div style="font-size:11px;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">✅ Vuelto</div>'
-        + '<div style="font-family:var(--mono);font-size:18px;font-weight:900;color:var(--neon)">$' + vuelto.toFixed(2) + '</div>'
-        + '<div style="font-size:12px;color:var(--text2);margin-top:2px">' + (STATE.simboloLocal||'Bs') + ' ' + fmt(vuelto * STATE.tasa) + '</div>';
+    if (esEfBs) {
+      // ── Modo Bolívares: input en Bs, vuelto en Bs, referencia en $ ──
+      var totalBs   = total * STATE.tasa;
+      var vueltoBs  = recibido - totalBs;
+      var vueltoRef = vueltoBs / STATE.tasa; // referencia en $
+      if (vueltoBs >= 0) {
+        vueltoEl.style.background = 'rgba(6,214,160,0.08)';
+        vueltoEl.style.border = '1px solid rgba(6,214,160,0.3)';
+        vueltoEl.innerHTML = '<div style="font-size:11px;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">✅ Vuelto</div>'
+          + '<div style="font-family:var(--mono);font-size:20px;font-weight:900;color:var(--neon)">' + simb + ' ' + fmt(vueltoBs) + '</div>'
+          + '<div style="font-size:11px;color:var(--text3);margin-top:3px">Ref: $' + vueltoRef.toFixed(2) + '</div>';
+      } else {
+        vueltoEl.style.background = 'rgba(245,158,11,0.08)';
+        vueltoEl.style.border = '1px solid rgba(245,158,11,0.3)';
+        vueltoEl.innerHTML = '<div style="font-size:11px;color:var(--warn);margin-bottom:2px">⚠️ Falta cubrir</div>'
+          + '<div style="font-family:var(--mono);font-size:20px;font-weight:900;color:var(--warn)">' + simb + ' ' + fmt(Math.abs(vueltoBs)) + '</div>'
+          + '<div style="font-size:11px;color:var(--text3);margin-top:3px">Ref: $' + Math.abs(vueltoRef).toFixed(2) + '</div>';
+      }
     } else {
-      vueltoEl.style.background = 'rgba(245,158,11,0.08)';
-      vueltoEl.style.border = '1px solid rgba(245,158,11,0.3)';
-      vueltoEl.innerHTML = '<div style="font-size:11px;color:var(--warn);margin-bottom:2px">⚠️ Falta cubrir</div>'
-        + '<div style="font-family:var(--mono);font-size:18px;font-weight:900;color:var(--warn)">$' + Math.abs(vuelto).toFixed(2) + '</div>'
-        + '<div style="font-size:12px;color:var(--text2);margin-top:2px">' + (STATE.simboloLocal||'Bs') + ' ' + fmt(Math.abs(vuelto) * STATE.tasa) + '</div>';
+      // ── Modo Dólares: comportamiento original ──
+      var vuelto = recibido - total;
+      if (vuelto >= 0) {
+        vueltoEl.style.background = 'rgba(6,214,160,0.08)';
+        vueltoEl.style.border = '1px solid rgba(6,214,160,0.3)';
+        vueltoEl.innerHTML = '<div style="font-size:11px;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">✅ Vuelto</div>'
+          + '<div style="font-family:var(--mono);font-size:18px;font-weight:900;color:var(--neon)">$' + vuelto.toFixed(2) + '</div>'
+          + '<div style="font-size:12px;color:var(--text2);margin-top:2px">' + simb + ' ' + fmt(vuelto * STATE.tasa) + '</div>';
+      } else {
+        vueltoEl.style.background = 'rgba(245,158,11,0.08)';
+        vueltoEl.style.border = '1px solid rgba(245,158,11,0.3)';
+        vueltoEl.innerHTML = '<div style="font-size:11px;color:var(--warn);margin-bottom:2px">⚠️ Falta cubrir</div>'
+          + '<div style="font-family:var(--mono);font-size:18px;font-weight:900;color:var(--warn)">$' + Math.abs(vuelto).toFixed(2) + '</div>'
+          + '<div style="font-size:12px;color:var(--text2);margin-top:2px">' + simb + ' ' + fmt(Math.abs(vuelto) * STATE.tasa) + '</div>';
+      }
     }
   } else {
     vueltoEl.style.display = 'none';
@@ -3097,6 +3120,14 @@ function procesarVenta() {
     var rb=document.getElementById('remanenteBox'); if(rb) rb.style.display='none';
   }
 
+  // ── Adaptar label y hint según método de pago ──
+  var _esEfBs = (STATE.payMethod||'') === 'Efectivo Bs';
+  var _lbl = document.getElementById('labelMontoRecibidoTxt');
+  var _hint = document.getElementById('hintMontoRecibido');
+  var _inputMR = document.getElementById('montoRecibido');
+  if (_lbl)   _lbl.textContent  = _esEfBs ? 'Monto Recibido ('+( STATE.simboloLocal||'Bs')+')' : 'Monto Recibido ($)';
+  if (_hint)  _hint.textContent = _esEfBs ? 'ingresa el monto en Bolívares' : 'para calcular vuelto';
+  if (_inputMR) { _inputMR.value = ''; _inputMR.placeholder = '0.00'; }
   openModal('modalCobro');
   // Fiado: mostrar/ocultar sección de deuda al abrir modal
   var _fiadoSec = document.getElementById('fiadoClienteInfo');
@@ -3135,9 +3166,20 @@ function confirmarVenta() {
     vueltoBs  = vueltoUSD * tasa;
   } else {
     const montoRecibidoEl = document.getElementById('montoRecibido');
-    montoRecibido = montoRecibidoEl ? (parseFloat(montoRecibidoEl.value) || total) : total;
-    vueltoUSD = Math.max(0, montoRecibido - total);
-    vueltoBs  = vueltoUSD * (STATE.tasa || 649);
+    var _esEfBsConf = (STATE.payMethod||'') === 'Efectivo Bs';
+    if (_esEfBsConf) {
+      // Input en Bs → convertir para almacenar en USD equivalente
+      var _tasaConf  = STATE.tasa || 649;
+      var _totalBs   = total * _tasaConf;
+      var _recibBs   = montoRecibidoEl ? (parseFloat(montoRecibidoEl.value) || _totalBs) : _totalBs;
+      vueltoBs       = Math.max(0, _recibBs - _totalBs);
+      vueltoUSD      = vueltoBs / _tasaConf;
+      montoRecibido  = _recibBs / _tasaConf; // guardar en USD equivalente
+    } else {
+      montoRecibido = montoRecibidoEl ? (parseFloat(montoRecibidoEl.value) || total) : total;
+      vueltoUSD = Math.max(0, montoRecibido - total);
+      vueltoBs  = vueltoUSD * (STATE.tasa || 649);
+    }
   }
 
   const venta = {
