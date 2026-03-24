@@ -685,10 +685,15 @@ canvas{max-width:100%!important}
         <div class="form-group">
           <label class="form-label">Código de Activación</label>
           <input type="text" id="ln-code" class="form-input" placeholder="BPRO-XXXX-XXXX o DEMO-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:2px" oninput="var v=this.value.trim().toUpperCase();var al=document.getElementById('loginAlert');if(al&&v.length>=8){al.innerHTML='';}" onkeydown="if(event.key==='Enter')doLogin()">
-          <div class="license-info">
-            Tu código de activación es único y está ligado a este dispositivo.<br>
-            <strong>No es transferible ni puede revenderse.</strong><br>
-            <span class="license-code" id="deviceIdDisplay">Tu Device ID: DEV-DZR3-1YU8</span>
+          <div class="license-info" style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.3);border-radius:10px;padding:10px 12px">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:6px">
+              🔐 Tu licencia está vinculada a <strong style="color:var(--warn)">este equipo específico</strong>. No es transferible.
+            </div>
+            <div style="background:var(--bg2);border-radius:8px;padding:8px 10px;text-align:center">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:3px">📋 TU DEVICE ID — Envíalo al comprar tu licencia PRO:</div>
+              <span class="license-code" id="deviceIdDisplay" style="font-size:14px;font-weight:900;color:var(--neon);letter-spacing:2px;cursor:pointer" onclick="navigator.clipboard&&navigator.clipboard.writeText(this.textContent.replace('Tu Device ID: ',''));this.style.color='var(--accent)';setTimeout(function(){},1000)" title="Clic para copiar">DEV-XXXX-XXXX</span>
+              <div style="font-size:10px;color:var(--text3);margin-top:3px">👆 Clic para copiar · Comparte este ID con A2K para activar tu PRO</div>
+            </div>
           </div>
         </div>
         <button class="btn btn-primary btn-full btn-lg mt-3" onclick="doLogin()">🚀 Activar y Entrar</button>
@@ -5965,11 +5970,21 @@ function generarLicenciaDemo() {
 function compartirUltimaLicencia() {
   var lic = _ultimaLicGenerada;
   if (!lic) { showToast('Genera una licencia primero','warn'); return; }
-  var txt = 'BODEGA PRO 8.0 — Código de Activación\n\n'
-    + 'Negocio: ' + lic.negocio + '\n'
-    + 'Código: ' + lic.code + '\n'
-    + 'Terminales: ' + lic.maxTerminales + '\n\n'
-    + 'Soporte: +58 416 411 7331\nA2K Digital Studio';
+  var txt = '🏪 BODEGA PRO 8.0 — Licencia de Activación\n'
+    + '━━━━━━━━━━━━━━━━━━━━━━\n'
+    + '📋 Negocio: ' + lic.negocio + '\n'
+    + '🔑 Código: ' + lic.code + '\n';
+  if (lic.deviceLocked) {
+    txt += '🔐 Equipo autorizado: ' + lic.deviceLocked + '\n'
+      + '⚠️ Esta licencia funciona SOLO en ese equipo\n';
+  } else {
+    txt += '💻 Terminales: ' + lic.maxTerminales + '\n';
+  }
+  txt += '━━━━━━━━━━━━━━━━━━━━━━\n'
+    + '📱 App: https://tiendadigitalaipro.github.io/bodega-pro-descarga.html/\n\n'
+    + '⚠️ IMPORTANTE: Este código es personal e intransferible.\n'
+    + 'Si lo compartes con otra persona, tu acceso quedará bloqueado.\n\n'
+    + '🆘 Soporte: +58 416 411 7331 — A2K Digital Studio';
   window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
 }
 
