@@ -629,6 +629,19 @@ canvas{max-width:100%!important}
   .bento-item.span2,.bento-item.span3{grid-column:span 2}
   .bento-item.span4{grid-column:span 2}
 }
+/* ── ASISTENTE LÓGICO LOCAL ── */
+#ia-fab{position:fixed;bottom:90px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--neon,#39ff14),#00c851);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;z-index:9999;box-shadow:0 4px 15px rgba(57,255,20,0.35);transition:transform 0.2s}
+#ia-fab:hover{transform:scale(1.1)}
+#ia-panel{position:fixed;bottom:160px;right:20px;width:320px;height:420px;background:#141418;border:1px solid rgba(57,255,20,0.25);border-radius:16px;display:none;flex-direction:column;z-index:9998;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.45)}
+#ia-header{background:#1C1C22;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;color:var(--neon,#39ff14);font-weight:500;font-size:14px;border-bottom:1px solid rgba(57,255,20,0.15)}
+#ia-header button{background:none;border:none;color:#8A8794;cursor:pointer;font-size:16px;z-index:20000;pointer-events:auto}
+#ia-mensajes{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.ia-msg-user{background:var(--neon,#39ff14);color:#0D0D0F;padding:8px 12px;border-radius:12px 12px 4px 12px;font-size:13px;align-self:flex-end;max-width:85%;white-space:pre-line}
+.ia-msg-bot{background:#1C1C22;color:#F0EDE6;padding:8px 12px;border-radius:12px 12px 12px 4px;font-size:13px;align-self:flex-start;max-width:85%;border:1px solid rgba(57,255,20,0.12);white-space:pre-line}
+.ia-msg-bot.cargando{color:#8A8794;font-style:italic}
+#ia-input-area{padding:10px;border-top:1px solid rgba(57,255,20,0.15);display:flex;gap:8px}
+#ia-input{flex:1;background:#1C1C22;border:1px solid rgba(57,255,20,0.2);border-radius:8px;color:#F0EDE6;padding:8px 12px;font-size:13px;outline:none}
+#ia-input-area button{background:var(--neon,#39ff14);color:#0D0D0F;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:16px;font-weight:700}
 </style>
 </head>
 
@@ -7409,5 +7422,159 @@ window.imprimirCierreCaja    = imprimirCierreCaja;
 window.compartirCierreWA     = compartirCierreWA;
 window._mostrarComprobanteCierre = _mostrarComprobanteCierre;
 </script>
+<script>
+/* ============================================================
+   ASISTENTE LÓGICO LOCAL — Bodega Pro v8
+   Sin API, sin internet, sin costo. Lee el inventario local.
+   ============================================================ */
+function _iaNorm(s){
+  return String(s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s]/g,'').trim();
+}
+function _iaScore(query,nombre){
+  var q=_iaNorm(query),n=_iaNorm(nombre);
+  if(n===q) return 100;
+  if(n.includes(q)||q.includes(n)) return 80;
+  var words=q.split(/\s+/);
+  var hits=words.filter(function(w){ return w.length>2&&n.includes(w); });
+  if(hits.length>0) return 40+(hits.length/words.length)*30;
+  return 0;
+}
+function _iaBuscar(query){
+  var prods=DB.get('productos')||[];
+  var res=[];
+  prods.forEach(function(p){
+    var s=_iaScore(query,p.nombre);
+    if(s>0) res.push({p:p,score:s});
+  });
+  return res.sort(function(a,b){return b.score-a.score;});
+}
+function _iaIntencion(txt){
+  var t=_iaNorm(txt);
+  if(/precio|cuanto cuesta|cuanto vale|cuanto es|a como|a cuanto/.test(t)) return 'precio';
+  if(/stock|cuantos hay|cuantos quedan|hay|tienes|tienen|queda|quedan|disponible/.test(t)) return 'stock';
+  if(/agotado|sin stock|acabado|no hay/.test(t)) return 'agotados';
+  if(/barato|economico|mas barato|menor precio|oferta/.test(t)) return 'baratos';
+  if(/caro|mas caro|mayor precio/.test(t)) return 'caros';
+  if(/categoria|lista|todos|inventario|que tienen|que hay/.test(t)) return 'lista';
+  if(/venta|vendido|mas vendido|top|popular/.test(t)) return 'ventas';
+  if(/hola|buenas|buenos|hey|buen dia/.test(t)) return 'saludo';
+  if(/gracias|thank/.test(t)) return 'gracias';
+  return 'busqueda';
+}
+function _iaFmt(n){ return '$'+parseFloat(n||0).toFixed(2); }
+function _iaResponder(txt){
+  var prods=DB.get('productos')||[];
+  var intencion=_iaIntencion(txt);
+  if(intencion==='saludo'){
+    return '¡Hola! 👋 Soy tu Asistente Local de Bodega Pro.\n\nPregúntame:\n• "¿Cuánto cuesta el arroz?"\n• "¿Hay jabón?"\n• "¿Qué está agotado?"\n• "¿Cuál es el más barato?"\n• "Muéstrame el inventario"\n\n¿En qué te ayudo?';
+  }
+  if(intencion==='gracias') return '¡Con gusto! 😊 Para lo que necesites.';
+  if(intencion==='agotados'){
+    var ag=prods.filter(function(p){return p.stock<=0;});
+    if(!ag.length) return '✅ ¡Todo el inventario tiene stock disponible!';
+    return '⚠️ Productos agotados ('+ag.length+'):\n'+
+      ag.slice(0,8).map(function(p){return '• '+(p.emoji||'📦')+' '+p.nombre;}).join('\n')+
+      (ag.length>8?'\n...y '+(ag.length-8)+' más.':'');
+  }
+  if(intencion==='baratos'){
+    var sb=[].concat(prods).sort(function(a,b){return a.precio-b.precio;});
+    return '💰 Los 5 más económicos:\n'+
+      sb.slice(0,5).map(function(p,i){return (i+1)+'. '+(p.emoji||'📦')+' '+p.nombre+' → '+_iaFmt(p.precio);}).join('\n');
+  }
+  if(intencion==='caros'){
+    var sc=[].concat(prods).sort(function(a,b){return b.precio-a.precio;});
+    return '💎 Los 5 más costosos:\n'+
+      sc.slice(0,5).map(function(p,i){return (i+1)+'. '+(p.emoji||'📦')+' '+p.nombre+' → '+_iaFmt(p.precio);}).join('\n');
+  }
+  if(intencion==='lista'){
+    var cats={};
+    prods.forEach(function(p){var c=p.categoria||'General';if(!cats[c])cats[c]=0;cats[c]++;});
+    return '📦 Inventario ('+prods.length+' productos):\n'+
+      Object.keys(cats).map(function(c){return '• '+c+': '+cats[c]+' ítems';}).join('\n');
+  }
+  if(intencion==='ventas'){
+    var ventas=DB.get('ventas')||[];
+    var ctr={};
+    ventas.forEach(function(v){(v.items||[]).forEach(function(it){var n=it.nombre||it.productoId;ctr[n]=(ctr[n]||0)+(it.qty||1);});});
+    var rank=Object.keys(ctr).sort(function(a,b){return ctr[b]-ctr[a];}).slice(0,5);
+    if(!rank.length) return '📊 Aún no hay suficientes ventas registradas.';
+    return '🏆 Más vendidos:\n'+rank.map(function(n,i){return (i+1)+'. '+n+' ('+ctr[n]+' uds)';}).join('\n');
+  }
+  /* ── Búsqueda de producto ── */
+  var res=_iaBuscar(txt);
+  if(!res.length){
+    var sug=prods[Math.floor(Math.random()*prods.length)];
+    var r='🔍 No encontré "'+txt.trim()+'" en el inventario.';
+    if(sug) r+='\n\nTe ofrezco: '+(sug.emoji||'📦')+' '+sug.nombre+' a '+_iaFmt(sug.precio);
+    return r+'\n\n¿Quieres buscar algo parecido?';
+  }
+  var m=res[0].p;
+  var stk=m.stock>0?'✅ Hay '+m.stock+' '+(m.unidad||'und')+' disponibles.':'⚠️ Agotado (stock: 0).';
+  var resp;
+  if(intencion==='precio'){
+    resp='💵 '+m.nombre+': '+_iaFmt(m.precio);
+    if(m.stock<=0) resp+='\n⚠️ (está agotado actualmente)';
+  } else if(intencion==='stock'){
+    resp=m.stock>0?'✅ '+m.nombre+': quedan '+m.stock+' '+(m.unidad||'und')+'.':'❌ '+m.nombre+' está agotado.';
+  } else {
+    resp=(m.emoji||'📦')+' '+m.nombre+'\n💵 Precio: '+_iaFmt(m.precio)+'\n'+stk;
+    if(res.length>1){
+      var alt=res.slice(1,3).map(function(r){return '  • '+(r.p.emoji||'📦')+' '+r.p.nombre+' → '+_iaFmt(r.p.precio);});
+      resp+='\n\n📋 También tengo:\n'+alt.join('\n');
+    }
+  }
+  if(m.stock>0&&m.stockMin>0&&m.stock<=m.stockMin) resp+='\n⚡ Stock bajo — pocas unidades.';
+  return resp;
+}
+function toggleIA(){
+  var p=document.getElementById('ia-panel');
+  p.style.display=p.style.display==='flex'?'none':'flex';
+  if(p.style.display==='flex'){
+    document.getElementById('ia-input').focus();
+    if(!document.getElementById('ia-mensajes').children.length){
+      agregarMensajeIA('bot','¡Hola! Soy tu Asistente Local 🤖\n\nFunciono SIN internet — leo directo tu inventario.\n\nPregúntame por precios, stock, productos agotados o los más baratos.\n\n¿En qué te ayudo?');
+    }
+  }
+}
+function agregarMensajeIA(tipo,texto){
+  var m=document.getElementById('ia-mensajes');
+  var d=document.createElement('div');
+  d.className=tipo==='user'?'ia-msg-user':'ia-msg-bot';
+  d.textContent=texto;
+  m.appendChild(d);
+  m.scrollTop=m.scrollHeight;
+  return d;
+}
+function enviarIA(){
+  var input=document.getElementById('ia-input');
+  var txt=input.value.trim();
+  if(!txt)return;
+  input.value='';
+  agregarMensajeIA('user',txt);
+  var cargando=agregarMensajeIA('bot','⚙️ Buscando...');
+  cargando.classList.add('cargando');
+  setTimeout(function(){
+    try{ cargando.textContent=_iaResponder(txt); }
+    catch(e){ cargando.textContent='❌ Error: '+e.message; }
+    cargando.classList.remove('cargando');
+  },150);
+}
+</script>
+
+<!-- ASISTENTE LÓGICO LOCAL — Sin API, sin internet, sin costo -->
+<div id="ia-fab" onclick="toggleIA()" title="Asistente Local 🤖">🤖</div>
+<div id="ia-panel">
+  <div id="ia-header">
+    <span>🤖 Asistente Bodega Pro</span>
+    <button onclick="toggleIA()">✕</button>
+  </div>
+  <div id="ia-mensajes"></div>
+  <div id="ia-input-area">
+    <input type="text" id="ia-input" placeholder="Pregunta por un producto..." onkeydown="if(event.key==='Enter')enviarIA()"/>
+    <button onclick="enviarIA()">📤</button>
+  </div>
+</div>
 
 <div id="modalServerInfo" class="modal-overlay" style="display: none;"><div class="modal" style="max-width: 460px;"><div class="modal-header"><span class="modal-title">Servidor Local A2K</span><button class="btn-close" id="closeServerModal">x</button></div><div class="modal-body"><div style="background:var(--bg2);border-radius:12px;padding:14px;margin-bottom:12px"><div class="bento-label" style="margin-bottom:7px">QUE CONTROLA EL SERVIDOR LOCAL</div><div style="font-size:13px;color:var(--text2);line-height:1.9">Impresoras termicas directo al puerto<br>Gaveta de dinero (cajon monedero)<br>Balanzas digitales por puerto serial<br>Terminales POS fisicos</div></div><div style="background:var(--bg2);border-radius:12px;padding:14px;margin-bottom:12px"><div class="bento-label" style="margin-bottom:7px">COMO OBTENERLO</div><div style="font-size:13px;color:var(--text2);line-height:1.9">Contacta a A2K Digital Studio:<br><strong style="color:var(--neon)">+58 416 411 7331</strong> (WhatsApp)<br><strong style="color:var(--accent)">a2kdigitalstudio2025@gmail.com</strong><br><br>Puerto: <strong style="color:var(--neon);font-family:var(--mono)">localhost:9100</strong></div></div><div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:11px;font-size:12px;color:var(--text2)">Sin servidor: Bodega Pro funciona completo para ventas, inventario y reportes.</div></div><div class="modal-footer"><button class="btn btn-ghost" id="closeServerModal2">Cerrar</button><a href="https://wa.me/584164117331?text=Hola%20A2K%2C%20quiero%20el%20servidor%20local" target="_blank" class="btn btn-primary">Contactar A2K por WhatsApp</a></div></div></div></body></html>
