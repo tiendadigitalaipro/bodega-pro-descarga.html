@@ -1741,7 +1741,7 @@ canvas{max-width:100%!important}
         <select id="etiqueta-cat-filter" class="form-select" style="flex:1;min-width:160px" onchange="renderEtiquetasPreview()">
           <option value="">📦 Todas las categorías</option>
         </select>
-        <select id="etiqueta-size" class="form-select" style="width:140px">
+        <select id="etiqueta-size" class="form-select" style="width:140px" onchange="renderEtiquetasPreview()">
           <option value="small">Pequeña (5×3cm)</option>
           <option value="medium" selected>Mediana (7×4cm)</option>
           <option value="large">Grande (10×6cm)</option>
@@ -4006,17 +4006,23 @@ function renderEtiquetasPreview() {
   var prods = DB.get('productos') || [];
   var cat = document.getElementById('etiqueta-cat-filter');
   if (cat && cat.value) prods = prods.filter(function(p){ return p.categoria === cat.value; });
-  var tasa = STATE.tasa || 1;
-  var simbolo = STATE.simboloLocal || 'Bs';
+  var sizeSel = document.getElementById('etiqueta-size');
+  var size = sizeSel ? sizeSel.value : 'medium';
+  var szMap = {
+    small:  {w:'95px', emoji:'18px', nombre:'9px',  cat:'8px',  precio:'14px'},
+    medium: {w:'140px',emoji:'28px', nombre:'12px', cat:'10px', precio:'20px'},
+    large:  {w:'190px',emoji:'40px', nombre:'15px', cat:'12px', precio:'30px'}
+  };
+  var sz = szMap[size] || szMap.medium;
   var container = document.getElementById('etiquetasPreview');
   if (!container) return;
   if (!prods.length) { container.innerHTML = '<p style="color:var(--text3);padding:20px">No hay productos en esta categoría</p>'; return; }
   container.innerHTML = prods.map(function(p){
-    return '<div style="background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;width:140px;text-align:center;font-family:var(--body)">' +
-      '<div style="font-size:28px;margin-bottom:4px">'+(p.emoji||'📦')+'</div>' +
-      '<div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:4px;min-height:28px">'+(p.nombre||'')+'</div>' +
-      '<div style="font-size:10px;color:var(--text3);margin-bottom:4px">'+(p.categoria||'')+'</div>' +
-      '<div style="font-size:20px;font-weight:900;color:var(--neon);font-family:var(--mono)">$'+p.precio.toFixed(2)+'</div>' +
+    return '<div style="background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;width:'+sz.w+';text-align:center;font-family:var(--body)">' +
+      '<div style="font-size:'+sz.emoji+';margin-bottom:4px">'+(p.emoji||'📦')+'</div>' +
+      '<div style="font-size:'+sz.nombre+';font-weight:700;color:var(--text);line-height:1.2;margin-bottom:4px;min-height:24px">'+(p.nombre||'')+'</div>' +
+      '<div style="font-size:'+sz.cat+';color:var(--text3);margin-bottom:4px">'+(p.categoria||'')+'</div>' +
+      '<div style="font-size:'+sz.precio+';font-weight:900;color:var(--neon);font-family:var(--mono)">$'+p.precio.toFixed(2)+'</div>' +
     '</div>';
   }).join('');
 }
@@ -4027,8 +4033,15 @@ function imprimirEtiquetas() {
   if (cat && cat.value) prods = prods.filter(function(p){ return p.categoria === cat.value; });
   if (!prods.length) return showToast('No hay productos para imprimir','warn');
   var tasa = STATE.tasa || 1;
-  var simbolo = STATE.simboloLocal || 'Bs';
   var nombre_tienda = (DB.get('config')||{}).nombre || 'Mi Bodega';
+  var sizeSel = document.getElementById('etiqueta-size');
+  var size = sizeSel ? sizeSel.value : 'medium';
+  var szMap = {
+    small:  {w:'5cm',  pad:'5px 6px',  emoji:'16px', nombre:'8px',  cat:'7px',  precio:'13px', tienda:'7px'},
+    medium: {w:'7cm',  pad:'8px 10px', emoji:'24px', nombre:'11px', cat:'9px',  precio:'20px', tienda:'8px'},
+    large:  {w:'10cm', pad:'12px 14px',emoji:'36px', nombre:'14px', cat:'11px', precio:'28px', tienda:'9px'}
+  };
+  var sz = szMap[size] || szMap.medium;
   var etiquetasHtml = prods.map(function(p){
     return '<div class="etq">'+
       '<div class="etq-emoji">'+(p.emoji||'📦')+'</div>'+
@@ -4043,16 +4056,16 @@ function imprimirEtiquetas() {
   w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Etiquetas — '+nombre_tienda+'</title>'+
   '<style>'+
   'body{margin:10px;font-family:Arial,sans-serif;background:#fff}'+
-  '.etq-grid{display:flex;flex-wrap:wrap;gap:8px}'+
-  '.etq{border:1.5px dashed #333;border-radius:8px;padding:8px;width:130px;text-align:center;page-break-inside:avoid}'+
-  '.etq-emoji{font-size:26px;margin-bottom:2px}'+
-  '.etq-nombre{font-size:11px;font-weight:700;line-height:1.2;margin-bottom:2px;min-height:24px}'+
-  '.etq-cat{font-size:9px;color:#666;margin-bottom:2px}'+
-  '.etq-precio{font-size:22px;font-weight:900;color:#00aa44}'+
-  '.etq-tienda{font-size:8px;color:#999;margin-top:4px;border-top:1px solid #eee;padding-top:2px}'+
-  '@media print{body{margin:4mm} .etq{width:120px;border-style:dashed}}'+
+  '.etq-grid{display:flex;flex-wrap:wrap;gap:6px}'+
+  '.etq{border:1.5px dashed #333;border-radius:6px;padding:'+sz.pad+';width:'+sz.w+';text-align:center;page-break-inside:avoid;box-sizing:border-box}'+
+  '.etq-emoji{font-size:'+sz.emoji+';margin-bottom:2px}'+
+  '.etq-nombre{font-size:'+sz.nombre+';font-weight:700;line-height:1.2;margin-bottom:2px;min-height:18px}'+
+  '.etq-cat{font-size:'+sz.cat+';color:#666;margin-bottom:2px}'+
+  '.etq-precio{font-size:'+sz.precio+';font-weight:900;color:#00aa44}'+
+  '.etq-tienda{font-size:'+sz.tienda+';color:#999;margin-top:3px;border-top:1px solid #eee;padding-top:2px}'+
+  '@media print{body{margin:4mm}}'+
   '</style></head><body>'+
-  '<div style="text-align:center;margin-bottom:12px;font-weight:700;font-size:14px">🏷️ Etiquetas — '+nombre_tienda+' · Tasa '+tasa+'</div>'+
+  '<div style="text-align:center;margin-bottom:10px;font-weight:700;font-size:13px">🏷️ Etiquetas — '+nombre_tienda+' · Tasa '+tasa+'</div>'+
   '<div class="etq-grid">'+etiquetasHtml+'</div>'+
   '<script>setTimeout(function(){window.print();},400);<\/script>'+
   '</body></html>');
