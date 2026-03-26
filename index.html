@@ -934,6 +934,7 @@ canvas{max-width:100%!important}
               <input type="text" class="search-input" placeholder="🔍 Buscar producto o código..." id="posSearch" oninput="renderPosProducts()">
               <button class="btn btn-outline btn-sm" id="btnQRPos" onclick="openQRScanner(&#39;pos&#39;)" title="Escanear código de barras">📷 QR</button>
               <button class="btn btn-outline btn-sm" onclick="openAddProduct()">+ Producto</button>
+              <button class="btn btn-sm" style="background:var(--warn);color:#000;font-weight:700;border:none;border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer" onclick="abrirCobroRapido()" title="Cobrar producto sin registrar">⚡ Cobro Rápido</button>
             </div>
             <div class="cat-filters" id="catFilters"></div>
             <div class="products-grid" id="posProductsGrid"></div>
@@ -2851,6 +2852,69 @@ function addToCart(prodId) {
   renderCart();
 }
 
+function abrirCobroRapido() {
+  var existente = document.getElementById('modalCobroRapido');
+  if (existente) existente.remove();
+  var tasa = STATE.tasa || 1;
+  var modal = document.createElement('div');
+  modal.id = 'modalCobroRapido';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:10001;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:360px;max-width:95vw;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <h3 style="margin:0;font-size:18px;">⚡ Cobro Rápido</h3>
+        <button class="btn-close" onclick="document.getElementById('modalCobroRapido').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);">×</button>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 16px 0;">Artículo sin registro. Tasa del día: <strong>Bs ${tasa}</strong> / $1</p>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Nombre del artículo (opcional)</label>
+        <input id="crNombre" type="text" placeholder="Ej: Pinceles, Cuaderno, Foco..." style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box;">
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;">Precio <span style="color:var(--danger)">*</span> — ingresa en la moneda que sabes:</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label style="font-size:11px;color:#4ade80;font-weight:700;display:block;margin-bottom:4px;">💵 USD</label>
+            <input id="crPrecioUSD" type="number" min="0.01" step="0.01" placeholder="0.00"
+              oninput="var v=parseFloat(this.value);var t=STATE.tasa||1;var bs=document.getElementById('crPrecioBS');if(!isNaN(v)&&v>0){bs.value=(v*t).toFixed(2);}else{bs.value='';}"
+              style="width:100%;padding:10px;border-radius:8px;border:2px solid #4ade80;background:var(--bg);color:var(--text);font-size:15px;font-weight:700;box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--warn);font-weight:700;display:block;margin-bottom:4px;">🇻🇪 Bs</label>
+            <input id="crPrecioBS" type="number" min="0.01" step="0.01" placeholder="0.00"
+              oninput="var v=parseFloat(this.value);var t=STATE.tasa||1;var usd=document.getElementById('crPrecioUSD');if(!isNaN(v)&&v>0){usd.value=(v/t).toFixed(4);}else{usd.value='';}"
+              style="width:100%;padding:10px;border-radius:8px;border:2px solid var(--warn);background:var(--bg);color:var(--text);font-size:15px;font-weight:700;box-sizing:border-box;">
+          </div>
+        </div>
+        <div id="crPreview" style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:6px;min-height:16px;"></div>
+      </div>
+      <div style="margin-bottom:20px;margin-top:14px;">
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Cantidad</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="var q=document.getElementById('crCantidad');q.value=Math.max(1,parseInt(q.value||1)-1)" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:20px;cursor:pointer;font-weight:700;">−</button>
+          <input id="crCantidad" type="number" min="1" value="1" style="width:70px;text-align:center;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:16px;font-weight:700;">
+          <button onclick="var q=document.getElementById('crCantidad');q.value=parseInt(q.value||1)+1" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:20px;cursor:pointer;font-weight:700;">+</button>
+        </div>
+      </div>
+      <button onclick="confirmarCobroRapido()" style="width:100%;padding:12px;background:var(--warn);color:#000;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;">✅ Agregar al Carrito</button>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(function(){ var el=document.getElementById('crPrecioUSD'); if(el) el.focus(); }, 100);
+}
+
+function confirmarCobroRapido() {
+  var nombre = (document.getElementById('crNombre').value.trim()) || 'Artículo sin registro';
+  var precioUSD = parseFloat(document.getElementById('crPrecioUSD').value);
+  var qty = parseInt(document.getElementById('crCantidad').value) || 1;
+  if (!precioUSD || precioUSD <= 0) { showToast('⚠️ Ingresa un precio válido','warn'); return; }
+  if (qty < 1) qty = 1;
+  var idLibre = 'libre_' + Date.now();
+  STATE.cart.push({ productoId: idLibre, nombre: nombre, emoji: '🏷️', precio: precioUSD, qty: qty, subtotal: precioUSD * qty, esLibre: true });
+  renderCart();
+  document.getElementById('modalCobroRapido').remove();
+  showToast('✅ ' + nombre + ' agregado al carrito','success');
+}
+
 function renderCart() {
   const items = STATE.cart;
   const el = document.getElementById('cartItems');
@@ -2872,12 +2936,12 @@ function renderCart() {
         <div class="cart-item-price">$${it.precio.toFixed(2)} c/u</div>
       </div>
       <div class="qty-ctrl">
-        <button class="qty-btn" onclick="changeQty(${it.productoId},-1)">−</button>
+        <button class="qty-btn" onclick="changeQty('${it.productoId}',-1)">−</button>
         <span class="qty-num">${it.qty}</span>
-        <button class="qty-btn" onclick="changeQty(${it.productoId},1)">+</button>
+        <button class="qty-btn" onclick="changeQty('${it.productoId}',1)">+</button>
       </div>
       <div class="cart-subtotal">$${it.subtotal.toFixed(2)}</div>
-      <button class="remove-btn" onclick="removeFromCart(${it.productoId})">✕</button>
+      <button class="remove-btn" onclick="removeFromCart('${it.productoId}')">✕</button>
     </div>`
   ).join('');
 
@@ -2900,16 +2964,17 @@ function renderCart() {
 
 function changeQty(prodId, delta) {
   const prods = DB.get('productos') || [];
-  const prod = prods.find(p => p.id === prodId);
-  const item = STATE.cart.find(i => i.productoId === prodId);
+  const item = STATE.cart.find(i => String(i.productoId) === String(prodId));
   if (!item) return;
-  item.qty = Math.max(1, Math.min(item.qty + delta, prod ? prod.stock : 999));
+  const prod = prods.find(p => p.id === prodId);
+  var maxStock = (item.esLibre || !prod) ? 9999 : prod.stock;
+  item.qty = Math.max(1, Math.min(item.qty + delta, maxStock));
   item.subtotal = item.qty * item.precio;
   renderCart();
 }
 
 function removeFromCart(prodId) {
-  STATE.cart = STATE.cart.filter(i => i.productoId !== prodId);
+  STATE.cart = STATE.cart.filter(i => String(i.productoId) !== String(prodId));
   renderCart();
 }
 
@@ -6879,6 +6944,8 @@ window.actualizarHwLabel = actualizarHwLabel;
 window.actualizarVenceEl = actualizarVenceEl;
 window.actualizarVencePRO = actualizarVencePRO;
 window.addToCart = addToCart;
+window.abrirCobroRapido = abrirCobroRapido;
+window.confirmarCobroRapido = confirmarCobroRapido;
 window.adjustStock = adjustStock;
 window.agregarCarritoBalanza = agregarCarritoBalanza;
 window.aplicarPais = aplicarPais;
