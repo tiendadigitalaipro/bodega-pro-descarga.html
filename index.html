@@ -7463,12 +7463,22 @@ function _iaIntencion(txt){
   if(/gracias|thank/.test(t)) return 'gracias';
   return 'busqueda';
 }
+function _iaTasa(){
+  try{
+    var t=0;
+    if(typeof STATE!=='undefined') t=parseFloat(STATE.tasa)||0;
+    if(t<=0){var cfg=DB.get('config')||{};t=parseFloat(cfg.tasa)||0;}
+    return t>0?t:649;
+  }catch(e){return 649;}
+}
 function _iaFmt(n){
   var usd=parseFloat(n||0);
-  var tasa=(typeof STATE!=='undefined'&&STATE.tasa>0)?STATE.tasa:((DB.get('config')||{}).tasa||649);
-  var bs=usd*tasa;
-  var bsFmt=bs>=1000?(bs/1000).toFixed(2)+'k':bs.toFixed(2);
-  return '$'+usd.toFixed(2)+' · Bs '+bsFmt;
+  var bs=usd*_iaTasa();
+  var bsFmt=bs>=1000000?(bs/1000000).toFixed(1)+'M'
+           :bs>=1000?(bs/1000).toFixed(1)+'k'
+           :Math.round(bs).toLocaleString('es-VE');
+  return '<b>$'+usd.toFixed(2)+'</b>'
+        +'<small style="display:block;color:#8A8794;font-size:11px;margin-top:1px;margin-left:2px">Bs '+bsFmt+'</small>';
 }
 function _iaResponder(txt){
   var prods=DB.get('productos')||[];
@@ -7544,11 +7554,13 @@ function toggleIA(){
     }
   }
 }
-function agregarMensajeIA(tipo,texto){
+function _iaEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _iaTxt2Html(s){ return _iaEsc(s).replace(/\n/g,'<br>'); }
+function agregarMensajeIA(tipo,html){
   var m=document.getElementById('ia-mensajes');
   var d=document.createElement('div');
   d.className=tipo==='user'?'ia-msg-user':'ia-msg-bot';
-  d.textContent=texto;
+  d.innerHTML=(typeof html==='string')?html.replace(/\n/g,'<br>'):html;
   m.appendChild(d);
   m.scrollTop=m.scrollHeight;
   return d;
@@ -7558,12 +7570,12 @@ function enviarIA(){
   var txt=input.value.trim();
   if(!txt)return;
   input.value='';
-  agregarMensajeIA('user',txt);
+  agregarMensajeIA('user',_iaEsc(txt));
   var cargando=agregarMensajeIA('bot','⚙️ Buscando...');
   cargando.classList.add('cargando');
   setTimeout(function(){
-    try{ cargando.textContent=_iaResponder(txt); }
-    catch(e){ cargando.textContent='❌ Error: '+e.message; }
+    try{ cargando.innerHTML=_iaResponder(txt).replace(/\n/g,'<br>'); }
+    catch(e){ cargando.innerHTML='❌ Error: '+_iaEsc(e.message); }
     cargando.classList.remove('cargando');
   },150);
 }
