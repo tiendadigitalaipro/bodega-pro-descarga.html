@@ -7463,7 +7463,13 @@ function _iaIntencion(txt){
   if(/gracias|thank/.test(t)) return 'gracias';
   return 'busqueda';
 }
-function _iaFmt(n){ return '$'+parseFloat(n||0).toFixed(2); }
+function _iaFmt(n){
+  var usd=parseFloat(n||0);
+  var tasa=(typeof STATE!=='undefined'&&STATE.tasa>0)?STATE.tasa:((DB.get('config')||{}).tasa||649);
+  var bs=usd*tasa;
+  var bsFmt=bs>=1000?(bs/1000).toFixed(2)+'k':bs.toFixed(2);
+  return '$'+usd.toFixed(2)+' · Bs '+bsFmt;
+}
 function _iaResponder(txt){
   var prods=DB.get('productos')||[];
   var intencion=_iaIntencion(txt);
