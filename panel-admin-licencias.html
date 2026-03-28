@@ -3,190 +3,266 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Panel Admin A2K — Sistema de Licencias</title>
+<title>Panel Admin A2K — Sistema de Licencias · Bodega Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;0,9..40,900&family=Syne:wght@700;800;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
+/* ═══ VARIABLES ═══ */
 :root {
-  --bg:        #08080f;
-  --bg2:       #0f0f1a;
-  --bg3:       #161625;
-  --card:      #12121e;
-  --card2:     #1a1a2e;
-  --border:    rgba(124,58,237,0.15);
-  --border2:   rgba(124,58,237,0.3);
-  --text:      #e8e8f0;
-  --text2:     #8888aa;
-  --text3:     #444466;
-  --accent:    #7c3aed;
-  --accent2:   #9d5bf4;
-  --neon:      #06d6a0;
-  --neon2:     #00f5c3;
-  --warn:      #f59e0b;
-  --danger:    #ef4444;
-  --success:   #10b981;
-  --shadow:    rgba(124,58,237,0.2);
-  --font:      'DM Sans', sans-serif;
-  --mono:      'JetBrains Mono', monospace;
-  --display:   'Syne', sans-serif;
+  --bg:       #08080f;
+  --bg2:      #0f0f1a;
+  --bg3:      #161625;
+  --card:     #12121e;
+  --border:   rgba(124,58,237,0.18);
+  --border2:  rgba(124,58,237,0.38);
+  --text:     #e8e8f0;
+  --text2:    #8888aa;
+  --text3:    #444466;
+  --accent:   #7c3aed;
+  --accent2:  #9d5bf4;
+  --neon:     #06d6a0;
+  --neon2:    #00f5c3;
+  --warn:     #f59e0b;
+  --danger:   #ef4444;
+  --success:  #10b981;
+  --shadow:   rgba(124,58,237,0.22);
+  --font:     'DM Sans', sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+  --display:  'Syne', sans-serif;
 }
-* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent }
-html,body { min-height:100%; background:var(--bg); color:var(--text); font-family:var(--font); font-size:14px; line-height:1.5 }
-::-webkit-scrollbar { width:4px }
-::-webkit-scrollbar-track { background:var(--bg2) }
-::-webkit-scrollbar-thumb { background:var(--accent); border-radius:2px }
-button { cursor:pointer; font-family:var(--font) }
-input,select { font-family:var(--font) }
-
-/* ── LAYOUT ── */
-.page-wrap { max-width:720px; margin:0 auto; padding:20px 16px 40px }
-
-/* ── HEADER ── */
-.admin-header {
-  display:flex; align-items:center; gap:14px;
-  background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(6,214,160,0.08));
-  border:1px solid var(--border2); border-radius:16px;
-  padding:20px 24px; margin-bottom:24px;
+[data-theme="light"] {
+  --bg:       #f0f2f8;
+  --bg2:      #e4e7f2;
+  --bg3:      #d8dcee;
+  --card:     #ffffff;
+  --border:   rgba(124,58,237,0.12);
+  --border2:  rgba(124,58,237,0.30);
+  --text:     #1a1a2e;
+  --text2:    #555577;
+  --text3:    #9999bb;
+  --accent:   #7c3aed;
+  --accent2:  #9d5bf4;
+  --neon:     #059669;
+  --neon2:    #10b981;
+  --warn:     #d97706;
+  --danger:   #dc2626;
+  --success:  #059669;
+  --shadow:   rgba(124,58,237,0.15);
 }
-.admin-logo {
-  width:48px; height:48px; border-radius:14px;
+
+/* ═══ RESET ═══ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{min-height:100%;background:var(--bg)}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;transition:background .3s,color .3s}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
+button,input,select{font-family:var(--font)}
+
+/* ═══ TOPBAR ═══ */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:60px;
+  background:var(--card);border-bottom:1px solid var(--border);
+  box-shadow:0 2px 20px rgba(0,0,0,0.15);
+}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.top-logo{
+  width:40px;height:40px;border-radius:12px;flex-shrink:0;
   background:linear-gradient(135deg,var(--accent),var(--neon));
-  display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
 }
-.admin-title { font-family:var(--display); font-weight:800; font-size:20px; color:var(--text) }
-.admin-sub   { font-size:12px; color:var(--text2); margin-top:2px }
-.sync-badge  {
-  margin-left:auto; background:rgba(6,214,160,0.12); border:1px solid rgba(6,214,160,0.3);
-  color:var(--neon); font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px;
-  white-space:nowrap;
+.top-brand{font-family:var(--display);font-weight:800;font-size:16px;color:var(--text)}
+.top-brand span{color:var(--accent)}
+.top-sub{font-size:11px;color:var(--text2)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.lic-badge{
+  background:linear-gradient(135deg,var(--accent),var(--neon));
+  color:#fff;font-size:11px;font-weight:800;padding:5px 12px;
+  border-radius:20px;letter-spacing:.5px;white-space:nowrap;
 }
+.time-label{font-size:12px;color:var(--text2);white-space:nowrap}
+.btn-theme{
+  width:34px;height:34px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--bg2);color:var(--text2);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;
+}
+.btn-theme:hover{border-color:var(--accent);color:var(--accent)}
+.btn-logout{
+  display:flex;align-items:center;gap:6px;padding:7px 14px;
+  border-radius:8px;border:1px solid var(--danger);
+  background:transparent;color:var(--danger);font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.btn-logout:hover{background:rgba(239,68,68,.08)}
 
-/* ── CARD ── */
-.card {
-  background:var(--card); border:1px solid var(--border); border-radius:14px;
-  padding:20px; margin-bottom:16px;
-}
-.card-title { font-family:var(--display); font-weight:700; font-size:15px; color:var(--accent); margin-bottom:16px }
+/* ═══ LAYOUT ═══ */
+.page-wrap{max-width:1100px;margin:0 auto;padding:24px 20px 48px}
 
-/* ── FORMS ── */
-.form-group { margin-bottom:14px }
-.form-label { display:block; font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text2); text-transform:uppercase; margin-bottom:6px }
-.form-input,.form-select {
-  width:100%; background:var(--bg2); border:1px solid var(--border); color:var(--text);
-  padding:10px 12px; border-radius:8px; font-family:var(--font); font-size:13px; outline:none; transition:all 0.2s;
+/* ═══ STATS ═══ */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:16px 12px;text-align:center;transition:all .2s;
+  border-top:3px solid transparent;
 }
-.form-input:focus,.form-select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,58,237,0.1) }
-.form-input::placeholder { color:var(--text3) }
-.form-select option { background:var(--card) }
-.grid-2 { display:grid; grid-template-columns:repeat(2,1fr); gap:14px }
+.stat-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.stat-card.total  {border-top-color:var(--accent)}
+.stat-card.activas{border-top-color:var(--neon)}
+.stat-card.vencidas{border-top-color:var(--warn)}
+.stat-card.inactivas{border-top-color:var(--danger)}
+.stat-card.demos  {border-top-color:#a855f7}
+.stat-num{font-family:var(--display);font-size:28px;font-weight:900;line-height:1}
+.stat-card.total   .stat-num{color:var(--accent)}
+.stat-card.activas .stat-num{color:var(--neon)}
+.stat-card.vencidas .stat-num{color:var(--warn)}
+.stat-card.inactivas .stat-num{color:var(--danger)}
+.stat-card.demos   .stat-num{color:#a855f7}
+.stat-label{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text2);margin-top:4px;text-transform:uppercase}
 
-/* ── BUTTONS ── */
-.btn {
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  padding:10px 18px; border-radius:10px; font-family:var(--font); font-weight:600;
-  font-size:13px; border:none; transition:all 0.2s; white-space:nowrap;
-}
-.btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 4px 15px var(--shadow) }
-.btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px var(--shadow) }
-.btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text2) }
-.btn-ghost:hover { border-color:var(--border2); color:var(--text) }
-.btn-sm { padding:7px 12px; font-size:12px; border-radius:8px }
-.btn-full { width:100% }
-.mb-0 { margin-bottom:0 }
+/* ═══ TWO COLUMNS ═══ */
+.gen-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
 
-/* ── TABS ── */
-.tabs { display:flex; gap:8px; margin-bottom:16px }
-.tabs .btn { flex:1; font-weight:700 }
+/* ═══ CARDS ═══ */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card-demo{border-top:3px solid var(--warn)}
+.card-pro {border-top:3px solid var(--neon)}
 
-/* ── RESULTADO ── */
-.resultado-box {
-  display:none; margin-top:12px; background:var(--bg3);
-  border-radius:12px; padding:16px;
+.card-header-row{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.card-icon-demo{
+  width:44px;height:44px;border-radius:12px;flex-shrink:0;
+  background:linear-gradient(135deg,#f59e0b,#ef4444);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
 }
-.resultado-box.pro  { border:2px solid var(--neon) }
-.resultado-box.demo { border:2px solid var(--warn) }
-.resultado-label { font-size:11px; color:var(--text2); margin-bottom:4px }
-.resultado-code  { font-family:var(--mono); font-size:20px; font-weight:900; letter-spacing:3px }
-.resultado-code.pro  { color:var(--neon) }
-.resultado-code.demo { color:var(--warn) }
-.resultado-info  { font-size:11px; color:var(--text2); margin-top:4px }
-.resultado-btns  { display:flex; gap:8px; margin-top:12px }
+.card-icon-pro{
+  width:44px;height:44px;border-radius:12px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),var(--neon));
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+.card-title{font-family:var(--display);font-weight:800;font-size:17px;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text2);margin-top:1px}
+.divider{border:none;border-top:1px dashed var(--border2);margin:0 0 16px}
+.card-demo .divider{border-top-color:rgba(245,158,11,.3)}
+.card-pro  .divider{border-top-color:rgba(6,214,160,.3)}
 
-/* ── HISTORIAL ── */
-.historial-header {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:10px; flex-wrap:wrap; gap:6px;
+/* ═══ FORMS ═══ */
+.form-group{margin-bottom:13px}
+.form-label{display:block;font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--text2);text-transform:uppercase;margin-bottom:5px}
+.form-input,.form-select{
+  width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);
+  padding:9px 12px;border-radius:9px;font-family:var(--font);font-size:13px;outline:none;transition:all .2s;
 }
-.historial-title { font-size:12px; font-weight:700; color:var(--text2) }
-.count-badge { background:var(--accent); color:#fff; font-size:10px; padding:2px 7px; border-radius:10px; margin-left:4px }
-.historial-tools { display:flex; gap:6px; align-items:center }
-.search-input { width:140px; font-size:11px; padding:4px 8px; height:28px }
-.export-btn { font-size:11px; padding:4px 8px; height:28px }
-.lic-table { max-height:420px; overflow-y:auto; border:1px solid var(--border); border-radius:10px; padding:4px }
+.form-input:focus,.form-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.1)}
+.form-input::placeholder{color:var(--text3)}
+.form-select option{background:var(--card)}
+.input-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
-/* ── TOAST ── */
-#toastContainer { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:999999; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none }
-.toast {
-  background:var(--card); border:1px solid var(--border2); border-radius:10px;
-  padding:10px 18px; font-size:13px; font-weight:600; box-shadow:0 8px 30px rgba(0,0,0,0.4);
-  animation:toastIn 0.25s ease;
+/* ═══ BUTTONS ═══ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:10px 18px;border-radius:10px;font-family:var(--font);font-weight:700;
+  font-size:13px;border:none;transition:all .2s;white-space:nowrap;cursor:pointer;
 }
-.toast.success { border-color:var(--neon); color:var(--neon) }
-.toast.warn    { border-color:var(--warn); color:var(--warn) }
-.toast.error   { border-color:var(--danger); color:var(--danger) }
-@keyframes toastIn { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+.btn-full{width:100%}
+.btn-sm{padding:7px 12px;font-size:12px;border-radius:8px}
+.btn-accent{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 15px var(--shadow)}
+.btn-accent:hover{transform:translateY(-1px);box-shadow:0 6px 20px var(--shadow)}
+.btn-neon{background:linear-gradient(135deg,var(--accent),var(--neon));color:#fff;box-shadow:0 4px 15px rgba(6,214,160,.25)}
+.btn-neon:hover{transform:translateY(-1px)}
+.btn-demo{background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-weight:800}
+.btn-demo:hover{transform:translateY(-1px);opacity:.92}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-copy{
+  padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);
+  color:var(--accent);border-radius:9px;font-size:12px;font-weight:700;
+  white-space:nowrap;cursor:pointer;transition:all .2s;
+}
+.btn-copy:hover{background:rgba(124,58,237,.1)}
 
-/* ── OVERLAY LOGIN ── */
-#loginOverlay {
-  position:fixed; inset:0; background:rgba(0,0,0,0.95);
-  z-index:999999; display:flex; align-items:center; justify-content:center;
-  padding:16px; backdrop-filter:blur(8px);
-}
-.login-box {
-  background:#1a0a3a; border:2px solid #7B2FFF; border-radius:18px;
-  padding:36px 32px; width:100%; max-width:380px; text-align:center;
-}
-.login-icon  { font-size:48px; margin-bottom:14px }
-.login-title { color:#7B2FFF; font-family:var(--display); font-weight:900; font-size:20px; margin-bottom:4px }
-.login-sub   { color:var(--text2); font-size:13px; margin-bottom:24px }
-.pw-input {
-  width:100%; box-sizing:border-box; padding:13px; border-radius:10px;
-  border:1.5px solid #444; background:#0d0820; color:#fff;
-  font-size:15px; text-align:center; letter-spacing:3px;
-  margin-bottom:8px; outline:none; font-family:var(--mono);
-  transition:border-color 0.2s;
-}
-.pw-input:focus { border-color:#7B2FFF }
-.pw-err  { color:#ff4444; font-size:12px; margin-bottom:12px; min-height:16px }
-.login-btns { display:flex; gap:10px }
-.btn-cancel { flex:1; padding:12px; border-radius:10px; border:1px solid #444; background:transparent; color:var(--text2); font-size:14px; cursor:pointer }
-.btn-enter  { flex:2; padding:12px; border-radius:10px; border:none; background:#7B2FFF; color:#fff; font-size:14px; font-weight:800; cursor:pointer; transition:opacity 0.2s }
-.btn-enter:hover { opacity:0.85 }
-.login-brand { font-size:11px; color:var(--text3); margin-top:16px }
+/* ═══ RESULTADO ═══ */
+.resultado{display:none;margin-top:14px;border-radius:12px;padding:15px}
+.resultado.pro {background:rgba(6,214,160,.07);border:1.5px solid var(--neon)}
+.resultado.demo{background:rgba(245,158,11,.07);border:1.5px solid var(--warn)}
+.res-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px}
+.resultado.pro  .res-label{color:var(--neon)}
+.resultado.demo .res-label{color:var(--warn)}
+.res-code{font-family:var(--mono);font-size:17px;font-weight:900;letter-spacing:2px;word-break:break-all;margin-bottom:4px}
+.resultado.pro  .res-code{color:var(--neon)}
+.resultado.demo .res-code{color:var(--warn)}
+.res-info{font-size:11px;color:var(--text2);margin-bottom:10px}
+.res-btns{display:flex;gap:8px}
 
-/* ── VOLVER LINK ── */
-.back-link {
-  display:inline-flex; align-items:center; gap:6px;
-  color:var(--text2); font-size:12px; text-decoration:none;
-  margin-bottom:20px; padding:6px 12px; border-radius:8px;
-  border:1px solid var(--border); background:var(--bg2);
-  transition:all 0.2s;
-}
-.back-link:hover { color:var(--accent); border-color:var(--border2) }
+/* ═══ HISTORIAL ═══ */
+.historial-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px}
+.hist-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.hist-title{font-family:var(--display);font-weight:800;font-size:15px;color:var(--text);display:flex;align-items:center;gap:8px}
+.count-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px}
+.hist-tools{display:flex;gap:8px;align-items:center}
+.lic-table{border:1px solid var(--border);border-radius:12px;padding:4px;max-height:440px;overflow-y:auto}
 
-/* ── SYNC INFO ── */
-.sync-info {
-  background:rgba(6,214,160,0.06); border:1px solid rgba(6,214,160,0.2);
-  border-radius:10px; padding:10px 14px; font-size:11px; color:var(--text2);
-  margin-bottom:16px; display:flex; align-items:center; gap:8px;
-}
-.sync-dot { width:8px; height:8px; border-radius:50%; background:var(--neon); flex-shrink:0; animation:pulse 2s infinite }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+/* ═══ INFO BOX ═══ */
+.info-box{background:var(--bg3);border-radius:10px;padding:11px 13px;font-size:12px;color:var(--text2);margin-bottom:12px;border-left:3px solid var(--warn)}
 
-/* ── RESPONSIVE ── */
-@media(max-width:480px) {
-  .grid-2 { grid-template-columns:1fr }
-  .admin-header { flex-wrap:wrap }
-  .sync-badge { margin-left:0 }
+/* ═══ TOAST ═══ */
+#toastWrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{
+  background:var(--card);border:1px solid var(--border2);border-radius:10px;
+  padding:10px 20px;font-size:13px;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,.4);
+  animation:tin .25s ease;
+}
+.toast.ok {border-color:var(--neon);color:var(--neon)}
+.toast.warn{border-color:var(--warn);color:var(--warn)}
+.toast.err {border-color:var(--danger);color:var(--danger)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ LOGIN OVERLAY ═══ */
+#loginOverlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.95);
+  z-index:999999;display:flex;align-items:center;justify-content:center;
+  padding:16px;backdrop-filter:blur(10px);
+}
+.login-box{
+  background:#120c28;border:2px solid var(--accent);border-radius:20px;
+  padding:40px 32px;width:100%;max-width:400px;text-align:center;
+  box-shadow:0 30px 80px rgba(124,58,237,.3);
+}
+.login-icon {font-size:52px;margin-bottom:14px}
+.login-title{font-family:var(--display);font-weight:900;font-size:22px;color:var(--accent);margin-bottom:4px}
+.login-sub  {font-size:13px;color:var(--text2);margin-bottom:26px}
+.pw-input{
+  width:100%;padding:14px;border-radius:12px;border:1.5px solid rgba(124,58,237,.4);
+  background:rgba(124,58,237,.06);color:#fff;font-size:16px;text-align:center;
+  letter-spacing:4px;margin-bottom:8px;outline:none;transition:border-color .2s;font-family:var(--mono);
+}
+.pw-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+.pw-err{color:#ff4444;font-size:12px;margin-bottom:12px;min-height:16px}
+.login-btns{display:flex;gap:10px}
+.btn-cancel{flex:1;padding:13px;border-radius:10px;border:1px solid #333;background:transparent;color:var(--text2);font-size:14px;cursor:pointer;transition:all .2s}
+.btn-cancel:hover{border-color:#555}
+.btn-enter{flex:2;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--neon));color:#fff;font-size:14px;font-weight:800;cursor:pointer;transition:opacity .2s}
+.btn-enter:hover{opacity:.88}
+.login-brand{font-size:11px;color:var(--text3);margin-top:18px}
+
+/* ═══ SYNC DOT ═══ */
+.sync-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--neon);animation:pulse 2s infinite;margin-right:5px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:768px){
+  .gen-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(3,1fr)}
+  .stats-grid .stat-card:nth-child(4),
+  .stats-grid .stat-card:nth-child(5){grid-column:span 1}
+  .topbar{padding:0 14px}
+  .top-sub,.time-label,.lic-badge{display:none}
+  .page-wrap{padding:16px 12px 40px}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .grid-2{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -197,542 +273,573 @@ input,select { font-family:var(--font) }
   <div class="login-box">
     <div class="login-icon">🔐</div>
     <div class="login-title">Panel Admin A2K</div>
-    <div class="login-sub">Ingresa la contraseña para acceder</div>
+    <div class="login-sub">Sistema de Licencias · Bodega Pro 8.0</div>
     <input type="password" id="pwInput" class="pw-input" placeholder="••••••••"
       onkeydown="if(event.key==='Enter')verificarPw()">
     <div id="pwErr" class="pw-err"></div>
     <div class="login-btns">
       <button class="btn-cancel" onclick="window.history.back()">← Volver</button>
-      <button class="btn-enter" onclick="verificarPw()">⚡ Entrar</button>
+      <button class="btn-enter" onclick="verificarPw()">⚡ Entrar al Panel</button>
     </div>
-    <div class="login-brand">Bodega Pro 8.0 · A2K Digital Studio</div>
+    <div class="login-brand">🛡️ A2K Digital Studio · Acceso restringido</div>
   </div>
 </div>
 
-<!-- ══ CONTENIDO PRINCIPAL (oculto hasta auth) ══ -->
-<div id="mainContent" style="display:none">
+<!-- ══ APP (oculta hasta auth) ══ -->
+<div id="appWrap" style="display:none">
+
+  <!-- TOPBAR -->
+  <nav class="topbar">
+    <div class="topbar-left">
+      <div class="top-logo">🛠️</div>
+      <div>
+        <div class="top-brand">Bodega <span>Pro</span></div>
+        <div class="top-sub">Panel de Licencias · A2K Digital Studio</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="lic-badge">🔒 LICENCIAS · NO TRANSFERIBLES</div>
+      <span class="time-label" id="reloj"></span>
+      <button class="btn-theme" onclick="toggleTheme()" id="btnTheme" title="Cambiar tema">🌙</button>
+      <button class="btn-logout" onclick="cerrarSesion()">🔒 Cerrar sesión</button>
+    </div>
+  </nav>
+
   <div class="page-wrap">
 
-    <!-- HEADER -->
-    <a href="index.html" class="back-link">← Volver a Bodega Pro</a>
-    <div class="admin-header">
-      <div class="admin-logo">🛠️</div>
-      <div>
-        <div class="admin-title">Panel Admin A2K</div>
-        <div class="admin-sub">Sistema de Licencias — Bodega Pro 8.0</div>
+    <!-- ══ STATS ══ -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card total">
+        <div class="stat-num" id="statTotal">0</div>
+        <div class="stat-label">Total</div>
       </div>
-      <div class="sync-badge">🔄 Conectado</div>
+      <div class="stat-card activas">
+        <div class="stat-num" id="statActivas">0</div>
+        <div class="stat-label">Activas</div>
+      </div>
+      <div class="stat-card vencidas">
+        <div class="stat-num" id="statVencidas">0</div>
+        <div class="stat-label">Vencidas</div>
+      </div>
+      <div class="stat-card inactivas">
+        <div class="stat-num" id="statInactivas">0</div>
+        <div class="stat-label">Inactivas</div>
+      </div>
+      <div class="stat-card demos">
+        <div class="stat-num" id="statDemos">0</div>
+        <div class="stat-label">Demos</div>
+      </div>
     </div>
 
-    <!-- SYNC INFO -->
-    <div class="sync-info">
-      <div class="sync-dot"></div>
-      <span>Las licencias se sincronizan automáticamente con la app principal al compartir el mismo navegador y dispositivo.</span>
-    </div>
+    <!-- ══ GENERADORES: DOS COLUMNAS ══ -->
+    <div class="gen-grid">
 
-    <!-- ══ PANEL GENERADOR ══ -->
-    <div class="card">
-      <div class="card-title">⚡ Generar Nueva Licencia</div>
+      <!-- DEMO -->
+      <div class="card card-demo">
+        <div class="card-header-row">
+          <div class="card-icon-demo">🆓</div>
+          <div>
+            <div class="card-title">LICENCIA DEMO</div>
+            <div class="card-sub">Prueba gratuita para el cliente</div>
+          </div>
+        </div>
+        <hr class="divider">
 
-      <!-- TABS -->
-      <div class="tabs">
-        <button onclick="switchTab('pro')"  id="tabPro"  class="btn btn-primary">⚡ Licencia PRO</button>
-        <button onclick="switchTab('demo')" id="tabDemo" class="btn btn-ghost">🎯 Licencia DEMO</button>
-      </div>
-
-      <!-- TAB PRO -->
-      <div id="panelPro">
         <div class="form-group">
           <label class="form-label">Nombre del Negocio Cliente *</label>
-          <input type="text" id="lic-negocio" class="form-input" placeholder="Bodega La Esquina, Farmacia Central...">
+          <input type="text" id="demo-negocio" class="form-input" placeholder="Ej: Bodega La Esquina">
         </div>
         <div class="form-group">
-          <label class="form-label">🔐 Device ID del Cliente <span style="color:var(--text3);font-weight:400">(opcional — bloquea a 1 equipo)</span></label>
-          <input type="text" id="lic-device-id" class="form-input"
-            placeholder="DEV-XXXX-XXXX — el cliente lo ve en pantalla de login"
-            style="font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:1px"
-            oninput="this.value=this.value.trim().toUpperCase()">
-          <div style="font-size:11px;color:var(--text3);margin-top:4px">⚠️ Si ingresas el Device ID, la licencia SOLO funcionará en ese equipo específico.</div>
+          <label class="form-label">Teléfono / WhatsApp</label>
+          <input type="text" id="demo-telefono" class="form-input" placeholder="+58 424-1406951">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Device ID del Cliente <span style="color:var(--text3);font-weight:400;text-transform:none">(opcional)</span></label>
+          <div class="input-row">
+            <input type="text" id="demo-device-id" class="form-input"
+              placeholder="DEV-XXXX-XXXX — el cliente lo ve en pantalla"
+              style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px"
+              oninput="this.value=this.value.trim().toUpperCase()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Días de Prueba</label>
+          <select id="demo-dias" class="form-select" disabled style="pointer-events:none;opacity:.9">
+            <option value="5" selected>5 días</option>
+          </select>
+        </div>
+
+        <div class="info-box">
+          ℹ️ El cliente prueba por <strong style="color:var(--warn)">5 días</strong>. Al vencer se bloquea pero <strong style="color:var(--neon)">sus datos se conservan</strong>. Solo necesita código PRO para continuar.
+        </div>
+
+        <button class="btn btn-demo btn-full" onclick="generarLicenciaDemo()">
+          🆓 Generar Código DEMO
+        </button>
+
+        <div id="demoResultado" class="resultado demo">
+          <div class="res-label">🎯 Código DEMO generado</div>
+          <div id="demoCodigoDisplay" class="res-code"></div>
+          <div id="demoInfoDisplay" class="res-info"></div>
+          <div class="res-btns">
+            <button class="btn btn-full" onclick="compartirUltimaDemo()"
+              style="background:#25D366;color:#fff;font-weight:800;flex:1">📤 WhatsApp</button>
+            <button class="btn btn-ghost btn-sm" onclick="copiarDemo()" style="flex-shrink:0">📋</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRO -->
+      <div class="card card-pro">
+        <div class="card-header-row">
+          <div class="card-icon-pro">⚡</div>
+          <div>
+            <div class="card-title">LICENCIA PRO</div>
+            <div class="card-sub">Acceso completo al sistema</div>
+          </div>
+        </div>
+        <hr class="divider">
+
+        <div class="form-group">
+          <label class="form-label">Nombre del Negocio Cliente *</label>
+          <input type="text" id="lic-negocio" class="form-input" placeholder="Ej: Bodega El Patio">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono / WhatsApp</label>
+          <input type="text" id="lic-telefono" class="form-input" placeholder="+58 424-1406951">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email <span style="color:var(--text3);font-weight:400;text-transform:none">(opcional)</span></label>
+          <input type="text" id="lic-email" class="form-input" placeholder="cliente@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Device ID del Cliente <span style="color:var(--text3);font-weight:400;text-transform:none">(opcional)</span></label>
+          <div class="input-row">
+            <input type="text" id="lic-device-id" class="form-input"
+              placeholder="DEV-XXXX-XXXX — el cliente lo ve en pantalla"
+              style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px"
+              oninput="this.value=this.value.trim().toUpperCase()">
+          </div>
         </div>
         <div class="grid-2">
           <div class="form-group">
-            <label class="form-label">⏳ Duración PRO</label>
+            <label class="form-label">Duración</label>
             <select id="lic-meses" class="form-select" onchange="actualizarVencePRO()">
               <option value="1">1 mes</option>
               <option value="3">3 meses</option>
               <option value="6">6 meses</option>
               <option value="12" selected>12 meses (1 año)</option>
               <option value="24">24 meses (2 años)</option>
-              <option value="0">Permanente (sin venc.)</option>
+              <option value="0">Permanente</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">📅 Vence el</label>
-            <input type="text" id="lic-fecha-vence" class="form-input" readonly
-              style="color:var(--neon);font-weight:700;font-family:var(--mono);background:var(--bg3)" placeholder="Auto">
-          </div>
-        </div>
-        <div class="grid-2">
-          <div class="form-group">
-            <label class="form-label">Máx. Terminales</label>
+            <label class="form-label">Terminales</label>
             <select id="lic-terminales" class="form-select">
-              <option value="1">1 terminal</option>
-              <option value="2" selected>2 terminales</option>
+              <option value="1" selected>1 terminal</option>
+              <option value="2">2 terminales</option>
               <option value="3">3 terminales</option>
             </select>
           </div>
-          <div class="form-group" style="display:flex;align-items:flex-end">
-            <button class="btn btn-full" onclick="generarLicencia()"
-              style="height:42px;background:linear-gradient(135deg,#7c3aed,#06d6a0)">
-              ⚡ Generar Código PRO
-            </button>
-          </div>
         </div>
-        <!-- Resultado PRO -->
-        <div id="licResultado" class="resultado-box pro">
-          <div class="resultado-label">✅ Código PRO generado:</div>
-          <div id="licCodigoDisplay" class="resultado-code pro"></div>
-          <div id="licInfoDisplay" class="resultado-info"></div>
-          <div class="resultado-btns">
-            <button class="btn btn-primary" onclick="compartirUltimaLicencia()" style="flex:1">📤 WhatsApp</button>
-            <button class="btn btn-ghost btn-sm" onclick="copiarCodigo()" style="flex:1">📋 Copiar</button>
-          </div>
-        </div>
-      </div><!-- /panelPro -->
 
-      <!-- TAB DEMO -->
-      <div id="panelDemo" style="display:none">
-        <div class="form-group">
-          <label class="form-label">Nombre del Negocio Cliente *</label>
-          <input type="text" id="demo-negocio" class="form-input" placeholder="Bodega La Esquina...">
-        </div>
-        <div class="grid-2">
-          <div class="form-group">
-            <label class="form-label">⏱️ Duración Demo</label>
-            <select id="demo-dias" class="form-select" disabled style="pointer-events:none;opacity:0.9">
-              <option value="5" selected>5 días</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">📅 Vence el</label>
-            <input type="text" id="demo-fecha-vence" class="form-input" readonly
-              style="background:var(--bg3);color:var(--warn);font-weight:700;text-align:center" placeholder="Auto">
-          </div>
-        </div>
-        <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--text2)">
-          ℹ️ El cliente prueba la app por <strong id="demo-dias-label" style="color:var(--warn)">5 días</strong>.
-          Al vencer, se bloquea pero <strong style="color:var(--neon)">sus datos se conservan</strong>.
-          Solo necesita el código PRO para continuar.
-        </div>
-        <button class="btn btn-full" onclick="generarLicenciaDemo()"
-          style="background:linear-gradient(135deg,#f59e0b,#ef4444);font-weight:700;height:42px">
-          🎯 Generar Código DEMO
+        <button class="btn btn-neon btn-full" onclick="generarLicencia()" style="margin-top:2px">
+          ⚡ Generar Código PRO
         </button>
-        <!-- Resultado DEMO -->
-        <div id="demoResultado" class="resultado-box demo">
-          <div class="resultado-label">🎯 Código DEMO generado:</div>
-          <div id="demoCodigoDisplay" class="resultado-code demo"></div>
-          <div id="demoInfoDisplay" class="resultado-info"></div>
-          <div class="resultado-btns">
-            <button class="btn btn-full" onclick="compartirUltimaDemo()"
-              style="background:#25D366;color:#fff;font-weight:700">📤 Enviar por WhatsApp</button>
+
+        <div id="licResultado" class="resultado pro">
+          <div class="res-label">✅ Código PRO generado</div>
+          <div id="licCodigoDisplay" class="res-code"></div>
+          <div id="licInfoDisplay" class="res-info"></div>
+          <div class="res-btns">
+            <button class="btn btn-full btn-accent" onclick="compartirUltimaLicencia()" style="flex:1">📤 WhatsApp</button>
+            <button class="btn btn-ghost btn-sm" onclick="copiarPro()" style="flex-shrink:0">📋 Copiar</button>
           </div>
         </div>
-      </div><!-- /panelDemo -->
-    </div><!-- /card generador -->
+      </div>
+
+    </div><!-- /gen-grid -->
 
     <!-- ══ HISTORIAL ══ -->
-    <div class="card">
-      <div class="historial-header">
-        <div class="historial-title">
-          📋 HISTORIAL DE LICENCIAS
+    <div class="historial-card">
+      <div class="hist-top">
+        <div class="hist-title">
+          <span class="sync-dot"></span>
+          📋 Historial de Licencias
           <span id="licTableCount" class="count-badge">0</span>
         </div>
-        <div class="historial-tools">
-          <input type="text" id="licTableSearch" class="form-input search-input"
+        <div class="hist-tools">
+          <input type="text" id="licTableSearch" class="form-input"
+            style="width:160px;font-size:12px;padding:6px 10px;height:32px"
             placeholder="🔍 Buscar..." oninput="renderLicTable()">
-          <button class="btn btn-ghost btn-sm export-btn" onclick="exportarLicencias()">📤 Exportar</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportarLicencias()">📤 Exportar CSV</button>
         </div>
       </div>
       <div id="licTable" class="lic-table"></div>
     </div>
 
     <!-- FOOTER -->
-    <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:8px">
-      Bodega Pro 8.0 · A2K Digital Studio · Panel Admin v1.0
+    <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:20px">
+      Bodega Pro 8.0 · A2K Digital Studio · Panel Admin Independiente
     </div>
 
   </div><!-- /page-wrap -->
-</div><!-- /mainContent -->
+</div><!-- /appWrap -->
 
-<!-- TOAST CONTAINER -->
-<div id="toastContainer"></div>
+<div id="toastWrap"></div>
 
 <script>
-// ══════════════════════════════════════════════════
-//  BODEGA PRO — PANEL ADMIN STANDALONE
-//  Usa el mismo localStorage (bp_licenses_issued)
-//  que index.html → datos siempre sincronizados.
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  BODEGA PRO — PANEL ADMIN STANDALONE v2
+//  localStorage compartido con index.html
+//  Clave: bp_licenses_issued
+// ══════════════════════════════════════════════
 
-// ── DB (mismo prefijo que index.html) ──
-var _memDB = {};
-var _lsOK = (function(){
-  try { localStorage.setItem('_bp_test','1'); localStorage.removeItem('_bp_test'); return true; }
-  catch(e) { return false; }
-})();
-var DB = {
-  get: function(k) {
-    try { if(_lsOK) return JSON.parse(localStorage.getItem('bp_'+k)); return _memDB['bp_'+k]||null; }
-    catch(e) { return _memDB['bp_'+k]||null; }
-  },
-  set: function(k,v) {
-    try { if(_lsOK) localStorage.setItem('bp_'+k, JSON.stringify(v)); _memDB['bp_'+k]=v; }
-    catch(e) { _memDB['bp_'+k]=v; }
-  }
+// ── DB (mismo prefijo que index.html: bp_) ──
+var _mem={};
+var _lsOK=(function(){try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return true;}catch(e){return false;}})();
+var DB={
+  get:function(k){try{if(_lsOK)return JSON.parse(localStorage.getItem('bp_'+k));return _mem['bp_'+k]||null;}catch(e){return _mem['bp_'+k]||null;}},
+  set:function(k,v){try{if(_lsOK)localStorage.setItem('bp_'+k,JSON.stringify(v));_mem['bp_'+k]=v;}catch(e){_mem['bp_'+k]=v;}}
 };
 
-// ── PRIMITIVAS CRIPTOGRÁFICAS (idénticas a index.html) ──
-var CHARS        = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-var SECRET_PRO   = 'BPRO2026A2K';
-var SECRET_DEMO  = 'BPD3MO2026';
-var SECRET_DEVICE= 'BDEV2026A2K';
+// ── CRYPTO (idéntico a index.html) ──
+var CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+var SECRET_PRO='BPRO2026A2K', SECRET_DEMO='BPD3MO2026', SECRET_DEVICE='BDEV2026A2K';
+function djb2(s){var h=5381;for(var i=0;i<s.length;i++){h=((h<<5)+h)^s.charCodeAt(i);h=h>>>0;}return h;}
+function toB(n,l){var r='',b=CHARS.length;for(var i=0;i<l;i++){r=CHARS[n%b]+r;n=Math.floor(n/b);}return r;}
+function fromB(s){var r=0,b=CHARS.length;for(var i=0;i<(s||'').length;i++){var x=CHARS.indexOf(s[i]);if(x<0)return 0;r=r*b+x;}return r;}
 
-function djb2(s) {
-  var h=5381;
-  for(var i=0;i<s.length;i++){ h=((h<<5)+h)^s.charCodeAt(i); h=h>>>0; }
-  return h;
-}
-function toB(n,len) {
-  var r='',b=CHARS.length;
-  for(var i=0;i<len;i++){ r=CHARS[n%b]+r; n=Math.floor(n/b); }
-  return r;
-}
-function fromB(s) {
-  var r=0,b=CHARS.length;
-  for(var i=0;i<(s||'').length;i++){ var idx=CHARS.indexOf(s[i]); if(idx<0) return 0; r=r*b+idx; }
-  return r;
-}
-
-// ── GENERADORES DE CÓDIGO ──
-function generateLicenseCode(neg, meses) {
-  meses = meses || 12;
-  var vence = new Date(); vence.setMonth(vence.getMonth()+meses);
-  var diaAbsoluto = Math.floor(vence.getTime()/86400000);
-  var s1 = toB(djb2(neg.toUpperCase()+Date.now().toString()),4);
-  var sv = toB(diaAbsoluto%(CHARS.length*CHARS.length*CHARS.length*CHARS.length),4);
-  var s2 = toB(djb2(s1+sv+SECRET_PRO),4);
+function generateLicenseCode(neg,meses){
+  meses=meses||12;
+  var v=new Date();v.setMonth(v.getMonth()+meses);
+  var da=Math.floor(v.getTime()/86400000);
+  var s1=toB(djb2(neg.toUpperCase()+Date.now().toString()),4);
+  var sv=toB(da%(CHARS.length*CHARS.length*CHARS.length*CHARS.length),4);
+  var s2=toB(djb2(s1+sv+SECRET_PRO),4);
   return 'BPRO-'+s1+'-'+sv+'-'+s2;
 }
-function generateLicenseCodeLocked(neg, meses, deviceId) {
-  meses = meses || 12;
-  var vence = new Date(); vence.setMonth(vence.getMonth()+meses);
-  var diaAbsoluto = Math.floor(vence.getTime()/86400000);
-  var s1 = toB(djb2(neg.toUpperCase()+Date.now().toString()),4);
-  var sv = toB(diaAbsoluto%(CHARS.length*CHARS.length*CHARS.length*CHARS.length),4);
-  var s2 = toB(djb2(s1+sv+SECRET_PRO),4);
-  var dv = toB(djb2((deviceId||'').toUpperCase()+SECRET_DEVICE),4);
+function generateLicenseCodeLocked(neg,meses,deviceId){
+  meses=meses||12;
+  var v=new Date();v.setMonth(v.getMonth()+meses);
+  var da=Math.floor(v.getTime()/86400000);
+  var s1=toB(djb2(neg.toUpperCase()+Date.now().toString()),4);
+  var sv=toB(da%(CHARS.length*CHARS.length*CHARS.length*CHARS.length),4);
+  var s2=toB(djb2(s1+sv+SECRET_PRO),4);
+  var dv=toB(djb2((deviceId||'').toUpperCase()+SECRET_DEVICE),4);
   return 'BPRO-'+s1+'-'+sv+'-'+s2+'-'+dv;
 }
-function generateDemoCode(neg, dias) {
-  dias = dias || 5;
-  var expDay = Math.floor((Date.now()+dias*86400000)/86400000);
-  var sv = toB(expDay%(CHARS.length*CHARS.length*CHARS.length*CHARS.length),4);
-  var s1 = toB(djb2((neg||'').toUpperCase()+Date.now().toString()),4);
-  var s2 = toB(djb2(s1+SECRET_DEMO+sv),4);
+function generateDemoCode(neg,dias){
+  dias=dias||5;
+  var expDay=Math.floor((Date.now()+dias*86400000)/86400000);
+  var sv=toB(expDay%(CHARS.length*CHARS.length*CHARS.length*CHARS.length),4);
+  var s1=toB(djb2((neg||'').toUpperCase()+Date.now().toString()),4);
+  var s2=toB(djb2(s1+SECRET_DEMO+sv),4);
   return 'DEMO-'+s1+'-'+s2+'-'+sv;
+}
+function extraerVenceEnDePRO(code){
+  var p=code.split('-');if(p.length!==4||p[0]!=='BPRO')return null;
+  var sv=p[2],b=CHARS.length,da=0;
+  for(var i=0;i<sv.length;i++)da=da*b+CHARS.indexOf(sv[i]);
+  return new Date(da*86400000);
 }
 
 // ── STORAGE ──
-function getLicenses() { return DB.get('licenses_issued') || []; }
-function saveLicenses(l) { DB.set('licenses_issued', l); }
+function getLicenses(){return DB.get('licenses_issued')||[];}
+function saveLicenses(l){DB.set('licenses_issued',l);}
 
-// ── VENCIMIENTO PRO ──
-function extraerVenceEnDePRO(code) {
-  var p = code.split('-');
-  if(p.length!==4 || p[0]!=='BPRO') return null;
-  var sv = p[2]; var b=CHARS.length; var diaAbsoluto=0;
-  for(var i=0;i<sv.length;i++) diaAbsoluto=diaAbsoluto*b+CHARS.indexOf(sv[i]);
-  return new Date(diaAbsoluto*86400000);
-}
+// ── SEMILLA INICIAL (solo si localStorage vacío) ──
+var SEED=[
+  {id:1001,code:'DEMO-VVD8-7VFN-AWCA',negocio:'TU ESPACIO ESCOLAR',tipo:'DEMO',dias:5,devices:[],activo:true,creadoEn:'2026-03-27T00:00:00.000Z',venceEn:'2026-04-01T00:00:00.000Z'},
+  {id:1002,code:'BPRO-GCA2-AWC4-Q5KC-4X6A',negocio:'BODEGA DE TODITO',tipo:'PRO',maxTerminales:1,devices:[],deviceLocked:null,activo:true,creadoEn:'2026-03-27T00:00:00.000Z'},
+  {id:1003,code:'DEMO-RWWK-YPRT-AWB8',negocio:'EL KAIROS DE DIOS',tipo:'DEMO',dias:5,devices:[],activo:true,creadoEn:'2026-03-25T00:00:00.000Z',venceEn:'2026-03-30T00:00:00.000Z'},
+  {id:1004,code:'BPRO-YA5B-AWPF-43Q5-GZWA',negocio:'COMERCIALIZADORA AZUAJE DE SEIJAS',tipo:'PRO',maxTerminales:1,devices:[],deviceLocked:null,activo:true,creadoEn:'2026-03-27T00:00:00.000Z'},
+  {id:1005,code:'BPRO-LEG7-AWPF-NERP-SKNS',negocio:'BODEGA LA GONDA',tipo:'PRO',maxTerminales:1,devices:[],deviceLocked:null,activo:true,creadoEn:'2026-03-27T00:00:00.000Z'},
+  {id:1006,code:'DEMO-EYQA-XNF7',negocio:'LA GLORIA ES DE JEHOVA',tipo:'DEMO',dias:5,devices:[],activo:true,creadoEn:'2026-03-22T00:00:00.000Z',venceEn:'2026-03-27T00:00:00.000Z'},
+  {id:1007,code:'DEMO-ALS3-C7P6',negocio:'BODEGA DE TODITO',tipo:'DEMO',dias:5,devices:[],activo:true,creadoEn:'2026-03-22T00:00:00.000Z',venceEn:'2026-03-27T00:00:00.000Z'}
+];
+function initSeed(){if(getLicenses().length===0)saveLicenses(SEED);}
 
 // ── VARS TEMPORALES ──
-var _ultimaLicGenerada  = null;
-var _ultimaDemoGenerada = null;
+var _ultimaLic=null, _ultimaDemo=null;
 
 // ── AUTH ──
-function verificarPw() {
-  var inp = document.getElementById('pwInput');
-  var err = document.getElementById('pwErr');
-  var pw  = inp ? inp.value.trim() : '';
-  var validos = ['ZYNC2024admin','admin','zync','a2k2026'];
-  if(validos.indexOf(pw)<0) {
-    if(err) err.textContent = 'Contraseña incorrecta';
-    if(inp) { inp.value=''; inp.focus(); }
+function verificarPw(){
+  var inp=document.getElementById('pwInput');
+  var err=document.getElementById('pwErr');
+  var pw=inp?inp.value.trim():'';
+  if(['ZYNC2024admin','admin','zync','a2k2026'].indexOf(pw)<0){
+    if(err) err.textContent='Contraseña incorrecta';
+    if(inp){inp.value='';inp.focus();}
     return;
   }
   document.getElementById('loginOverlay').style.display='none';
-  document.getElementById('mainContent').style.display='block';
+  document.getElementById('appWrap').style.display='block';
   actualizarVencePRO();
-  actualizarVenceEl();
+  actualizarStats();
   renderLicTable();
+  iniciarReloj();
 }
 
-// ── TABS ──
-function switchTab(tab) {
-  var panelPro  = document.getElementById('panelPro');
-  var panelDemo = document.getElementById('panelDemo');
-  var btnPro    = document.getElementById('tabPro');
-  var btnDemo   = document.getElementById('tabDemo');
-  if(tab==='pro') {
-    panelPro.style.display='block'; panelDemo.style.display='none';
-    btnPro.className='btn btn-primary'; btnPro.style.flex='1'; btnPro.style.fontWeight='700';
-    btnDemo.className='btn btn-ghost';  btnDemo.style.flex='1'; btnDemo.style.fontWeight='700';
-  } else {
-    panelPro.style.display='none'; panelDemo.style.display='block';
-    btnPro.className='btn btn-ghost';   btnPro.style.flex='1'; btnPro.style.fontWeight='700';
-    btnDemo.className='btn btn-primary'; btnDemo.style.flex='1'; btnDemo.style.fontWeight='700';
-    setTimeout(function(){ try{ actualizarVenceEl(); }catch(e){} }, 50);
+function cerrarSesion(){
+  document.getElementById('appWrap').style.display='none';
+  document.getElementById('loginOverlay').style.display='flex';
+  var inp=document.getElementById('pwInput');
+  if(inp){inp.value='';setTimeout(function(){inp.focus();},200);}
+}
+
+// ── TEMA ──
+function toggleTheme(){
+  var t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var btn=document.getElementById('btnTheme');
+  if(btn) btn.textContent=t==='dark'?'🌙':'☀️';
+  try{localStorage.setItem('bp_admin_theme',t);}catch(e){}
+}
+function cargarTema(){
+  try{var t=localStorage.getItem('bp_admin_theme');if(t){document.documentElement.setAttribute('data-theme',t);var btn=document.getElementById('btnTheme');if(btn)btn.textContent=t==='dark'?'🌙':'☀️';}}catch(e){}
+}
+
+// ── RELOJ ──
+function iniciarReloj(){
+  function tick(){
+    var el=document.getElementById('reloj');
+    if(el) el.textContent='Local: '+new Date().toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit',hour12:true});
   }
+  tick(); setInterval(tick,1000);
 }
 
-// ── ACTUALIZAR CAMPOS FECHA ──
-function actualizarVencePRO() {
-  var mesesEl = document.getElementById('lic-meses');
-  var venceEl = document.getElementById('lic-fecha-vence');
-  var meses = mesesEl ? parseInt(mesesEl.value) : 12;
-  if(!meses || meses===0) { if(venceEl) venceEl.value='Permanente'; return; }
-  var v = new Date(); v.setMonth(v.getMonth()+meses);
-  if(venceEl) venceEl.value = v.toLocaleDateString('es-VE',{day:'numeric',month:'short',year:'numeric'});
-}
-function actualizarVenceEl() {
-  var diasEl  = document.getElementById('demo-dias');
-  var venceEl = document.getElementById('demo-fecha-vence');
-  var labelEl = document.getElementById('demo-dias-label');
-  var dias = diasEl ? (parseInt(diasEl.value)||5) : 5;
-  var v = new Date(); v.setDate(v.getDate()+dias);
-  var opts = {weekday:'short',day:'numeric',month:'short',year:'numeric'};
-  if(venceEl) venceEl.value = v.toLocaleDateString('es-VE',opts);
-  if(labelEl) labelEl.textContent = dias+(dias===1?' día':' días');
+// ── ACTUALIZAR FECHA VENCE PRO ──
+function actualizarVencePRO(){
+  var meses=parseInt((document.getElementById('lic-meses')||{}).value)||12;
+  var el=document.getElementById('lic-fecha-vence');
+  if(!meses||meses===0){return;}
+  var v=new Date();v.setMonth(v.getMonth()+meses);
+  if(el) el.placeholder=v.toLocaleDateString('es-VE',{day:'numeric',month:'short',year:'numeric'});
 }
 
-// ── GENERAR PRO ──
-function generarLicencia() {
-  var negocio  = (document.getElementById('lic-negocio')||{}).value||'';
-  var maxT     = parseInt((document.getElementById('lic-terminales')||{}).value)||1;
-  var meses    = parseInt((document.getElementById('lic-meses')||{}).value)||12;
-  var deviceId = ((document.getElementById('lic-device-id')||{}).value||'').trim().toUpperCase();
-  negocio = negocio.trim();
-  if(!negocio) { showToast('Ingresa el nombre del negocio','warn'); return; }
-  var esLocked = deviceId.length>=8;
-  var code = esLocked
-    ? generateLicenseCodeLocked(negocio, meses, deviceId)
-    : generateLicenseCode(negocio, meses);
-  var lics = getLicenses();
-  var lic = { id:Date.now(), code:code, negocio:negocio,
-    tipo:'PRO', maxTerminales:esLocked?1:maxT,
-    devices:esLocked?[deviceId]:[],
-    deviceLocked:esLocked?deviceId:null,
-    activo:true, creadoEn:new Date().toISOString() };
-  lics.push(lic); saveLicenses(lics);
-  _ultimaLicGenerada = lic;
-  var el = document.getElementById('licCodigoDisplay'); if(el) el.textContent=code;
-  var info = negocio+(esLocked?' — 🔐 Bloqueada a: '+deviceId:' — Max '+maxT+' terminal(es)');
-  var eli = document.getElementById('licInfoDisplay'); if(eli) eli.textContent=info;
-  var res = document.getElementById('licResultado'); if(res) res.style.display='block';
-  var dEl = document.getElementById('lic-device-id'); if(dEl) dEl.value='';
-  renderLicTable();
-  showToast((esLocked?'🔐 Licencia device-locked: ':'✅ Código PRO: ')+code,'success');
+// ── STATS ──
+function actualizarStats(){
+  var lics=getLicenses();
+  var total=lics.length,activas=0,vencidas=0,inactivas=0,demos=0;
+  var hoy=new Date();
+  lics.forEach(function(l){
+    if(l.bloqueada||l.pausada||!l.activo){inactivas++;return;}
+    if(l.tipo==='DEMO'){
+      demos++;
+      if(l.venceEn&&new Date(l.venceEn)<hoy) vencidas++;
+      else activas++;
+    } else {
+      var vp=extraerVenceEnDePRO(l.code);
+      if(vp&&vp<hoy) vencidas++;
+      else activas++;
+    }
+  });
+  function set(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
+  set('statTotal',total);set('statActivas',activas);set('statVencidas',vencidas);
+  set('statInactivas',inactivas);set('statDemos',demos);
 }
 
 // ── GENERAR DEMO ──
-function generarLicenciaDemo() {
-  var negocio = ((document.getElementById('demo-negocio')||{}).value||'').trim();
-  var dias    = parseInt((document.getElementById('demo-dias')||{}).value)||5;
-  if(!negocio) { showToast('Ingresa el nombre del negocio','warn'); return; }
-  var code  = generateDemoCode(negocio, dias);
-  var vence = new Date(); vence.setDate(vence.getDate()+dias);
-  var lics  = getLicenses();
-  var lic   = { id:Date.now(), code:code, negocio:negocio,
-    tipo:'DEMO', dias:dias, devices:[], activo:true,
-    creadoEn:new Date().toISOString(), venceEn:vence.toISOString() };
-  lics.push(lic); saveLicenses(lics);
-  _ultimaDemoGenerada = lic;
-  var el = document.getElementById('demoCodigoDisplay'); if(el) el.textContent=code;
-  var eli = document.getElementById('demoInfoDisplay'); if(eli) eli.textContent=negocio+' — Vence: '+vence.toLocaleDateString('es-VE');
-  var res = document.getElementById('demoResultado'); if(res) res.style.display='block';
-  renderLicTable();
-  showToast('Código DEMO generado: '+code,'success');
+function generarLicenciaDemo(){
+  var negocio=((document.getElementById('demo-negocio')||{}).value||'').trim();
+  var telefono=((document.getElementById('demo-telefono')||{}).value||'').trim();
+  var deviceId=((document.getElementById('demo-device-id')||{}).value||'').trim().toUpperCase();
+  var dias=5;
+  if(!negocio){showToast('Ingresa el nombre del negocio','warn');return;}
+  var code=generateDemoCode(negocio,dias);
+  var vence=new Date();vence.setDate(vence.getDate()+dias);
+  var lics=getLicenses();
+  var lic={id:Date.now(),code:code,negocio:negocio,telefono:telefono||null,
+    tipo:'DEMO',dias:dias,devices:[],activo:true,
+    creadoEn:new Date().toISOString(),venceEn:vence.toISOString()};
+  lics.push(lic);saveLicenses(lics);
+  _ultimaDemo=lic;
+  var el=document.getElementById('demoCodigoDisplay');if(el)el.textContent=code;
+  var eli=document.getElementById('demoInfoDisplay');if(eli)eli.textContent=negocio+' — Vence: '+vence.toLocaleDateString('es-VE')+(telefono?' · '+telefono:'');
+  var res=document.getElementById('demoResultado');if(res)res.style.display='block';
+  actualizarStats();renderLicTable();
+  showToast('Código DEMO: '+code,'ok');
+}
+
+// ── GENERAR PRO ──
+function generarLicencia(){
+  var negocio=((document.getElementById('lic-negocio')||{}).value||'').trim();
+  var telefono=((document.getElementById('lic-telefono')||{}).value||'').trim();
+  var email=((document.getElementById('lic-email')||{}).value||'').trim();
+  var deviceId=((document.getElementById('lic-device-id')||{}).value||'').trim().toUpperCase();
+  var meses=parseInt((document.getElementById('lic-meses')||{}).value)||12;
+  var maxT=parseInt((document.getElementById('lic-terminales')||{}).value)||1;
+  if(!negocio){showToast('Ingresa el nombre del negocio','warn');return;}
+  var esLocked=deviceId.length>=8;
+  var code=esLocked?generateLicenseCodeLocked(negocio,meses,deviceId):generateLicenseCode(negocio,meses);
+  var lics=getLicenses();
+  var lic={id:Date.now(),code:code,negocio:negocio,telefono:telefono||null,email:email||null,
+    tipo:'PRO',maxTerminales:esLocked?1:maxT,
+    devices:esLocked?[deviceId]:[],deviceLocked:esLocked?deviceId:null,
+    activo:true,creadoEn:new Date().toISOString()};
+  lics.push(lic);saveLicenses(lics);
+  _ultimaLic=lic;
+  var el=document.getElementById('licCodigoDisplay');if(el)el.textContent=code;
+  var info=negocio+(esLocked?' — 🔐 Device-locked: '+deviceId:' — '+maxT+' terminal(es)')+(telefono?' · '+telefono:'');
+  var eli=document.getElementById('licInfoDisplay');if(eli)eli.textContent=info;
+  var res=document.getElementById('licResultado');if(res)res.style.display='block';
+  var dEl=document.getElementById('lic-device-id');if(dEl)dEl.value='';
+  actualizarStats();renderLicTable();
+  showToast((esLocked?'🔐 Device-locked: ':'✅ Código PRO: ')+code,'ok');
 }
 
 // ── COMPARTIR ──
-function compartirUltimaLicencia() {
-  var lic = _ultimaLicGenerada;
-  if(!lic) { showToast('Genera una licencia primero','warn'); return; }
-  var txt = '🏪 BODEGA PRO 8.0 — Licencia de Activación\n'
-    +'━━━━━━━━━━━━━━━━━━━━━━\n'
-    +'📋 Negocio: '+lic.negocio+'\n'
-    +'🔑 Código: '+lic.code+'\n';
-  if(lic.deviceLocked) txt+='🔐 Equipo autorizado: '+lic.deviceLocked+'\n⚠️ Esta licencia funciona SOLO en ese equipo\n';
+function compartirUltimaLicencia(){
+  var lic=_ultimaLic;if(!lic){showToast('Genera una licencia primero','warn');return;}
+  var txt='🏪 BODEGA PRO 8.0 — Licencia de Activación\n━━━━━━━━━━━━━━━━━━━━━━\n'
+    +'📋 Negocio: '+lic.negocio+'\n🔑 Código: '+lic.code+'\n';
+  if(lic.deviceLocked) txt+='🔐 Equipo autorizado: '+lic.deviceLocked+'\n⚠️ Solo funciona en ese equipo\n';
   else txt+='💻 Terminales: '+lic.maxTerminales+'\n';
-  txt+='━━━━━━━━━━━━━━━━━━━━━━\n'
-    +'📱 App: https://tiendadigitalaipro.github.io/bodega-pro-descarga.html/\n\n'
-    +'⚠️ IMPORTANTE: Este código es personal e intransferible.\n'
-    +'Si lo compartes con otra persona, tu acceso quedará bloqueado.\n\n'
-    +'🆘 Soporte: +58 416 411 7331 — A2K Digital Studio';
+  if(lic.telefono) txt+='📞 Tel: '+lic.telefono+'\n';
+  txt+='━━━━━━━━━━━━━━━━━━━━━━\n📱 App: https://tiendadigitalaipro.github.io/bodega-pro-descarga.html/\n\n'
+    +'⚠️ Código personal e intransferible.\n🆘 Soporte: +58 416 411 7331 — A2K Digital Studio';
   window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
 }
-function compartirUltimaDemo() {
-  var lic = _ultimaDemoGenerada;
-  if(!lic) { showToast('Genera una demo primero','warn'); return; }
-  var vence = new Date(lic.venceEn).toLocaleDateString('es-VE');
-  var txt = 'BODEGA PRO 8.0 — Demo Gratuita\n\n'
-    +'Negocio: '+lic.negocio+'\n'
-    +'Código DEMO: '+lic.code+'\n'
-    +'Válido por: '+lic.dias+' días\n'
-    +'Vence: '+vence+'\n\n'
-    +'Al vencer tus datos quedan seguros. Activa PRO para continuar.\n'
-    +'Soporte: +58 416 411 7331\nA2K Digital Studio';
+function compartirUltimaDemo(){
+  var lic=_ultimaDemo;if(!lic){showToast('Genera una demo primero','warn');return;}
+  var vence=new Date(lic.venceEn).toLocaleDateString('es-VE');
+  var txt='BODEGA PRO 8.0 — Demo Gratuita\n\nNegocio: '+lic.negocio+'\nCódigo DEMO: '+lic.code
+    +'\nVálido por: '+lic.dias+' días\nVence: '+vence+'\n';
+  if(lic.telefono) txt+='\nTel: '+lic.telefono;
+  txt+='\n\nAl vencer tus datos quedan seguros. Activa PRO para continuar.\nSoporte: +58 416 411 7331\nA2K Digital Studio';
   window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
 }
-function compartirLic(id) {
-  var l = getLicenses().find(function(x){ return x.id===id; });
-  if(!l) return;
-  if(l.tipo==='DEMO') { _ultimaDemoGenerada=l; compartirUltimaDemo(); }
-  else { _ultimaLicGenerada=l; compartirUltimaLicencia(); }
+function compartirLic(id){
+  var l=getLicenses().find(function(x){return x.id===id;});if(!l)return;
+  if(l.tipo==='DEMO'){_ultimaDemo=l;compartirUltimaDemo();}
+  else{_ultimaLic=l;compartirUltimaLicencia();}
 }
-function copiarCodigo() {
-  var el = document.getElementById('licCodigoDisplay');
-  if(!el) return;
-  var txt = el.textContent||'';
-  if(navigator.clipboard) {
-    navigator.clipboard.writeText(txt)
-      .then(function(){ showToast('Código copiado','success'); })
-      .catch(function(){ _copiarFallback(txt); });
-  } else { _copiarFallback(txt); }
+function copiarPro(){
+  var el=document.getElementById('licCodigoDisplay');
+  _copiar(el?el.textContent:'');
 }
-function _copiarFallback(txt) {
-  var ta=document.createElement('textarea'); ta.value=txt;
-  document.body.appendChild(ta); ta.select();
-  document.execCommand('copy'); document.body.removeChild(ta);
-  showToast('Código copiado','success');
+function copiarDemo(){
+  var el=document.getElementById('demoCodigoDisplay');
+  _copiar(el?el.textContent:'');
+}
+function _copiar(txt){
+  if(!txt)return;
+  if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){showToast('Código copiado','ok');}).catch(function(){_copiarFb(txt);});}
+  else{_copiarFb(txt);}
+}
+function _copiarFb(txt){
+  var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
+  document.execCommand('copy');document.body.removeChild(ta);showToast('Código copiado','ok');
 }
 
-// ── ACCIONES SOBRE LICENCIAS ──
-function bloquearLicencia(id) {
-  var lics=getLicenses(); var lic=lics.find(function(l){ return l.id===id; }); if(!lic) return;
-  lic.activo=false; lic.bloqueada=true; lic.bloqueadaEn=new Date().toISOString();
-  saveLicenses(lics); renderLicTable(); showToast('Licencia bloqueada: '+lic.negocio,'warn');
+// ── ACCIONES ──
+function bloquearLicencia(id){
+  var lics=getLicenses();var l=lics.find(function(x){return x.id===id;});if(!l)return;
+  l.activo=false;l.bloqueada=true;l.bloqueadaEn=new Date().toISOString();
+  saveLicenses(lics);actualizarStats();renderLicTable();showToast('Bloqueada: '+l.negocio,'warn');
 }
-function pausarLicencia(id) {
-  var lics=getLicenses(); var lic=lics.find(function(l){ return l.id===id; }); if(!lic) return;
-  lic.pausada=!lic.pausada; lic.pausadaEn=lic.pausada?new Date().toISOString():null;
-  saveLicenses(lics); renderLicTable();
-  showToast(lic.pausada?('Pausada: '+lic.negocio):('Reactivada: '+lic.negocio),'success');
+function pausarLicencia(id){
+  var lics=getLicenses();var l=lics.find(function(x){return x.id===id;});if(!l)return;
+  l.pausada=!l.pausada;l.pausadaEn=l.pausada?new Date().toISOString():null;
+  saveLicenses(lics);actualizarStats();renderLicTable();
+  showToast(l.pausada?'Pausada: '+l.negocio:'Reactivada: '+l.negocio,'ok');
 }
-function reactivarLicencia(id) {
-  var lics=getLicenses(); var lic=lics.find(function(l){ return l.id===id; }); if(!lic) return;
-  lic.activo=true; lic.bloqueada=false; lic.pausada=false;
-  lic.bloqueadaEn=null; lic.pausadaEn=null;
-  saveLicenses(lics); renderLicTable(); showToast('Licencia reactivada: '+lic.negocio,'success');
+function reactivarLicencia(id){
+  var lics=getLicenses();var l=lics.find(function(x){return x.id===id;});if(!l)return;
+  l.activo=true;l.bloqueada=false;l.pausada=false;l.bloqueadaEn=null;l.pausadaEn=null;
+  saveLicenses(lics);actualizarStats();renderLicTable();showToast('Reactivada: '+l.negocio,'ok');
 }
-function eliminarLicencia(id) {
-  var lics=getLicenses(); var lic=lics.find(function(l){ return l.id===id; }); if(!lic) return;
-  var viejo=document.getElementById('modalEliminarLic'); if(viejo) viejo.remove();
-  var m=document.createElement('div'); m.id='modalEliminarLic';
-  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
-  var inner=document.createElement('div');
-  inner.style.cssText='background:var(--card);border:2px solid var(--danger);border-radius:18px;padding:28px;width:100%;max-width:380px;text-align:center';
-  inner.innerHTML='<div style="font-size:36px;margin-bottom:10px">🗑️</div>'
+function eliminarLicencia(id){
+  var lics=getLicenses();var l=lics.find(function(x){return x.id===id;});if(!l)return;
+  var viejo=document.getElementById('modalDelLic');if(viejo)viejo.remove();
+  var m=document.createElement('div');m.id='modalDelLic';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  var box=document.createElement('div');
+  box.style.cssText='background:var(--card);border:2px solid var(--danger);border-radius:18px;padding:28px;width:100%;max-width:380px;text-align:center';
+  box.innerHTML='<div style="font-size:38px;margin-bottom:10px">🗑️</div>'
     +'<div style="font-size:15px;font-weight:800;color:var(--danger);margin-bottom:6px">Eliminar Licencia</div>'
-    +'<div style="font-size:13px;color:var(--text2);margin-bottom:6px">'+(lic.negocio||'—')+'</div>'
-    +'<div style="font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:16px">'+lic.code+'</div>'
-    +'<div style="font-size:12px;color:var(--warn);margin-bottom:20px">Esta acción no se puede deshacer.<br>El código quedará inválido permanentemente.</div>';
-  var btnCancel=document.createElement('button');
-  btnCancel.textContent='Cancelar';
-  btnCancel.style.cssText='padding:11px 20px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;font-family:var(--font);margin-right:8px';
-  btnCancel.onclick=function(){ m.remove(); };
-  var btnOk=document.createElement('button');
-  btnOk.textContent='🗑️ Eliminar';
-  btnOk.style.cssText='padding:11px 20px;border-radius:10px;border:none;background:var(--danger);color:#fff;cursor:pointer;font-size:13px;font-weight:800;font-family:var(--font)';
-  btnOk.onclick=function(){
+    +'<div style="font-size:13px;color:var(--text2);margin-bottom:6px">'+(l.negocio||'—')+'</div>'
+    +'<div style="font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:16px">'+l.code+'</div>'
+    +'<div style="font-size:12px;color:var(--warn);margin-bottom:20px">Esta acción no se puede deshacer.</div>';
+  var bCan=document.createElement('button');bCan.textContent='Cancelar';
+  bCan.style.cssText='padding:11px 20px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;margin-right:8px';
+  bCan.onclick=function(){m.remove();};
+  var bOk=document.createElement('button');bOk.textContent='🗑️ Eliminar';
+  bOk.style.cssText='padding:11px 20px;border-radius:10px;border:none;background:var(--danger);color:#fff;cursor:pointer;font-size:13px;font-weight:800';
+  bOk.onclick=function(){
     m.remove();
-    var lics2=getLicenses().filter(function(l){ return l.id!==id; });
-    saveLicenses(lics2); renderLicTable(); showToast('Licencia eliminada','success');
+    saveLicenses(getLicenses().filter(function(x){return x.id!==id;}));
+    actualizarStats();renderLicTable();showToast('Licencia eliminada','ok');
   };
-  var btns=document.createElement('div'); btns.style.cssText='display:flex;gap:8px;justify-content:center';
-  btns.appendChild(btnCancel); btns.appendChild(btnOk);
-  inner.appendChild(btns); m.appendChild(inner); document.body.appendChild(m);
+  var btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px;justify-content:center';
+  btns.appendChild(bCan);btns.appendChild(bOk);box.appendChild(btns);m.appendChild(box);document.body.appendChild(m);
 }
 
 // ── EXPORTAR ──
-function exportarLicencias() {
-  var lics=getLicenses();
-  if(!lics.length) { showToast('No hay licencias para exportar','warn'); return; }
-  var csv='Negocio,Código,Tipo,Estado,Fecha Generación,Vencimiento\n';
+function exportarLicencias(){
+  var lics=getLicenses();if(!lics.length){showToast('Sin licencias para exportar','warn');return;}
+  var csv='Negocio,Código,Tipo,Estado,Teléfono,Email,Generado,Vencimiento\n';
   lics.forEach(function(l){
     var tipo=l.tipo||(l.code&&l.code.startsWith('DEMO')?'DEMO':'PRO');
     var estado=l.bloqueada?'BLOQUEADA':l.pausada?'PAUSADA':!l.activo?'INACTIVA':'ACTIVA';
-    var fechaGen=l.creadoEn?new Date(l.creadoEn).toLocaleDateString('es-VE'):'-';
+    var fgen=l.creadoEn?new Date(l.creadoEn).toLocaleDateString('es-VE'):'-';
     var vence='-';
-    if(tipo==='DEMO'&&l.venceEn) vence=new Date(l.venceEn).toLocaleDateString('es-VE');
-    else if(tipo==='PRO') { var vp=extraerVenceEnDePRO(l.code); vence=vp?vp.toLocaleDateString('es-VE'):'Permanente'; }
-    csv+='"'+(l.negocio||'')+'","'+(l.code||'')+'","'+tipo+'","'+estado+'","'+fechaGen+'","'+vence+'"\n';
+    if(tipo==='DEMO'&&l.venceEn)vence=new Date(l.venceEn).toLocaleDateString('es-VE');
+    else if(tipo==='PRO'){var vp=extraerVenceEnDePRO(l.code);vence=vp?vp.toLocaleDateString('es-VE'):'Permanente';}
+    csv+='"'+(l.negocio||'')+'","'+(l.code||'')+'","'+tipo+'","'+estado+'","'+(l.telefono||'')+'","'+(l.email||'')+'","'+fgen+'","'+vence+'"\n';
   });
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url; a.download='licencias-bodega-pro-'+new Date().toISOString().slice(0,10)+'.csv';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-  showToast('📤 Licencias exportadas ('+lics.length+' registros)','success');
+  var a=document.createElement('a');a.href=url;a.download='licencias-bodega-pro-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast('Exportadas ('+lics.length+' registros)','ok');
 }
 
 // ── RENDER TABLA ──
-function renderLicTable() {
-  var el=document.getElementById('licTable'); if(!el) return;
+function renderLicTable(){
+  var el=document.getElementById('licTable');if(!el)return;
   var lics=getLicenses();
   var q=((document.getElementById('licTableSearch')||{value:''}).value||'').trim().toUpperCase();
-  var licsFiltradas=q?lics.filter(function(l){
-    return (l.code||'').toUpperCase().includes(q)||
-           (l.negocio||'').toUpperCase().includes(q)||
-           (l.tipo||'').toUpperCase().includes(q);
-  }):lics;
-  var countEl=document.getElementById('licTableCount');
-  if(countEl) countEl.textContent=lics.length+(q?' · '+licsFiltradas.length+' filtradas':'');
-  if(!licsFiltradas.length) {
-    el.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">'+(q?'Sin resultados para "'+q+'"':'Sin licencias generadas')+'</div>';
+  var fil=q?lics.filter(function(l){return(l.code||'').toUpperCase().includes(q)||(l.negocio||'').toUpperCase().includes(q)||(l.tipo||'').toUpperCase().includes(q);}):lics;
+  var cEl=document.getElementById('licTableCount');
+  if(cEl)cEl.textContent=lics.length+(q?' · '+fil.length+' filtradas':'');
+  if(!fil.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px">'+(q?'Sin resultados para "'+q+'"':'Sin licencias generadas aún')+'</div>';
     return;
   }
-  el.innerHTML=licsFiltradas.slice().reverse().map(function(l){
+  var hoy=new Date();
+  el.innerHTML=fil.slice().reverse().map(function(l){
     var tipo=l.tipo||(l.code&&l.code.startsWith('DEMO')?'DEMO':'PRO');
-    var estado='ACTIVA'; var estadoColor='var(--neon)';
-    if(l.bloqueada){estado='BLOQUEADA';estadoColor='var(--danger)';}
-    else if(l.pausada){estado='PAUSADA';estadoColor='var(--warn)';}
-    else if(!l.activo){estado='INACTIVA';estadoColor='var(--text3)';}
-    var venceStr='';
+    var estado='ACTIVA',estadoC='var(--neon)';
+    if(l.bloqueada){estado='BLOQUEADA';estadoC='var(--danger)';}
+    else if(l.pausada){estado='PAUSADA';estadoC='var(--warn)';}
+    else if(!l.activo){estado='INACTIVA';estadoC='var(--text3)';}
+    var vStr='';
     if(tipo==='DEMO'&&l.venceEn){
-      var vd=new Date(l.venceEn); var diffD=Math.floor((vd-new Date())/86400000);
-      if(diffD<0) venceStr='<div style="font-size:10px;color:var(--danger)">Demo vencida '+vd.toLocaleDateString("es-VE")+'</div>';
-      else if(diffD===0) venceStr='<div style="font-size:10px;color:var(--warn)">Vence HOY</div>';
-      else venceStr='<div style="font-size:10px;color:var(--text3)">Vence: '+vd.toLocaleDateString("es-VE")+' ('+diffD+'d)</div>';
+      var vd=new Date(l.venceEn);var dd=Math.floor((vd-hoy)/86400000);
+      if(dd<0)vStr='<span style="font-size:10px;color:var(--danger)">Demo vencida '+vd.toLocaleDateString("es-VE")+'</span>';
+      else if(dd===0)vStr='<span style="font-size:10px;color:var(--warn)">⚠️ Vence HOY</span>';
+      else vStr='<span style="font-size:10px;color:var(--text3)">Vence: '+vd.toLocaleDateString("es-VE")+' ('+dd+'d)</span>';
     } else if(tipo==='PRO'){
       var vp=extraerVenceEnDePRO(l.code);
-      if(vp){ var diffP=Math.floor((vp-new Date())/86400000);
-        if(diffP<0) venceStr='<div style="font-size:10px;color:var(--danger)">PRO vencida '+vp.toLocaleDateString("es-VE")+'</div>';
-        else venceStr='<div style="font-size:10px;color:var(--text3)">PRO hasta: '+vp.toLocaleDateString("es-VE")+'</div>';
-      } else { venceStr='<div style="font-size:10px;color:var(--neon)">Licencia permanente</div>'; }
+      if(vp){var dp=Math.floor((vp-hoy)/86400000);
+        vStr=dp<0?'<span style="font-size:10px;color:var(--danger)">PRO vencida '+vp.toLocaleDateString("es-VE")+'</span>'
+          :'<span style="font-size:10px;color:var(--text3)">PRO hasta: '+vp.toLocaleDateString("es-VE")+'</span>';
+      } else vStr='<span style="font-size:10px;color:var(--neon)">Licencia permanente</span>';
     }
-    var tipoBg=tipo==='DEMO'?'#f59e0b':'#06d6a0'; var tipoColor='#000';
-    return '<div style="border-bottom:1px solid var(--border);padding:10px 0">'
-      +'<div style="display:flex;align-items:flex-start;gap:8px">'
-      +'<span style="background:'+tipoBg+';color:'+tipoColor+';font-size:10px;font-weight:800;padding:3px 7px;border-radius:5px;white-space:nowrap;flex-shrink:0">'+tipo+(l.dias?' '+l.dias+'d':'')+'</span>'
+    var tipoBg=tipo==='DEMO'?'#f59e0b':'#06d6a0';
+    var extra=(l.telefono?'<span style="font-size:10px;color:var(--text3)">📞 '+l.telefono+'</span>':'')
+      +(l.email?'<span style="font-size:10px;color:var(--text3)"> · ✉️ '+l.email+'</span>':'');
+    return '<div style="border-bottom:1px solid var(--border);padding:10px 6px;display:flex;align-items:flex-start;gap:8px">'
+      +'<span style="background:'+tipoBg+';color:#000;font-size:10px;font-weight:800;padding:3px 7px;border-radius:5px;white-space:nowrap;flex-shrink:0;margin-top:2px">'+tipo+(l.dias?' '+l.dias+'d':'')+'</span>'
       +'<div style="flex:1;min-width:0">'
-      +'<div style="font-size:12px;font-weight:700;color:var(--text)">'+(l.negocio||'—')+'</div>'
-      +'<div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin:1px 0;word-break:break-all">'+(l.code||'—')+'</div>'
-      +venceStr
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+(l.negocio||'—')+'</div>'
+      +'<div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin:2px 0;word-break:break-all">'+(l.code||'—')+'</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+vStr+extra+'</div>'
       +'</div>'
-      +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'
-      +'<span style="font-size:9px;font-weight:700;color:'+estadoColor+';text-align:right">'+estado+'</span>'
+      +'<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">'
+      +'<span style="font-size:9px;font-weight:800;color:'+estadoC+'">'+estado+'</span>'
       +'<div style="display:flex;gap:3px">'
       +(estado!=='BLOQUEADA'
         ?'<button onclick="bloquearLicencia('+l.id+')" title="Bloquear" style="background:var(--danger);border:none;color:#fff;border-radius:5px;padding:3px 6px;cursor:pointer;font-size:10px">🚫</button>'
@@ -744,92 +851,23 @@ function renderLicTable() {
       +'<button onclick="eliminarLicencia('+l.id+')" title="Eliminar" style="background:#333;border:none;color:#fff;border-radius:5px;padding:3px 6px;cursor:pointer;font-size:10px">🗑️</button>'
       +'</div>'
       +'</div>'
-      +'</div>'
       +'</div>';
   }).join('');
 }
 
 // ── TOAST ──
-function showToast(msg, tipo) {
-  var c=document.getElementById('toastContainer'); if(!c) return;
-  var t=document.createElement('div');
-  t.className='toast '+(tipo||'success');
-  t.textContent=msg;
-  c.appendChild(t);
-  setTimeout(function(){ if(t.parentNode) t.remove(); }, 3000);
-}
-
-// ── LICENCIAS REGISTRADAS (semilla inicial) ──
-// Se cargan SOLO si no hay datos en localStorage todavía.
-// En el mismo navegador de Bodega Pro ya aparecen automáticamente.
-var SEED_LICENSES = [
-  {
-    id: 1001,
-    code: 'DEMO-VVD8-7VFN-AWCA',
-    negocio: 'TU ESPACIO ESCOLAR',
-    tipo: 'DEMO', dias: 5, devices: [], activo: true,
-    creadoEn: '2026-03-27T00:00:00.000Z',
-    venceEn:  '2026-04-01T00:00:00.000Z'
-  },
-  {
-    id: 1002,
-    code: 'BPRO-GCA2-AWC4-Q5KC-4X6A',
-    negocio: 'BODEGA DE TODITO',
-    tipo: 'PRO', maxTerminales: 1, devices: [], deviceLocked: null,
-    activo: true, creadoEn: '2026-03-27T00:00:00.000Z'
-  },
-  {
-    id: 1003,
-    code: 'DEMO-RWWK-YPRT-AWB8',
-    negocio: 'EL KAIROS DE DIOS',
-    tipo: 'DEMO', dias: 5, devices: [], activo: true,
-    creadoEn: '2026-03-25T00:00:00.000Z',
-    venceEn:  '2026-03-30T00:00:00.000Z'
-  },
-  {
-    id: 1004,
-    code: 'BPRO-YA5B-AWPF-43Q5-GZWA',
-    negocio: 'COMERCIALIZADORA AZUAJE DE SEIJAS',
-    tipo: 'PRO', maxTerminales: 1, devices: [], deviceLocked: null,
-    activo: true, creadoEn: '2026-03-27T00:00:00.000Z'
-  },
-  {
-    id: 1005,
-    code: 'BPRO-LEG7-AWPF-NERP-SKNS',
-    negocio: 'BODEGA LA GONDA',
-    tipo: 'PRO', maxTerminales: 1, devices: [], deviceLocked: null,
-    activo: true, creadoEn: '2026-03-27T00:00:00.000Z'
-  },
-  {
-    id: 1006,
-    code: 'DEMO-EYQA-XNF7',
-    negocio: 'LA GLORIA ES DE JEHOVA',
-    tipo: 'DEMO', dias: 5, devices: [], activo: true,
-    creadoEn: '2026-03-22T00:00:00.000Z',
-    venceEn:  '2026-03-27T00:00:00.000Z'
-  },
-  {
-    id: 1007,
-    code: 'DEMO-ALS3-C7P6',
-    negocio: 'BODEGA DE TODITO',
-    tipo: 'DEMO', dias: 5, devices: [], activo: true,
-    creadoEn: '2026-03-22T00:00:00.000Z',
-    venceEn:  '2026-03-27T00:00:00.000Z'
-  }
-];
-
-function initSeedLicenses() {
-  // Solo sembrar si localStorage está vacío (panel abierto en navegador nuevo)
-  if(getLicenses().length === 0) {
-    saveLicenses(SEED_LICENSES);
-  }
+function showToast(msg,tipo){
+  var c=document.getElementById('toastWrap');if(!c)return;
+  var t=document.createElement('div');t.className='toast '+(tipo||'ok');t.textContent=msg;
+  c.appendChild(t);setTimeout(function(){if(t.parentNode)t.remove();},3200);
 }
 
 // ── INIT ──
-window.addEventListener('load', function() {
-  initSeedLicenses();
-  var inp = document.getElementById('pwInput');
-  if(inp) setTimeout(function(){ inp.focus(); }, 200);
+window.addEventListener('load',function(){
+  cargarTema();
+  initSeed();
+  var inp=document.getElementById('pwInput');
+  if(inp) setTimeout(function(){inp.focus();},200);
   actualizarVencePRO();
 });
 </script>
