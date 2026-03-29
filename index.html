@@ -642,15 +642,6 @@ canvas{max-width:100%!important}
 #ia-input-area{padding:10px;border-top:1px solid rgba(57,255,20,0.15);display:flex;gap:8px}
 #ia-input{flex:1;background:#1C1C22;border:1px solid rgba(57,255,20,0.2);border-radius:8px;color:#F0EDE6;padding:8px 12px;font-size:13px;outline:none}
 #ia-input-area button{background:var(--neon,#39ff14);color:#0D0D0F;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:16px;font-weight:700}
-/* ── HARDWARE SECTION ── */
-.hw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:12px}
-.hw-card{background:var(--bg3,#161625);border:1.5px solid var(--border,rgba(124,58,237,0.15));border-radius:12px;padding:16px;text-align:center;transition:all .2s}
-.hw-card.connected{border-color:#22c55e;background:rgba(34,197,94,0.08)}
-.hw-icon{font-size:28px;margin-bottom:8px}
-.hw-name{font-weight:700;font-size:13px;color:var(--text,#e8e8f0);margin-bottom:4px}
-.hw-status{font-size:11px;color:var(--text2,#8888aa);margin-bottom:10px}
-.hw-status.ok{color:#22c55e;font-weight:700}
-.temas-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:20px}
 </style>
 </head>
 
@@ -1275,73 +1266,130 @@ canvas{max-width:100%!important}
                 <span style="font-size:11px" id="licenseDeviceId">Device ID: DEV-DZR3-1YU8</span><br>
                 <span style="font-size:11px">Licencia ligada a este dispositivo. Máx. 2 terminales por código.</span>
               </div>
-            </div>
+              <div id="adminBtnWrap" style="display:block">
+                <button id="btnToggleAdmin" onclick="toggleAdminPanel(event)" style="width:100%;padding:13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:10px">🔑 Panel Admin ZYNC — Generar Codigos</button>
+              </div>
+              <div id="adminLicPanel" style="display:none;margin-top:12px">
+                <div style="background:var(--bg2);border:1px solid var(--accent);border-radius:16px;padding:20px">
+                  <div class="card-title mb-4" style="color:var(--accent);font-size:16px">🛠️ Panel Admin A2K — Sistema de Licencias</div>
+
+                  <!-- TABS -->
+                  <div style="display:flex;gap:8px;margin-bottom:16px">
+                    <button onclick="switchLicTab(&#39;pro&#39;)" id="tabPro" class="btn btn-primary" style="flex:1;font-weight:700">
+                      ⚡ Licencia PRO
+                    </button>
+                    <button onclick="switchLicTab(&#39;demo&#39;)" id="tabDemo" class="btn btn-ghost" style="flex:1;font-weight:700">
+                      🎯 Licencia DEMO
+                    </button>
+                  </div>
+
+                  <!-- TAB PRO -->
+                  <div id="panelLicPro">
+                    <div class="form-group">
+                      <label class="form-label">Nombre del Negocio Cliente *</label>
+                      <input type="text" id="lic-negocio" class="form-input" placeholder="Bodega La Esquina, Farmacia Central...">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">🔐 Device ID del Cliente <span style="color:var(--text3);font-weight:400">(opcional — bloquea licencia a 1 solo equipo)</span></label>
+                      <input type="text" id="lic-device-id" class="form-input" placeholder="DEV-XXXX-XXXX — el cliente lo ve en pantalla de login" style="font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:1px" oninput="this.value=this.value.trim().toUpperCase()">
+                      <div style="font-size:11px;color:var(--text3);margin-top:4px">⚠️ Si ingresas el Device ID, la licencia SOLO funcionará en ese equipo específico y no podrá usarse en otro</div>
+                    </div>
+                    <div class="grid-2">
+                      <div class="form-group">
+                        <label class="form-label">⏳ Duración PRO</label>
+                        <select id="lic-meses" class="form-select" onchange="actualizarVencePRO()">
+                          <option value="1">1 mes</option>
+                          <option value="3">3 meses</option>
+                          <option value="6">6 meses</option>
+                          <option value="12" selected="">12 meses (1 año)</option>
+                          <option value="24">24 meses (2 años)</option>
+                          <option value="0">Permanente (sin venc.)</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">📅 Vence el</label>
+                        <input type="text" id="lic-fecha-vence" class="form-input" readonly="" style="color:var(--neon);font-weight:700;font-family:var(--mono);background:var(--bg3)" placeholder="Auto">
+                      </div>
+                    </div>
+                    <div class="grid-2">
+                      <div class="form-group">
+                        <label class="form-label">Máx. Terminales</label>
+                        <select id="lic-terminales" class="form-select">
+                          <option value="1">1 terminal</option>
+                          <option value="2" selected="">2 terminales</option>
+                          <option value="3">3 terminales</option>
+                        </select>
+                      </div>
+                      <div class="form-group" style="display:flex;align-items:flex-end">
+                        <button class="btn btn-primary btn-full" onclick="generarLicencia()" style="height:42px;background:linear-gradient(135deg,#7c3aed,#06d6a0)">
+                          ⚡ Generar Código PRO
+                        </button>
+                      </div>
+                    </div>
+                    <div id="lic-resultado" style="display:none;margin-top:12px;background:var(--bg3);border:2px solid var(--neon);border-radius:12px;padding:16px">
+                      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">✅ Código PRO generado:</div>
+                      <div id="lic-code-display" style="font-family:monospace;font-size:20px;font-weight:900;color:var(--neon);letter-spacing:3px"></div>
+                      <div style="font-size:11px;color:var(--text2);margin-top:4px" id="lic-info-display"></div>
+                      <div style="display:flex;gap:8px;margin-top:12px">
+                        <button class="btn btn-primary" onclick="compartirUltimaLicencia()" style="flex:1">📤 WhatsApp</button>
+                        <button class="btn btn-ghost btn-sm" onclick="copiarCodigo()" style="flex:1">📋 Copiar</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- TAB DEMO -->
+                  <div id="panelLicDemo" style="display:none">
+                    <div class="form-group">
+                      <label class="form-label">Nombre del Negocio Cliente *</label>
+                      <input type="text" id="demo-negocio" class="form-input" placeholder="Bodega La Esquina...">
+                    </div>
+                    <div class="grid-2">
+                      <div class="form-group">
+                        <label class="form-label">⏱️ Duración Demo</label>
+                        <select id="demo-dias" class="form-select" disabled="" style="pointer-events:none;opacity:0.9">
+                          <option value="5" selected="">5 días</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">📅 Vence el</label>
+                        <input type="text" id="demo-fecha-vence" class="form-input" readonly="" style="background:var(--bg3);color:var(--warn);font-weight:700;text-align:center" placeholder="Auto">
+                      </div>
+                    </div>
+                    <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--text2)">
+                      ℹ️ El cliente prueba la app por <strong id="demo-dias-label" style="color:var(--warn)">5 días</strong>. Al vencer, se bloquea pero <strong style="color:var(--neon)">sus datos se conservan</strong>. Solo necesita el código PRO para continuar.
+                    </div>
+                    <button class="btn btn-full" onclick="generarLicenciaDemo()" style="background:linear-gradient(135deg,#f59e0b,#ef4444);font-weight:700;height:42px">
+                      🎯 Generar Código DEMO
+                    </button>
+                    <div id="demo-resultado" style="display:none;margin-top:12px;background:var(--bg3);border:2px solid var(--warn);border-radius:12px;padding:16px">
+                      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">🎯 Código DEMO generado:</div>
+                      <div id="demo-code-display" style="font-family:monospace;font-size:20px;font-weight:900;color:var(--warn);letter-spacing:3px"></div>
+                      <div style="font-size:11px;color:var(--text2);margin-top:4px" id="demo-info-display"></div>
+                      <div style="display:flex;gap:8px;margin-top:12px">
+                        <button class="btn btn-full" onclick="compartirUltimaDemo()" style="background:#25D366;color:#fff;font-weight:700">📤 Enviar por WhatsApp</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- LISTA DE LICENCIAS -->
+                  <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+                      <div style="font-size:12px;font-weight:700;color:var(--text2)">📋 HISTORIAL DE LICENCIAS <span id="licTableCount" style="background:var(--accent);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:4px">0</span></div>
+                      <div style="display:flex;gap:6px;align-items:center">
+                        <input type="text" id="licTableSearch" class="form-input" placeholder="🔍 Buscar..." style="width:140px;font-size:11px;padding:4px 8px;height:28px" oninput="renderLicTable()">
+                        <button class="btn btn-ghost btn-sm" onclick="exportarLicencias()" title="Exportar lista de licencias" style="font-size:11px;padding:4px 8px;height:28px">📤 Exportar</button>
+                      </div>
+                    </div>
+                    <div id="licTable" style="max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:4px"></div>
+                  </div>
+                </div>
+              </div></div>
 
             <div class="card">
               <div class="card-title mb-3">💳 Métodos de Pago Activos</div>
               <div id="payMethodsConfig"><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="efectivo_usd" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">💵</span><span style="flex:1">Efectivo $</span><span class="badge badge-green" style="margin-left:auto;font-size:10px;padding:2px 6px">USD</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="efectivo_bs" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">💴</span><span style="flex:1">Efectivo Bs</span><span class="badge badge-blue" style="margin-left:auto;font-size:10px;padding:2px 6px">Bs</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="pago_movil" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">📱</span><span style="flex:1">Pago Móvil</span><span class="badge badge-blue" style="margin-left:auto;font-size:10px;padding:2px 6px">Bs</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="punto_credito" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">💳</span><span style="flex:1">Punto Crédito</span><span class="badge badge-blue" style="margin-left:auto;font-size:10px;padding:2px 6px">Bs</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="punto_debito" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">🏧</span><span style="flex:1">Punto Débito</span><span class="badge badge-blue" style="margin-left:auto;font-size:10px;padding:2px 6px">Bs</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="transferencia" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">🔄</span><span style="flex:1">Transferencia Bs</span><span class="badge badge-blue" style="margin-left:auto;font-size:10px;padding:2px 6px">Bs</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="zelle" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">🏦</span><span style="flex:1">Zelle</span><span class="badge badge-green" style="margin-left:auto;font-size:10px;padding:2px 6px">USD</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="binance" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">🟡</span><span style="flex:1">Binance Pay</span><span class="badge badge-green" style="margin-left:auto;font-size:10px;padding:2px 6px">USD</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="zinli" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">💙</span><span style="flex:1">Zinli</span><span class="badge badge-green" style="margin-left:auto;font-size:10px;padding:2px 6px">USD</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="bybit" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">⚡</span><span style="flex:1">Bybit Pay</span><span class="badge badge-green" style="margin-left:auto;font-size:10px;padding:2px 6px">USD</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="apolo" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">🚀</span><span style="flex:1">Apolo Pay</span><span class="badge badge-green" style="margin-left:auto;font-size:10px;padding:2px 6px">USD</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="biopago" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">🟢</span><span style="flex:1">Bio Pago</span><span class="badge badge-blue" style="margin-left:auto;font-size:10px;padding:2px 6px">Bs</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="fiado" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">📝</span><span style="flex:1">Fiado</span><span class="badge badge-blue" style="margin-left:auto;font-size:10px;padding:2px 6px">Bs</span></label><label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" value="mixto" checked="" style="width:16px;height:16px;accent-color:var(--accent)"><span style="font-size:16px">🔀</span><span style="flex:1">Pago Mixto</span><span class="badge badge-orange" style="margin-left:auto;font-size:10px;padding:2px 6px">MIX</span></label></div>
               <button class="btn btn-outline btn-sm mt-3" onclick="savePayMethods()">Guardar Métodos</button>
             </div>
-          </div>
-        </div>
-
-        <!-- PERIFÉRICOS Y HARDWARE -->
-        <div class="card" style="margin-top:20px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="font-size:13px;font-weight:700;color:var(--neon)">🔌 Periféricos y Hardware</div>
-            <span style="font-size:11px;color:var(--text3)">Chrome + HTTPS requerido para hardware serial</span>
-          </div>
-          <div class="hw-grid">
-            <div class="hw-card" id="hw-card-balanza">
-              <div class="hw-icon">⚖️</div>
-              <div class="hw-name">Balanza Digital</div>
-              <div class="hw-status" id="hw-st-balanza">Desconectada</div>
-              <button class="btn btn-ghost btn-sm" onclick="conectarBalanzaBP()">Conectar</button>
-            </div>
-            <div class="hw-card" id="hw-card-gaveta">
-              <div class="hw-icon">💰</div>
-              <div class="hw-name">Gaveta de Dinero</div>
-              <div class="hw-status" id="hw-st-gaveta">Desconectada</div>
-              <button class="btn btn-ghost btn-sm" onclick="conectarGavetaBP()">Conectar</button>
-            </div>
-            <div class="hw-card" id="hw-card-datafono">
-              <div class="hw-icon">💳</div>
-              <div class="hw-name">Datafono / POS</div>
-              <div class="hw-status" id="hw-st-datafono">Requiere integración</div>
-              <button class="btn btn-ghost btn-sm" onclick="infoDatafonoBP()">¿Cómo integrar?</button>
-            </div>
-            <div class="hw-card" id="hw-card-biopago">
-              <div class="hw-icon">🫆</div>
-              <div class="hw-name">BioPago</div>
-              <div class="hw-status" id="hw-st-biopago">Requiere integración</div>
-              <button class="btn btn-ghost btn-sm" onclick="infoBioPagoBP()">¿Cómo integrar?</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- COLORES Y TEMA -->
-        <div class="card" style="margin-top:20px;">
-          <div style="font-size:13px;font-weight:700;color:var(--neon);margin-bottom:4px;">🎨 Colores y Tema</div>
-          <div style="font-size:12px;color:var(--text2);margin-bottom:16px;">Elige un tema predefinido o personaliza los colores de la aplicación.</div>
-          <div id="temas-grid" class="temas-wrap"></div>
-          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">🖌️ Personalizar colores</div>
-          <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
-            <div style="flex:1;min-width:130px;">
-              <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">Sidebar / Acento</label>
-              <input type="color" id="color-sidebar" style="width:100%;height:40px;padding:4px 6px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:8px;" oninput="previewColorBP('sidebar',this.value)">
-            </div>
-            <div style="flex:1;min-width:130px;">
-              <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">Color Acento 2</label>
-              <input type="color" id="color-acento" style="width:100%;height:40px;padding:4px 6px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:8px;" oninput="previewColorBP('acento',this.value)">
-            </div>
-            <div style="flex:1;min-width:130px;">
-              <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">Color Neón</label>
-              <input type="color" id="color-activo" style="width:100%;height:40px;padding:4px 6px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:8px;" oninput="previewColorBP('activo',this.value)">
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="guardarColoresCustomBP()">💾 Aplicar Colores</button>
-            <button class="btn btn-ghost" style="font-size:12px;padding:8px 14px;" onclick="resetearColoresBP()">↩ Restablecer</button>
           </div>
         </div>
 
@@ -1438,6 +1486,51 @@ canvas{max-width:100%!important}
               <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌺&#39;" title="Cayena / Hibisco">🌺</button>
               <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌻&#39;" title="Girasol">🌻</button>
               <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍀&#39;" title="Trébol / Hierba medicinal">🍀</button>
+              <!-- ── Frutas ── -->
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍎&#39;" title="Manzana roja">🍎</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍏&#39;" title="Manzana verde">🍏</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍊&#39;" title="Naranja / Mandarina">🍊</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍋&#39;" title="Limón amarillo">🍋</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍋‍🟩&#39;" title="Lima / Limón verde">🍋‍🟩</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍌&#39;" title="Cambur / Banana">🍌</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍉&#39;" title="Patilla / Sandía">🍉</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍇&#39;" title="Uvas">🍇</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍓&#39;" title="Fresa / Frutilla">🍓</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🫐&#39;" title="Mora / Arándano">🫐</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍈&#39;" title="Melón">🍈</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍑&#39;" title="Melocotón / Durazno">🍑</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍒&#39;" title="Cerezas">🍒</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍍&#39;" title="Piña / Ananás">🍍</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🥭&#39;" title="Mango">🥭</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍐&#39;" title="Pera">🍐</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🥥&#39;" title="Coco">🥥</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍅&#39;" title="Tomate">🍅</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🫒&#39;" title="Aceituna / Oliva">🫒</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍆&#39;" title="Berenjena">🍆</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🫑&#39;" title="Pimentón">🫑</button>
+              <!-- ── Verduras y Hortalizas ── -->
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🥦&#39;" title="Brócoli / Coliflor">🥦</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🥬&#39;" title="Lechuga / Col">🥬</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🥒&#39;" title="Pepino / Calabacín">🥒</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌽&#39;" title="Maíz / Jojotos">🌽</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🥕&#39;" title="Zanahoria">🥕</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🧅&#39;" title="Cebolla">🧅</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🧄&#39;" title="Ajo">🧄</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🥔&#39;" title="Papa / Patata">🥔</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍠&#39;" title="Batata / Ñame">🍠</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🫛&#39;" title="Vainitas / Judías">🫛</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍄&#39;" title="Champiñón / Hongo">🍄</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌶️&#39;" title="Ají / Chile picante">🌶️</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🥑&#39;" title="Aguacate">🥑</button>
+              <!-- ── Condimentos ── -->
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🧂&#39;" title="Sal">🧂</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🫙&#39;" title="Frasco / Condimento">🫙</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍯&#39;" title="Miel / Mermelada">🍯</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🫚&#39;" title="Aceite / Vinagre">🫚</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🍶&#39;" title="Salsa de soya / Botella">🍶</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🌶️&#39;" title="Salsa picante / Pimienta">🌶️</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🧄&#39;" title="Ajo en polvo">🧄</button>
+              <button type="button" class="btn btn-ghost" style="font-size:18px;padding:4px 7px" onclick="document.getElementById(&#39;prod-emoji&#39;).value=&#39;🫜&#39;" title="Curry / Especias">🫜</button>
             </div>
           </div>
         </div>
@@ -1466,6 +1559,7 @@ canvas{max-width:100%!important}
             <option value="Electrónica">📱 Electrónica y Accesorios</option>
             <option value="Papelería">📝 Papelería y Útiles</option>
             <option value="Mascotas">🐾 Mascotas</option>
+            <option value="Condimentos">🧂 Condimentos y Especias</option>
             <option value="Farmacia">💊 Farmacia y Medicamentos</option>
             <option value="Hierbas">🌿 Hierbas e Infusiones</option>
             <option value="Otros">📦 Otros</option>
@@ -2578,8 +2672,6 @@ function startApp() {
   if (_licCheck && _licCheck.esDemo && _licCheck.venceEn) {
     setTimeout(function(){ iniciarDemoWatchdog(); }, 2000);
   }
-  // Cargar tema de colores guardado
-  if (typeof _cargarColoresBP === 'function') _cargarColoresBP();
 }
 
 // ─── NAVEGACIÓN ───────────────────────────────────────────────
@@ -2625,7 +2717,7 @@ function showPage(page, el) {
     document.getElementById('cfg-telefono').value = cfg.telefono || '';
     document.getElementById('cfg-rif').value = cfg.rif || '';
     document.getElementById('cfg-tasa').value = STATE.tasa;
-    if (typeof renderConfigColoresBP === 'function') renderConfigColoresBP();
+
   }
 }
 
@@ -6334,6 +6426,7 @@ var EMOJI_CAT = {
   'Frutas':'🍎','Verduras':'🥦','Panadería':'🍞','Confitería':'🍬',
   'Electrodomésticos':'🔌','Ferretería':'🔧','Mascotas':'🐾',
   'Farmacia':'💊','Hierbas':'🌿',
+  'Frutas y Verduras':'🍎','Condimentos':'🧂',
 };
 function autoEmojiCategoria(select) {
   var cat = select ? select.value : '';
@@ -7613,151 +7706,6 @@ function enviarIA(){
     cargando.classList.remove('cargando');
   },150);
 }
-</script>
-<script>
-// ═══════════════════════════════════════════════════════════
-//  🎨 SISTEMA DE TEMAS — Bodega Pro Descarga
-// ═══════════════════════════════════════════════════════════
-var TEMAS_BP = [
-  { id:'purpura', nombre:'💜 Púrpura', vars:{
-    '--accent':'#7c3aed','--accent2':'#9d5bf4','--neon':'#06d6a0','--neon2':'#00f5c3','--neonb':'#3b82f6'
-  }},
-  { id:'neon', nombre:'🟢 Neón Verde', vars:{
-    '--accent':'#059669','--accent2':'#10b981','--neon':'#7c3aed','--neon2':'#9d5bf4','--neonb':'#3b82f6'
-  }},
-  { id:'azul', nombre:'🔵 Azul Eléctrico', vars:{
-    '--accent':'#1d4ed8','--accent2':'#3b82f6','--neon':'#06d6a0','--neon2':'#00f5c3','--neonb':'#60a5fa'
-  }},
-  { id:'rojo', nombre:'🔴 Rojo', vars:{
-    '--accent':'#dc2626','--accent2':'#ef4444','--neon':'#f59e0b','--neon2':'#fbbf24','--neonb':'#f97316'
-  }},
-  { id:'naranja', nombre:'🟠 Naranja', vars:{
-    '--accent':'#ea580c','--accent2':'#f97316','--neon':'#06d6a0','--neon2':'#00f5c3','--neonb':'#3b82f6'
-  }},
-  { id:'teal', nombre:'💎 Esmeralda', vars:{
-    '--accent':'#0d9488','--accent2':'#14b8a6','--neon':'#f97316','--neon2':'#fb923c','--neonb':'#3b82f6'
-  }},
-];
-
-function _aplicarColoresCSSBP(vars) {
-  var root = document.documentElement;
-  Object.keys(vars).forEach(function(k){ root.style.setProperty(k, vars[k]); });
-}
-
-function _cargarColoresBP() {
-  try {
-    var cfg = (window.DB ? DB.get('config') : null) || {};
-    var temaId = cfg.tema_id || 'purpura';
-    var tema = TEMAS_BP.find(function(t){ return t.id===temaId; }) || TEMAS_BP[0];
-    _aplicarColoresCSSBP(tema.vars);
-    if (cfg.colores_custom && Object.keys(cfg.colores_custom).length) _aplicarColoresCSSBP(cfg.colores_custom);
-  } catch(e) {}
-}
-
-function renderConfigColoresBP() {
-  var wrap = document.getElementById('temas-grid');
-  if (!wrap) return;
-  var cfg = (window.DB ? DB.get('config') : null) || {};
-  var temaActivo = cfg.tema_id || 'purpura';
-  wrap.innerHTML = TEMAS_BP.map(function(t) {
-    var isActivo = t.id === temaActivo && !cfg.colores_custom;
-    var borde = isActivo ? '2.5px solid '+t.vars['--accent'] : '2px solid rgba(124,58,237,0.2)';
-    var sombra = isActivo ? '0 0 0 2px rgba(124,58,237,.25)' : 'none';
-    return '<div onclick="aplicarTemaBP(\''+t.id+'\')" style="cursor:pointer;border-radius:10px;border:'+borde+';box-shadow:'+sombra+';overflow:hidden;transition:all .2s;" title="'+t.nombre+'">'
-      + '<div style="display:flex;height:44px;">'
-      + '<div style="width:24px;background:'+t.vars['--accent']+';flex-shrink:0;"></div>'
-      + '<div style="flex:1;background:#12121e;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;padding:4px;">'
-      + '<div style="width:65%;height:5px;border-radius:3px;background:'+t.vars['--accent']+'"></div>'
-      + '<div style="width:45%;height:5px;border-radius:3px;background:'+t.vars['--neon']+'"></div>'
-      + '</div></div>'
-      + '<div style="background:#0f0f1a;padding:4px 6px;font-size:10px;font-weight:600;color:#e8e8f0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
-      + (isActivo ? '✓ ' : '') + t.nombre + '</div></div>';
-  }).join('');
-  var pBase = cfg.colores_custom || (TEMAS_BP.find(function(t){ return t.id===temaActivo; })||TEMAS_BP[0]).vars;
-  var es=document.getElementById('color-sidebar'); if(es) es.value=pBase['--accent']||'#7c3aed';
-  var ea=document.getElementById('color-acento');  if(ea) ea.value=pBase['--accent2']||'#9d5bf4';
-  var eo=document.getElementById('color-activo');  if(eo) eo.value=pBase['--neon']   ||'#06d6a0';
-}
-
-function aplicarTemaBP(id) {
-  var tema = TEMAS_BP.find(function(t){ return t.id===id; });
-  if (!tema) return;
-  _aplicarColoresCSSBP(tema.vars);
-  var cfg = (window.DB ? DB.get('config') : null) || {};
-  cfg.tema_id = id; delete cfg.colores_custom;
-  if (window.DB) DB.set('config', cfg);
-  renderConfigColoresBP();
-  if(typeof showToast==='function') showToast('✅ Tema "'+tema.nombre+'" aplicado','success');
-}
-
-function previewColorBP(tipo, val) {
-  var root = document.documentElement;
-  if(tipo==='sidebar'){ root.style.setProperty('--accent',val); root.style.setProperty('--accent2',val); }
-  if(tipo==='acento') { root.style.setProperty('--accent2',val); }
-  if(tipo==='activo') { root.style.setProperty('--neon',val); root.style.setProperty('--neon2',val); }
-}
-
-function guardarColoresCustomBP() {
-  var es=document.getElementById('color-sidebar'), ea=document.getElementById('color-acento'), eo=document.getElementById('color-activo');
-  if(!es||!ea||!eo) return;
-  var custom = { '--accent':es.value,'--accent2':ea.value,'--neon':eo.value,'--neon2':eo.value };
-  _aplicarColoresCSSBP(custom);
-  var cfg = (window.DB ? DB.get('config') : null) || {};
-  cfg.colores_custom = custom; if(window.DB) DB.set('config', cfg);
-  if(typeof showToast==='function') showToast('✅ Colores guardados correctamente','success');
-  renderConfigColoresBP();
-}
-
-function resetearColoresBP() {
-  var cfg = (window.DB ? DB.get('config') : null) || {};
-  cfg.tema_id='purpura'; delete cfg.colores_custom; if(window.DB) DB.set('config',cfg);
-  var root=document.documentElement;
-  ['--accent','--accent2','--neon','--neon2'].forEach(function(k){ root.style.removeProperty(k); });
-  _aplicarColoresCSSBP(TEMAS_BP[0].vars);
-  renderConfigColoresBP();
-  if(typeof showToast==='function') showToast('↩ Colores restablecidos','success');
-}
-
-// ═══════════════════════════════════════════════════════════
-//  🔌 HARDWARE — Bodega Pro Descarga
-// ═══════════════════════════════════════════════════════════
-window._HW_BP = { balanza: null, gaveta: null };
-
-async function conectarBalanzaBP() {
-  if (!navigator.serial) { if(typeof showToast==='function') showToast('⚠️ Requiere Chrome y HTTPS para WebSerial','warn'); return; }
-  try {
-    var port=await navigator.serial.requestPort(); await port.open({baudRate:9600});
-    window._HW_BP.balanza=port;
-    var el=document.getElementById('hw-st-balanza'); if(el){el.textContent='✅ Conectada';el.className='hw-status ok';}
-    var card=document.getElementById('hw-card-balanza'); if(card) card.classList.add('connected');
-    if(typeof showToast==='function') showToast('✅ Balanza conectada','success');
-  } catch(e){ if(typeof showToast==='function') showToast('❌ No se pudo conectar','warn'); }
-}
-
-async function conectarGavetaBP() {
-  if (!navigator.serial) { if(typeof showToast==='function') showToast('⚠️ Requiere Chrome y HTTPS para WebSerial','warn'); return; }
-  try {
-    var port=await navigator.serial.requestPort(); await port.open({baudRate:9600});
-    window._HW_BP.gaveta=port;
-    var el=document.getElementById('hw-st-gaveta'); if(el){el.textContent='✅ Conectada';el.className='hw-status ok';}
-    var card=document.getElementById('hw-card-gaveta'); if(card) card.classList.add('connected');
-    if(typeof showToast==='function') showToast('✅ Gaveta conectada','success');
-  } catch(e){ if(typeof showToast==='function') showToast('❌ No se pudo conectar','warn'); }
-}
-
-function infoDatafonoBP() {
-  if(typeof showToast==='function') showToast('💳 Datafono: Contacta a A2K Digital Studio — +58 416 411 7331','info');
-}
-function infoBioPagoBP() {
-  if(typeof showToast==='function') showToast('🫆 BioPago: Contacta a A2K Digital Studio — +58 416 411 7331','info');
-}
-
-window.aplicarTemaBP=aplicarTemaBP; window.renderConfigColoresBP=renderConfigColoresBP;
-window.guardarColoresCustomBP=guardarColoresCustomBP; window.resetearColoresBP=resetearColoresBP;
-window.previewColorBP=previewColorBP; window._cargarColoresBP=_cargarColoresBP;
-window.conectarBalanzaBP=conectarBalanzaBP; window.conectarGavetaBP=conectarGavetaBP;
-window.infoDatafonoBP=infoDatafonoBP; window.infoBioPagoBP=infoBioPagoBP;
-// ─── FIN HARDWARE + TEMAS BP ─────────────────────────────
 </script>
 
 <!-- ASISTENTE LÓGICO LOCAL — Sin API, sin internet, sin costo -->
