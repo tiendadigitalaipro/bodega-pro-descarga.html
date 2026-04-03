@@ -1600,7 +1600,7 @@ canvas{max-width:100%!important}
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">% Ganancia deseada</label>
             <div style="position:relative;display:flex;align-items:center">
-              <input type="number" id="prod-ganancia-pct" placeholder="Ej: 30" min="0" max="99" step="0.1" oninput="setPct(this.value)" style="width:100%;padding:10px 36px 10px 14px;border-radius:10px;border:1.5px solid rgba(212,175,55,0.45);background:linear-gradient(135deg,rgba(20,20,30,0.95),rgba(30,28,20,0.9));color:#f5f0e1;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;outline:none;transition:all 0.3s;box-shadow:0 0 0 0 rgba(212,175,55,0),inset 0 1px 0 rgba(255,255,255,0.03);letter-spacing:0.5px" onfocus="this.style.borderColor='rgba(212,175,55,0.8)';this.style.boxShadow='0 0 12px rgba(212,175,55,0.15),inset 0 1px 0 rgba(255,255,255,0.05)'" onblur="this.style.borderColor='rgba(212,175,55,0.45)';this.style.boxShadow='0 0 0 0 rgba(212,175,55,0)'">
+              <input type="text" id="prod-ganancia-pct" inputmode="decimal" placeholder="Ej: 30" oninput="handlePctInput(this)" onkeydown="allowOnlyNumbers(event)" style="width:100%;padding:10px 36px 10px 14px;border-radius:10px;border:1.5px solid rgba(212,175,55,0.45);background:linear-gradient(135deg,rgba(20,20,30,0.95),rgba(30,28,20,0.9));color:#f5f0e1;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;outline:none;transition:all 0.3s;box-shadow:0 0 0 0 rgba(212,175,55,0),inset 0 1px 0 rgba(255,255,255,0.03);letter-spacing:0.5px" onfocus="this.style.borderColor='rgba(212,175,55,0.8)';this.style.boxShadow='0 0 12px rgba(212,175,55,0.15),inset 0 1px 0 rgba(255,255,255,0.05)'" onblur="this.style.borderColor='rgba(212,175,55,0.45)';this.style.boxShadow='0 0 0 0 rgba(212,175,55,0)'">
               <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:rgba(212,175,55,0.8);font-size:16px;font-weight:800;pointer-events:none;font-family:'DM Sans',sans-serif">%</span>
             </div>
             <div style="font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:0.3px">Escribe el margen de ganancia deseado</div>
@@ -3807,23 +3807,51 @@ function calcPrecioUnitario() {
   calcMargenDesdePrecio();
 }
 
-function setPct(pct) {
+function allowOnlyNumbers(e) {
+  // Permitir: Backspace, Delete, Tab, Escape, Enter, flechas, punto decimal
+  var permitted = [8,9,13,27,46,37,38,39,40,110,190];
+  if (permitted.indexOf(e.keyCode) !== -1) return true;
+  // Permitir números 0-9 y teclas numéricas del numpad
+  if ((e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105)) return true;
+  e.preventDefault();
+}
+
+function handlePctInput(el) {
   if(document.getElementById('prod-precio-fijo')&&document.getElementById('prod-precio-fijo').checked) return showToast('🔒 Precio fijo activo — desactívalo para recalcular','warn');
-  var el = document.getElementById('prod-ganancia-pct');
-  var val = parseFloat(pct);
-  // Si el campo está vacío o no es número válido, asumir 0% (precio base)
-  if (isNaN(val) || pct === '' || pct === null || pct === undefined) { val = 0; }
+  var raw = el.value;
+  // Si el campo está vacío, permitirlo y recalcular con 0%
+  if (raw === '' || raw === null || raw === undefined) {
+    setPct(0);
+    return;
+  }
+  // Limpiar: solo permitir números y un punto decimal
+  raw = raw.replace(/[^0-9.]/g, '');
+  // No permitir más de un punto decimal
+  var parts = raw.split('.');
+  if (parts.length > 2) raw = parts[0] + '.' + parts.slice(1).join('');
+  // No permitir más de 1 decimal
+  if (parts.length === 2 && parts[1].length > 1) raw = parts[0] + '.' + parts[1].substring(0,1);
+  el.value = raw;
+  var val = parseFloat(raw);
+  if (isNaN(val) || val < 0) { setPct(0); return; }
   if (val >= 100) {
-    if (el) el.value = '';
+    el.value = '';
     showToast('El margen no puede ser 100% o más','warn');
     calcPrecioAutomatico();
     return;
   }
-  // Si viene del input directamente (ya tiene el valor), no re-asignar
-  if (el && typeof pct === 'string') {
-    // El valor ya está en el input, solo validar
-  } else if (el) {
-    el.value = val;
+  setPct(val);
+}
+
+function setPct(pct) {
+  if(document.getElementById('prod-precio-fijo')&&document.getElementById('prod-precio-fijo').checked) return showToast('🔒 Precio fijo activo — desactívalo para recalcular','warn');
+  var el = document.getElementById('prod-ganancia-pct');
+  if (isNaN(pct) || pct === null || pct === undefined) pct = 0;
+  if (pct >= 100) {
+    if (el) el.value = '';
+    showToast('El margen no puede ser 100% o más','warn');
+    calcPrecioAutomatico();
+    return;
   }
   calcPrecioAutomatico();
 }
@@ -7162,6 +7190,8 @@ window.setAccent = setAccent;
 window.setCat = setCat;
 window.setPct = setPct;
 window.setPctManual = setPctManual;
+window.handlePctInput = handlePctInput;
+window.allowOnlyNumbers = allowOnlyNumbers;
 window.setTheme = setTheme;
 window.showLoginAlert = showLoginAlert;
 window.showPage = showPage;
