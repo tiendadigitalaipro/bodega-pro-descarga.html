@@ -1599,15 +1599,11 @@ canvas{max-width:100%!important}
         <div class="grid-2" style="margin-bottom:8px">
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">% Ganancia deseada</label>
-            <div style="display:flex;flex-wrap:wrap;gap:5px">
-              <input type="number" id="prod-ganancia-pct" class="form-input" placeholder="Ej: 30" min="0" max="200" oninput="calcPrecioAutomatico()" style="flex:1;min-width:60px">
-              <button type="button" data-pct-btn="15" onclick="setPct(15)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">15%</button>
-              <button type="button" data-pct-btn="20" onclick="setPct(20)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">20%</button>
-              <button type="button" data-pct-btn="25" onclick="setPct(25)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">25%</button>
-              <button type="button" data-pct-btn="30" onclick="setPct(30)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">30%</button>
-              <button type="button" data-pct-btn="40" onclick="setPct(40)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">40%</button>
-              <button type="button" data-pct-btn="50" onclick="setPct(50)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">50%</button>
+            <div style="position:relative;display:flex;align-items:center">
+              <input type="number" id="prod-ganancia-pct" placeholder="Ej: 30" min="0" max="99" step="0.1" oninput="setPct(this.value)" style="width:100%;padding:10px 36px 10px 14px;border-radius:10px;border:1.5px solid rgba(212,175,55,0.45);background:linear-gradient(135deg,rgba(20,20,30,0.95),rgba(30,28,20,0.9));color:#f5f0e1;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;outline:none;transition:all 0.3s;box-shadow:0 0 0 0 rgba(212,175,55,0),inset 0 1px 0 rgba(255,255,255,0.03);letter-spacing:0.5px" onfocus="this.style.borderColor='rgba(212,175,55,0.8)';this.style.boxShadow='0 0 12px rgba(212,175,55,0.15),inset 0 1px 0 rgba(255,255,255,0.05)'" onblur="this.style.borderColor='rgba(212,175,55,0.45)';this.style.boxShadow='0 0 0 0 rgba(212,175,55,0)'">
+              <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:rgba(212,175,55,0.8);font-size:16px;font-weight:800;pointer-events:none;font-family:'DM Sans',sans-serif">%</span>
             </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:0.3px">Escribe el margen de ganancia deseado</div>
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">IVA 16% incluido</label>
@@ -3813,14 +3809,22 @@ function calcPrecioUnitario() {
 
 function setPct(pct) {
   if(document.getElementById('prod-precio-fijo')&&document.getElementById('prod-precio-fijo').checked) return showToast('🔒 Precio fijo activo — desactívalo para recalcular','warn');
-  if (pct >= 100) { showToast('El margen no puede ser 100% o mas','warn'); return; }
   var el = document.getElementById('prod-ganancia-pct');
-  if (el) el.value = pct;
-  document.querySelectorAll('[data-pct-btn]').forEach(function(b) {
-    var v = parseInt(b.getAttribute('data-pct-btn'));
-    b.style.background = v === pct ? 'var(--accent)' : '#444';
-    b.style.transform  = v === pct ? 'scale(1.08)' : 'scale(1)';
-  });
+  var val = parseFloat(pct);
+  // Si el campo está vacío o no es número válido, asumir 0% (precio base)
+  if (isNaN(val) || pct === '' || pct === null || pct === undefined) { val = 0; }
+  if (val >= 100) {
+    if (el) el.value = '';
+    showToast('El margen no puede ser 100% o más','warn');
+    calcPrecioAutomatico();
+    return;
+  }
+  // Si viene del input directamente (ya tiene el valor), no re-asignar
+  if (el && typeof pct === 'string') {
+    // El valor ya está en el input, solo validar
+  } else if (el) {
+    el.value = val;
+  }
   calcPrecioAutomatico();
 }
 
