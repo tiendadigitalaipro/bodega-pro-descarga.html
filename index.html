@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Bodega Pro v8.0 — A2K Digital Studio</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;0,9..40,900;1,9..40,400&family=Syne:wght@700;800;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════
@@ -1861,6 +1862,25 @@ canvas{max-width:100%!important}
   </div>
 </div>
 
+<!-- MODAL: QR SCANNER -->
+<div id="modalQRScanner" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(8px)">
+  <div style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:20px;width:90%;max-width:420px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.6)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="color:var(--accent);margin:0;font-family:var(--display);font-size:16px">📷 Escanear Código</h3>
+      <button onclick="closeQRScanner()" style="background:none;border:1px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Apunta la cámara al código de barras o QR del producto</div>
+    <div id="qr-reader" style="width:100%;border-radius:12px;overflow:hidden;margin-bottom:14px"></div>
+    <div id="qr-manual-section" style="margin-bottom:12px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="qr-manual-input" class="form-input" placeholder="Escribe código manualmente..." style="flex:1" onkeydown="if(event.key==='Enter')applyQRManual()">
+        <button onclick="applyQRManual()" class="btn btn-neon" style="padding:8px 14px;font-size:12px">OK</button>
+      </div>
+    </div>
+    <div id="qr-status" style="font-size:11px;color:var(--text2)">Listo para escanear...</div>
+  </div>
+</div>
+
 <!-- MODAL: COBRO -->
 <div class="modal-overlay" id="modalCobro">
   <div class="modal" style="max-width:420px">
@@ -1912,7 +1932,18 @@ canvas{max-width:100%!important}
       </div>
       <!-- PAGO MIXTO -->
       <div id="pagoMixtoSection" style="display:none">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;padding:8px;background:var(--bg3);border-radius:8px">Ingresa el monto en cada método. El <strong>remanente</strong> se actualiza en tiempo real.</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;padding:8px;background:var(--bg3);border-radius:8px">Ingresa el monto en cada método de pago. El <strong>remanente</strong> se actualiza en tiempo real.</div>
+        <!-- Desglose del total -->
+        <div id="mixtoDesglose" style="display:none;background:linear-gradient(135deg,rgba(124,58,237,0.06),rgba(157,91,244,0.03));border:1px solid rgba(124,58,237,0.15);border-radius:10px;padding:10px 14px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--text2)">💰 Total a pagar</span>
+            <span style="font-size:16px;font-weight:900;color:var(--neon);font-family:var(--mono)" id="mixtoTotalDisplay">$0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:var(--text2)">✅ Suma pagada</span>
+            <span style="font-size:14px;font-weight:700;color:var(--neon);font-family:var(--mono)" id="mixtoPagadoDisplay">$0.00</span>
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label" style="font-size:9px">💵 Efectivo $</label>
@@ -1931,7 +1962,7 @@ canvas{max-width:100%!important}
             <input type="number" id="mx-zelle" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
           </div>
           <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">💳 Punto (Bs)</label>
+            <label class="form-label" style="font-size:9px">💳 Punto Débito/Crédito (Bs)</label>
             <input type="number" id="mx-punto" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
           </div>
           <div class="form-group" style="margin-bottom:0">
@@ -1939,9 +1970,9 @@ canvas{max-width:100%!important}
             <input type="number" id="mx-trans" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
           </div>
         </div>
-        <div id="remanenteBox" style="display:none;border-radius:8px;padding:10px 12px;text-align:center;margin-top:4px">
+        <div id="remanenteBox" style="display:none;border-radius:10px;padding:12px 14px;text-align:center;margin-top:4px">
           <div id="remanenteLabel" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px"></div>
-          <div id="remanenteValUsd" style="font-family:var(--mono);font-size:20px;font-weight:900"></div>
+          <div id="remanenteValUsd" style="font-family:var(--mono);font-size:22px;font-weight:900"></div>
           <div id="remanenteValBs" style="font-size:12px;margin-top:2px"></div>
         </div>
       </div>
@@ -3163,26 +3194,38 @@ function calcMixtoRemanente() {
   var rv  = document.getElementById('remanenteValUsd');
   var rvbs= document.getElementById('remanenteValBs');
   var btn = document.getElementById('btnConfirmarVenta');
+
+  // Actualizar desglose visual
+  var desglose = document.getElementById('mixtoDesglose');
+  var totalDisp = document.getElementById('mixtoTotalDisplay');
+  var pagadoDisp = document.getElementById('mixtoPagadoDisplay');
+  if (desglose) desglose.style.display = 'block';
+  if (totalDisp) totalDisp.textContent = '$' + total.toFixed(2);
+  if (pagadoDisp) {
+    pagadoDisp.textContent = '$' + pagado.toFixed(2);
+    pagadoDisp.style.color = pagado >= total - 0.005 ? 'var(--neon)' : 'var(--warn)';
+  }
+
   if (!rb) return;
   rb.style.display = 'block';
   if (rem > 0.005) {
     rb.style.background = 'rgba(245,158,11,0.08)';
     rb.style.border = '1px solid rgba(245,158,11,0.3)';
-    if (rl) { rl.textContent = '⚠️ Falta cubrir'; rl.style.color = 'var(--warn)'; }
+    if (rl) { rl.textContent = '⚠️ FALTA COBRAR'; rl.style.color = 'var(--warn)'; }
     if (rv) { rv.textContent = '$' + rem.toFixed(2); rv.style.color = 'var(--warn)'; }
     if (rvbs) rvbs.textContent = simb + ' ' + fmt(rem * tasa);
     if (btn)  btn.disabled = true;
   } else if (rem < -0.005) {
     rb.style.background = 'rgba(6,214,160,0.08)';
     rb.style.border = '1px solid rgba(6,214,160,0.3)';
-    if (rl) { rl.textContent = '✅ Vuelto'; rl.style.color = 'var(--neon)'; }
+    if (rl) { rl.textContent = '✅ VUELTO AL CLIENTE'; rl.style.color = 'var(--neon)'; }
     if (rv) { rv.textContent = '$' + Math.abs(rem).toFixed(2); rv.style.color = 'var(--neon)'; }
     if (rvbs) rvbs.textContent = simb + ' ' + fmt(Math.abs(rem) * tasa);
     if (btn)  btn.disabled = false;
   } else {
     rb.style.background = 'rgba(6,214,160,0.08)';
     rb.style.border = '1px solid rgba(6,214,160,0.3)';
-    if (rl) { rl.textContent = '✅ Exacto'; rl.style.color = 'var(--neon)'; }
+    if (rl) { rl.textContent = '✅ PAGO EXACTO'; rl.style.color = 'var(--neon)'; }
     if (rv) { rv.textContent = '$0.00'; rv.style.color = 'var(--neon)'; }
     if (rvbs) rvbs.textContent = '';
     if (btn)  btn.disabled = false;
@@ -3300,6 +3343,8 @@ function procesarVenta() {
       var el=document.getElementById(id); if(el) el.value='';
     });
     var rb=document.getElementById('remanenteBox'); if(rb) rb.style.display='none';
+    var dg=document.getElementById('mixtoDesglose'); if(dg) dg.style.display='none';
+    var btn=document.getElementById('btnConfirmarVenta'); if(btn) btn.disabled=false;
   }
 
   // ── Adaptar label y hint según método de pago ──
@@ -6662,8 +6707,105 @@ function cerrarCaja() {
 // registrarMovCaja reemplazada por versión mejorada
 
 // ── QR SCANNER (stub) ──
+var _qrScanner = null;
+var _qrContext = ''; // 'pos' o 'producto'
+
 function openQRScanner(contexto) {
-  showToast('Escáner QR requiere cámara del dispositivo. Usa el buscador manual.','warn');
+  _qrContext = contexto;
+  var modal = document.getElementById('modalQRScanner');
+  if (!modal) return;
+  modal.style.display = 'flex';
+
+  // Limpiar estado
+  var statusEl = document.getElementById('qr-status');
+  var manualInput = document.getElementById('qr-manual-input');
+  if (statusEl) statusEl.textContent = 'Iniciando cámara...';
+  if (manualInput) manualInput.value = '';
+
+  // Destruir scanner anterior si existe
+  if (_qrScanner) {
+    try { _qrScanner.clear(); } catch(e) {}
+    _qrScanner = null;
+  }
+
+  // Limpiar contenedor
+  var readerDiv = document.getElementById('qr-reader');
+  if (readerDiv) readerDiv.innerHTML = '';
+
+  // Verificar si la librería está disponible
+  if (typeof Html5Qrcode === 'undefined') {
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--warn)">⚠️ Librería de escáner no disponible. Usa la entrada manual abajo.</span>';
+    if (manualInput) manualInput.focus();
+    return;
+  }
+
+  // Iniciar escáner
+  try {
+    _qrScanner = new Html5Qrcode('qr-reader');
+    _qrScanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.5 },
+      function(decodedText) {
+        onQRDetected(decodedText);
+      },
+      function() {} // silenciar errores de escaneo
+    ).then(function() {
+      if (statusEl) statusEl.textContent = '📷 Apunta la cámara al código de barras o QR';
+    }).catch(function(err) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--warn)">⚠️ No se pudo acceder a la cámara. Usa la entrada manual abajo.</span>';
+      if (manualInput) manualInput.focus();
+    });
+  } catch(e) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--warn)">⚠️ Error al iniciar escáner. Usa la entrada manual abajo.</span>';
+    if (manualInput) manualInput.focus();
+  }
+}
+
+function closeQRScanner() {
+  if (_qrScanner) {
+    try { _qrScanner.stop().then(function(){ _qrScanner.clear(); _qrScanner = null; }); } catch(e) { _qrScanner = null; }
+  }
+  var modal = document.getElementById('modalQRScanner');
+  if (modal) modal.style.display = 'none';
+  _qrContext = '';
+}
+
+function onQRDetected(code) {
+  if (!code || !code.trim()) return;
+  code = code.trim();
+
+  // Detener escáner
+  if (_qrScanner) {
+    try { _qrScanner.stop().then(function(){ _qrScanner.clear(); _qrScanner = null; }); } catch(e) { _qrScanner = null; }
+  }
+  closeQRScanner();
+
+  // Aplicar código según contexto
+  if (_qrContext === 'pos') {
+    // Buscar producto por código en el POS
+    var productos = DB.get('productos') || [];
+    var prod = productos.find(function(p){ return p.codigo === code; });
+    if (prod) {
+      agregarAlCarrito(prod.id);
+      showToast('✅ Producto encontrado: ' + prod.nombre, 'success');
+    } else {
+      showToast('❌ No se encontró producto con código: ' + code, 'warn');
+    }
+  } else if (_qrContext === 'producto') {
+    // Llenar campo de código en formulario de producto
+    var input = document.getElementById('prod-codigo');
+    if (input) {
+      input.value = code;
+      verificarCodigoExistente();
+      showToast('✅ Código asignado: ' + code, 'success');
+    }
+  }
+}
+
+function applyQRManual() {
+  var input = document.getElementById('qr-manual-input');
+  if (!input || !input.value.trim()) return;
+  onQRDetected(input.value.trim());
 }
 
 // ── AUTO EMOJI CATEGORIA ──
@@ -7358,6 +7500,9 @@ window.openAddProduct = openAddProduct;
 window.openMobileSidebar = openMobileSidebar;
 window.openModal = openModal;
 window.openQRScanner = openQRScanner;
+window.closeQRScanner = closeQRScanner;
+window.onQRDetected = onQRDetected;
+window.applyQRManual = applyQRManual;
 window.pagarProveedor = pagarProveedor;
 window.pausarLicencia = pausarLicencia;
 window.populateInvFilters = populateInvFilters;
