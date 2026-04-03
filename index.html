@@ -972,7 +972,29 @@ canvas{max-width:100%!important}
       </div>
 
       <!-- ═══ INVENTARIO ═══ -->
-      <div id="page-inventario" style="display:none">
+      <div id="page-inventario" style="display:none;position:relative">
+        <!-- ══ PANTALLA DE BLOQUEO ══ -->
+        <div id="inv-lock-screen" style="display:none;position:absolute;inset:0;z-index:100;background:linear-gradient(135deg,rgba(10,10,18,0.98),rgba(18,16,24,0.98));backdrop-filter:blur(20px);flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px">
+          <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(157,91,244,0.1));display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 0 40px rgba(124,58,237,0.2)">🔒</div>
+          <div style="text-align:center;margin-top:8px">
+            <h2 style="color:#f0eef5;font-size:22px;font-weight:800;margin:0 0 6px">Inventario Bloqueado</h2>
+            <p style="color:rgba(240,238,245,0.5);font-size:13px;margin:0">Esta sección está protegida con clave</p>
+          </div>
+          <div style="width:100%;max-width:320px;margin-top:12px">
+            <div style="position:relative;display:flex;align-items:center;margin-bottom:14px">
+              <input type="password" id="inv-unlock-input" class="form-input" placeholder="Ingresa la clave" style="width:100%;padding:14px 46px 14px 18px;border-radius:12px;border:1.5px solid rgba(124,58,237,0.35);background:rgba(20,18,28,0.95);color:#f0eef5;font-size:16px;font-weight:700;text-align:center;letter-spacing:3px;outline:none;box-shadow:0 0 20px rgba(124,58,237,0.08)" onkeydown="if(event.key==='Enter')unlockInventario()">
+              <span onclick="toggleClaveVisibility('inv-unlock-input')" style="position:absolute;right:14px;cursor:pointer;font-size:18px;opacity:0.7" id="eye-inv-unlock-input">👁️</span>
+            </div>
+            <button onclick="unlockInventario()" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c3aed,#9d5bf4);color:#fff;font-weight:700;font-size:15px;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 20px rgba(124,58,237,0.3)">🔓 Desbloquear Inventario</button>
+            <p id="inv-lock-error" style="display:none;text-align:center;color:#ef4444;font-size:12px;font-weight:600;margin-top:10px">❌ Clave incorrecta — intenta de nuevo</p>
+          </div>
+          <div style="margin-top:20px;text-align:center">
+            <button onclick="goBackFromLockedInv()" style="background:none;border:1px solid rgba(240,238,245,0.15);color:rgba(240,238,245,0.5);padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer;transition:all 0.3s">← Volver atrás</button>
+          </div>
+        </div>
+
+        <!-- ══ CONTENIDO DEL INVENTARIO (se oculta cuando está bloqueado) ══ -->
+        <div id="inv-content-wrap">
         <div class="flex justify-between items-center mb-4">
           <div>
             <div class="section-title">Inventario</div>
@@ -983,6 +1005,7 @@ canvas{max-width:100%!important}
             <button class="btn btn-ghost btn-sm" onclick="abrirEtiquetas()" title="Imprimir etiquetas de productos">🏷️ Etiquetas</button>
             <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:700;border:none;border-radius:8px;padding:6px 12px;cursor:pointer" onclick="exportarInventarioWA()" title="Compartir por WhatsApp">📲 WhatsApp</button>
             <button class="btn btn-primary" onclick="openAddProduct()">+ Nuevo Producto</button>
+            <button class="btn btn-ghost btn-sm" onclick="lockInventario()" title="Bloquear Inventario" id="btn-lock-inv" style="display:none;background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3);font-weight:700">🔒 Bloquear</button>
           </div>
         </div>
         <div class="inv-toolbar">
@@ -1007,7 +1030,8 @@ canvas{max-width:100%!important}
             <tbody id="invTable"></tbody>
           </table>
         </div>
-      </div>
+        </div><!-- fin inv-content-wrap -->
+      </div><!-- fin page-inventario -->
 
       <!-- ═══ HISTORIAL ═══ -->
       <div id="page-historial" style="display:none">
@@ -1255,6 +1279,44 @@ canvas{max-width:100%!important}
                   <div onclick="setAccent(&#39;orange&#39;)" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#ea580c,#f97316);cursor:pointer;border:2px solid transparent" id="accent-orange"></div>
                   <div onclick="setAccent(&#39;pink&#39;)" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#db2777,#ec4899);cursor:pointer;border:2px solid transparent" id="accent-pink"></div>
                 </div>
+              </div>
+            </div>
+
+            <div class="card mb-4">
+              <div class="card-title mb-3">🔒 Bloqueo de Inventario</div>
+              <div class="alert alert-info" style="margin-bottom:14px">
+                <strong>📦 Protege tu Inventario</strong><br>
+                <span style="font-size:11px">Configura una clave para que solo el dueño pueda acceder al módulo de Inventario. Los empleados no podrán agregar, editar ni eliminar productos sin la clave.</span>
+              </div>
+              <div id="invLockStatus" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:10px 14px;margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:18px">🟢</span>
+                  <span style="color:#10b981;font-weight:700;font-size:13px">Inventario protegido con clave</span>
+                </div>
+              </div>
+              <div id="invUnlockStatus" style="background:var(--bg3);border-radius:10px;padding:10px 14px;margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:18px">⚪</span>
+                  <span style="color:var(--text2);font-weight:600;font-size:13px">Sin protección — cualquier usuario puede acceder</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">🔑 Nueva Clave (mínimo 4 dígitos)</label>
+                <div style="position:relative;display:flex;align-items:center">
+                  <input type="password" id="cfg-inv-clave" class="form-input" placeholder="••••" maxlength="20" style="padding-right:40px;border-color:var(--neon)">
+                  <span onclick="toggleClaveVisibility('cfg-inv-clave')" style="position:absolute;right:12px;cursor:pointer;font-size:16px;opacity:0.7" id="eye-cfg-inv-clave">👁️</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">🔑 Confirmar Clave</label>
+                <div style="position:relative;display:flex;align-items:center">
+                  <input type="password" id="cfg-inv-clave2" class="form-input" placeholder="••••" maxlength="20" style="padding-right:40px;border-color:var(--neon)">
+                  <span onclick="toggleClaveVisibility('cfg-inv-clave2')" style="position:absolute;right:12px;cursor:pointer;font-size:16px;opacity:0.7" id="eye-cfg-inv-clave2">👁️</span>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-neon" onclick="saveInvClave()" style="flex:1">🔒 Activar Protección</button>
+                <button class="btn btn-ghost" onclick="removeInvClave()" style="flex:1;color:var(--danger);border-color:var(--danger)">🔓 Quitar Clave</button>
               </div>
             </div>
 
@@ -2693,7 +2755,7 @@ function showPage(page, el) {
 
   if (page === 'dashboard') renderDashboard();
   if (page === 'pos') { renderPosProducts(); renderCart(); }
-  if (page === 'inventario') { renderInventario(); populateInvFilters(); }
+  if (page === 'inventario') { renderInventario(); populateInvFilters(); checkInvLock(); }
   if (page === 'historial') { renderHistorial(); renderHistStats(); }
   if (page === 'clientes') renderClientes();
   if (page === 'reportes') renderReportes();
@@ -2713,7 +2775,7 @@ function showPage(page, el) {
     document.getElementById('cfg-telefono').value = cfg.telefono || '';
     document.getElementById('cfg-rif').value = cfg.rif || '';
     document.getElementById('cfg-tasa').value = STATE.tasa;
-
+    refreshInvLockUI();
   }
 }
 
@@ -4752,6 +4814,159 @@ function renderChartDoughnut(id, labels, data) {
     data: {labels:labels, datasets:[{data:data, backgroundColor:colors.slice(0,data.length), borderWidth:0}]},
     options: {responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right',labels:{color:'#8888aa',font:{size:11}}}}}
   });
+}
+
+// ─── BLOQUEO DE INVENTARIO ─────────────────────────────────────
+// Estado de desbloqueo (en memoria, se pierde al recargar — seguridad)
+var _invUnlocked = false;
+
+// Función para mostrar/ocultar clave (ojo 👁️)
+function toggleClaveVisibility(inputId) {
+  var inp = document.getElementById(inputId);
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  var eye = document.getElementById('eye-' + inputId);
+  if (eye) eye.textContent = inp.type === 'password' ? '👁️' : '🙈';
+}
+
+// Actualizar indicador de estado en Configuración
+function refreshInvLockUI() {
+  var cfg = DB.get('config') || {};
+  var hasClave = !!(cfg.invClave);
+  var lockEl = document.getElementById('invLockStatus');
+  var unlockEl = document.getElementById('invUnlockStatus');
+  if (lockEl) lockEl.style.display = hasClave ? 'block' : 'none';
+  if (unlockEl) unlockEl.style.display = hasClave ? 'none' : 'block';
+}
+
+// Guardar clave de inventario
+function saveInvClave() {
+  var c1 = document.getElementById('cfg-inv-clave').value.trim();
+  var c2 = document.getElementById('cfg-inv-clave2').value.trim();
+
+  if (!c1 || c1.length < 4) {
+    return showToast('La clave debe tener al menos 4 caracteres', 'warn');
+  }
+  if (c1 !== c2) {
+    return showToast('Las claves no coinciden', 'warn');
+  }
+
+  var cfg = DB.get('config') || {};
+  cfg.invClave = c1;
+  DB.set('config', cfg);
+  _invUnlocked = false;
+
+  // Limpiar campos
+  document.getElementById('cfg-inv-clave').value = '';
+  document.getElementById('cfg-inv-clave2').value = '';
+
+  refreshInvLockUI();
+  showToast('🔒 Clave de Inventario activada correctamente', 'success');
+}
+
+// Quitar clave de inventario (requiere la clave actual)
+function removeInvClave() {
+  var cfg = DB.get('config') || {};
+  if (!cfg.invClave) {
+    return showToast('No hay clave configurada', 'info');
+  }
+
+  // Pedir la clave actual para confirmar
+  var currentClave = prompt('Ingresa la clave actual para eliminar la protección:');
+  if (!currentClave) return; // canceló
+  if (currentClave !== cfg.invClave) {
+    return showToast('❌ Clave incorrecta', 'warn');
+  }
+
+  delete cfg.invClave;
+  DB.set('config', cfg);
+  _invUnlocked = false;
+  refreshInvLockUI();
+  showToast('🔓 Protección de Inventario eliminada', 'success');
+}
+
+// Verificar si inventario está bloqueado y mostrar pantalla de bloqueo
+function checkInvLock() {
+  var cfg = DB.get('config') || {};
+  var hasClave = !!(cfg.invClave);
+  var lockScreen = document.getElementById('inv-lock-screen');
+  var contentWrap = document.getElementById('inv-content-wrap');
+  var btnLock = document.getElementById('btn-lock-inv');
+
+  if (!hasClave) {
+    // Sin protección — mostrar contenido normalmente
+    if (lockScreen) lockScreen.style.display = 'none';
+    if (contentWrap) contentWrap.style.display = 'block';
+    if (btnLock) btnLock.style.display = 'none';
+    _invUnlocked = true;
+    return;
+  }
+
+  // Hay clave configurada
+  if (_invUnlocked) {
+    // Ya está desbloqueado en esta sesión
+    if (lockScreen) lockScreen.style.display = 'none';
+    if (contentWrap) contentWrap.style.display = 'block';
+    if (btnLock) btnLock.style.display = 'inline-flex';
+  } else {
+    // Mostrar pantalla de bloqueo
+    if (lockScreen) {
+      lockScreen.style.display = 'flex';
+    }
+    if (contentWrap) contentWrap.style.display = 'none';
+    if (btnLock) btnLock.style.display = 'none';
+    // Limpiar input de desbloqueo
+    var inp = document.getElementById('inv-unlock-input');
+    if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 100); }
+    // Ocultar error
+    var err = document.getElementById('inv-lock-error');
+    if (err) err.style.display = 'none';
+  }
+}
+
+// Desbloquear inventario
+function unlockInventario() {
+  var inp = document.getElementById('inv-unlock-input');
+  var err = document.getElementById('inv-lock-error');
+  if (!inp) return;
+
+  var clave = inp.value.trim();
+  if (!clave) {
+    if (err) { err.textContent = '⚠️ Ingresa la clave'; err.style.display = 'block'; }
+    return;
+  }
+
+  var cfg = DB.get('config') || {};
+  if (clave !== cfg.invClave) {
+    if (err) { err.textContent = '❌ Clave incorrecta — intenta de nuevo'; err.style.display = 'block'; }
+    inp.value = '';
+    inp.focus();
+    // Temblar input
+    inp.style.borderColor = 'rgba(239,68,68,0.7)';
+    inp.style.boxShadow = '0 0 15px rgba(239,68,68,0.2)';
+    setTimeout(function(){
+      inp.style.borderColor = 'rgba(124,58,237,0.35)';
+      inp.style.boxShadow = '0 0 20px rgba(124,58,237,0.08)';
+    }, 1000);
+    return;
+  }
+
+  // Clave correcta
+  _invUnlocked = true;
+  checkInvLock();
+  showToast('🔓 Inventario desbloqueado', 'success');
+}
+
+// Bloquear inventario manualmente
+function lockInventario() {
+  _invUnlocked = false;
+  checkInvLock();
+  showToast('🔒 Inventario bloqueado', 'info');
+}
+
+// Volver atrás desde pantalla de bloqueo
+function goBackFromLockedInv() {
+  showPage('dashboard', document.querySelector('[data-page="dashboard"]'));
 }
 
 function saveConfig() {
@@ -7177,6 +7392,12 @@ window.resetearDatos = resetearDatos;
 window.resetearTodo = resetearTodo;
 window.saveCliente = saveCliente;
 window.saveConfig = saveConfig;
+window.saveInvClave = saveInvClave;
+window.removeInvClave = removeInvClave;
+window.toggleClaveVisibility = toggleClaveVisibility;
+window.unlockInventario = unlockInventario;
+window.lockInventario = lockInventario;
+window.goBackFromLockedInv = goBackFromLockedInv;
 window.saveFacturaConfig = saveFacturaConfig;
 window.saveLicenses = saveLicenses;
 window.savePayMethods = savePayMethods;
