@@ -1932,48 +1932,66 @@ canvas{max-width:100%!important}
       </div>
       <!-- PAGO MIXTO -->
       <div id="pagoMixtoSection" style="display:none">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;padding:8px;background:var(--bg3);border-radius:8px">Ingresa el monto en cada método de pago. El <strong>remanente</strong> se actualiza en tiempo real.</div>
-        <!-- Desglose del total -->
-        <div id="mixtoDesglose" style="display:none;background:linear-gradient(135deg,rgba(124,58,237,0.06),rgba(157,91,244,0.03));border:1px solid rgba(124,58,237,0.15);border-radius:10px;padding:10px 14px;margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-size:11px;color:var(--text2)">💰 Total a pagar</span>
-            <span style="font-size:16px;font-weight:900;color:var(--neon);font-family:var(--mono)" id="mixtoTotalDisplay">$0.00</span>
-          </div>
+        <!-- Total de la venta -->
+        <div style="background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(157,91,244,0.04));border:1px solid rgba(124,58,237,0.2);border-radius:12px;padding:14px;margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:11px;color:var(--text2)">✅ Suma pagada</span>
-            <span style="font-size:14px;font-weight:700;color:var(--neon);font-family:var(--mono)" id="mixtoPagadoDisplay">$0.00</span>
+            <span style="font-size:13px;color:var(--text2);font-weight:600">💰 Total de la venta</span>
+            <span style="font-size:22px;font-weight:900;color:var(--neon);font-family:var(--mono)" id="mixtoTotalDisplay">$0.00</span>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">💵 Efectivo $</label>
-            <input type="number" id="mx-efusd" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">💴 Efectivo Bs</label>
-            <input type="number" id="mx-efbs" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">📱 Pago Móvil (Bs)</label>
-            <input type="number" id="mx-pm" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">🏦 Zelle / Transferencia $</label>
-            <input type="number" id="mx-zelle" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">💳 Punto Débito/Crédito (Bs)</label>
-            <input type="number" id="mx-punto" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">🔄 Otra Transferencia (Bs)</label>
-            <input type="number" id="mx-trans" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
+
+        <!-- Método 1: Lo que el cliente abonó -->
+        <div style="margin-bottom:10px">
+          <label class="form-label" style="font-size:11px;color:var(--text2);margin-bottom:6px">1️⃣ El cliente abona con:</label>
+          <select id="mixto-metodo1" class="form-select" onchange="calcMixtoSplit()" style="margin-bottom:6px;font-size:13px;font-weight:600">
+            <option value="efectivo_usd">💵 Efectivo ($)</option>
+            <option value="efectivo_bs">💴 Efectivo (Bs)</option>
+            <option value="punto">💳 Tarjeta Débito/Crédito (Bs)</option>
+            <option value="pago_movil">📱 Pago Móvil (Bs)</option>
+            <option value="zelle">🏦 Zelle ($)</option>
+            <option value="transferencia">🔄 Transferencia (Bs)</option>
+          </select>
+          <input type="number" id="mixto-monto1" class="form-input" placeholder="Monto que recibió..." step="0.01" oninput="calcMixtoSplit()" style="font-size:16px;font-weight:700;font-family:var(--mono);text-align:center;padding:12px">
         </div>
-        <div id="remanenteBox" style="display:none;border-radius:10px;padding:12px 14px;text-align:center;margin-top:4px">
-          <div id="remanenteLabel" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px"></div>
-          <div id="remanenteValUsd" style="font-family:var(--mono);font-size:22px;font-weight:900"></div>
-          <div id="remanenteValBs" style="font-size:12px;margin-top:2px"></div>
+
+        <!-- Separador -->
+        <div style="display:flex;align-items:center;gap:8px;margin:12px 0">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:16px;color:var(--text3)">+</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+
+        <!-- Método 2: El complemento -->
+        <div style="margin-bottom:12px">
+          <label class="form-label" style="font-size:11px;color:var(--text2);margin-bottom:6px">2️⃣ El resto se cobra con:</label>
+          <select id="mixto-metodo2" class="form-select" onchange="calcMixtoSplit()" style="font-size:13px;font-weight:600">
+            <option value="punto">💳 Tarjeta Débito/Crédito (Bs)</option>
+            <option value="efectivo_usd">💵 Efectivo ($)</option>
+            <option value="efectivo_bs">💴 Efectivo (Bs)</option>
+            <option value="pago_movil">📱 Pago Móvil (Bs)</option>
+            <option value="zelle">🏦 Zelle ($)</option>
+            <option value="transferencia">🔄 Transferencia (Bs)</option>
+          </select>
+        </div>
+
+        <!-- RESUMEN DEL DESGLOSE -->
+        <div id="mixtoResumenBox" style="display:none;border-radius:12px;padding:14px;margin-top:4px">
+          <!-- Desglose método 1 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--border)">
+            <span style="font-size:12px;color:var(--text2)" id="mixtoResumenLabel1">💵 Efectivo ($)</span>
+            <span style="font-size:15px;font-weight:800;color:#f5f0e1;font-family:var(--mono)" id="mixtoResumenVal1">$0.00</span>
+          </div>
+          <!-- Desglose método 2 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed var(--border)">
+            <span style="font-size:12px;color:var(--text2)" id="mixtoResumenLabel2">💳 Tarjeta (Bs)</span>
+            <span style="font-size:15px;font-weight:800;color:#f5f0e1;font-family:var(--mono)" id="mixtoResumenVal2">$0.00</span>
+          </div>
+          <!-- Remanente / Vuelto -->
+          <div id="mixtoRemanenteFinal" style="text-align:center;padding:10px;border-radius:8px">
+            <div id="mixtoRemanenteLabel" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px"></div>
+            <div id="mixtoRemanenteVal" style="font-family:var(--mono);font-size:20px;font-weight:900"></div>
+            <div id="mixtoRemanenteBs" style="font-size:11px;margin-top:2px"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -3177,58 +3195,106 @@ function selectPayMethod(method) {
   }
 }
 
-function calcMixtoRemanente() {
+// Nombres de métodos para el mixto
+var MIXTO_LABELS = {
+  efectivo_usd: { lbl: '💵 Efectivo ($)', moneda: 'USD' },
+  efectivo_bs:  { lbl: '💴 Efectivo (Bs)', moneda: 'BS' },
+  punto:        { lbl: '💳 Tarjeta Débito/Crédito (Bs)', moneda: 'BS' },
+  pago_movil:   { lbl: '📱 Pago Móvil (Bs)', moneda: 'BS' },
+  zelle:        { lbl: '🏦 Zelle ($)', moneda: 'USD' },
+  transferencia:{ lbl: '🔄 Transferencia (Bs)', moneda: 'BS' }
+};
+
+function calcMixtoSplit() {
   var total = STATE.cart ? STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0) : 0;
   var tasa = STATE.tasa || 649;
   var simb = STATE.simboloLocal || 'Bs';
-  var usd   = parseFloat(document.getElementById('mx-efusd').value)||0;
-  var bs    = (parseFloat(document.getElementById('mx-efbs').value)||0) / tasa;
-  var pm    = (parseFloat(document.getElementById('mx-pm').value)||0) / tasa;
-  var zelle = parseFloat(document.getElementById('mx-zelle').value)||0;
-  var punto = (parseFloat(document.getElementById('mx-punto').value)||0) / tasa;
-  var trans = (parseFloat(document.getElementById('mx-trans').value)||0) / tasa;
-  var pagado = usd + bs + pm + zelle + punto + trans;
-  var rem = total - pagado;
-  var rb  = document.getElementById('remanenteBox');
-  var rl  = document.getElementById('remanenteLabel');
-  var rv  = document.getElementById('remanenteValUsd');
-  var rvbs= document.getElementById('remanenteValBs');
+
+  // Mostrar total
+  var totalDisp = document.getElementById('mixtoTotalDisplay');
+  if (totalDisp) totalDisp.textContent = '$' + total.toFixed(2);
+
+  // Leer método 1 y monto
+  var m1Key = document.getElementById('mixto-metodo1');
+  var m1Val = document.getElementById('mixto-monto1');
+  var m2Key = document.getElementById('mixto-metodo2');
+  if (!m1Key || !m1Val || !m2Key) return;
+
+  var metodo1 = m1Key.value;
+  var metodo2 = m2Key.value;
+  var monto1 = parseFloat(m1Val.value) || 0;
+
+  // Convertir monto1 a USD si está en Bs
+  var m1Info = MIXTO_LABELS[metodo1] || { moneda: 'USD' };
+  var m1USD = m1Info.moneda === 'BS' ? monto1 / tasa : monto1;
+
+  // Calcular complemento en USD
+  var complementoUSD = total - m1USD;
+  var remanenteUSD = Math.abs(complementoUSD);
+
+  // Convertir complemento a moneda del método 2
+  var m2Info = MIXTO_LABELS[metodo2] || { moneda: 'USD' };
+  var complementoDisplay = m2Info.moneda === 'BS' ? (complementoUSD * tasa) : complementoUSD;
+  var simbolo2 = m2Info.moneda === 'BS' ? simb : '$';
+
+  // Actualizar resumen
+  var resumenBox = document.getElementById('mixtoResumenBox');
+  var resumenLabel1 = document.getElementById('mixtoResumenLabel1');
+  var resumenVal1 = document.getElementById('mixtoResumenVal1');
+  var resumenLabel2 = document.getElementById('mixtoResumenLabel2');
+  var resumenVal2 = document.getElementById('mixtoResumenVal2');
+  var remanenteFinal = document.getElementById('mixtoRemanenteFinal');
+  var remanenteLabel = document.getElementById('mixtoRemanenteLabel');
+  var remanenteVal = document.getElementById('mixtoRemanenteVal');
+  var remanenteBsEl = document.getElementById('mixtoRemanenteBs');
   var btn = document.getElementById('btnConfirmarVenta');
 
-  // Actualizar desglose visual
-  var desglose = document.getElementById('mixtoDesglose');
-  var totalDisp = document.getElementById('mixtoTotalDisplay');
-  var pagadoDisp = document.getElementById('mixtoPagadoDisplay');
-  if (desglose) desglose.style.display = 'block';
-  if (totalDisp) totalDisp.textContent = '$' + total.toFixed(2);
-  if (pagadoDisp) {
-    pagadoDisp.textContent = '$' + pagado.toFixed(2);
-    pagadoDisp.style.color = pagado >= total - 0.005 ? 'var(--neon)' : 'var(--warn)';
+  if (!resumenBox) return;
+
+  // Si no han escrito nada, ocultar resumen
+  if (monto1 <= 0) {
+    resumenBox.style.display = 'none';
+    if (btn) btn.disabled = false;
+    return;
   }
 
-  if (!rb) return;
-  rb.style.display = 'block';
-  if (rem > 0.005) {
-    rb.style.background = 'rgba(245,158,11,0.08)';
-    rb.style.border = '1px solid rgba(245,158,11,0.3)';
-    if (rl) { rl.textContent = '⚠️ FALTA COBRAR'; rl.style.color = 'var(--warn)'; }
-    if (rv) { rv.textContent = '$' + rem.toFixed(2); rv.style.color = 'var(--warn)'; }
-    if (rvbs) rvbs.textContent = simb + ' ' + fmt(rem * tasa);
-    if (btn)  btn.disabled = true;
-  } else if (rem < -0.005) {
-    rb.style.background = 'rgba(6,214,160,0.08)';
-    rb.style.border = '1px solid rgba(6,214,160,0.3)';
-    if (rl) { rl.textContent = '✅ VUELTO AL CLIENTE'; rl.style.color = 'var(--neon)'; }
-    if (rv) { rv.textContent = '$' + Math.abs(rem).toFixed(2); rv.style.color = 'var(--neon)'; }
-    if (rvbs) rvbs.textContent = simb + ' ' + fmt(Math.abs(rem) * tasa);
-    if (btn)  btn.disabled = false;
+  resumenBox.style.display = 'block';
+
+  // Mostrar desglose método 1
+  var simbolo1 = m1Info.moneda === 'BS' ? simb : '$';
+  if (resumenLabel1) resumenLabel1.textContent = m1Info.lbl;
+  if (resumenVal1) resumenVal1.textContent = simbolo1 + ' ' + monto1.toFixed(2);
+
+  // Mostrar desglose método 2 (complemento)
+  if (resumenLabel2) resumenLabel2.textContent = m2Info.lbl;
+  if (resumenVal2) resumenVal2.textContent = simbolo2 + ' ' + Math.abs(complementoDisplay).toFixed(2);
+
+  if (!remanenteFinal) return;
+
+  if (complementoUSD > 0.005) {
+    // Falta dinero
+    remanenteFinal.style.background = 'rgba(245,158,11,0.08)';
+    remanenteFinal.style.border = '1px solid rgba(245,158,11,0.3)';
+    if (remanenteLabel) { remanenteLabel.textContent = '⚠️ FALTA COBRAR CON ' + (m2Info.lbl.split('(')[0]).trim().toUpperCase(); remanenteLabel.style.color = 'var(--warn)'; }
+    if (remanenteVal) { remanenteVal.textContent = simbolo2 + ' ' + complementoDisplay.toFixed(2); remanenteVal.style.color = 'var(--warn)'; }
+    if (remanenteBsEl) remanenteBsEl.textContent = m2Info.moneda === 'BS' ? '≈ $' + remanenteUSD.toFixed(2) : simb + ' ' + (remanenteUSD * tasa).toFixed(2);
+    if (btn) btn.disabled = true;
+  } else if (complementoUSD < -0.005) {
+    // Sobró dinero (vuelto)
+    remanenteFinal.style.background = 'rgba(6,214,160,0.08)';
+    remanenteFinal.style.border = '1px solid rgba(6,214,160,0.3)';
+    if (remanenteLabel) { remanenteLabel.textContent = '✅ VUELTO AL CLIENTE'; remanenteLabel.style.color = 'var(--neon)'; }
+    if (remanenteVal) { remanenteVal.textContent = simbolo1 + ' ' + Math.abs(complementoDisplay).toFixed(2); remanenteVal.style.color = 'var(--neon)'; }
+    if (remanenteBsEl) remanenteBsEl.textContent = m1Info.moneda === 'BS' ? '≈ $' + remanenteUSD.toFixed(2) : simb + ' ' + (remanenteUSD * tasa).toFixed(2);
+    if (btn) btn.disabled = false;
   } else {
-    rb.style.background = 'rgba(6,214,160,0.08)';
-    rb.style.border = '1px solid rgba(6,214,160,0.3)';
-    if (rl) { rl.textContent = '✅ PAGO EXACTO'; rl.style.color = 'var(--neon)'; }
-    if (rv) { rv.textContent = '$0.00'; rv.style.color = 'var(--neon)'; }
-    if (rvbs) rvbs.textContent = '';
-    if (btn)  btn.disabled = false;
+    // Exacto
+    remanenteFinal.style.background = 'rgba(6,214,160,0.08)';
+    remanenteFinal.style.border = '1px solid rgba(6,214,160,0.3)';
+    if (remanenteLabel) { remanenteLabel.textContent = '✅ PAGO EXACTO — LISTO PARA COBRAR'; remanenteLabel.style.color = 'var(--neon)'; }
+    if (remanenteVal) { remanenteVal.textContent = '$0.00'; remanenteVal.style.color = 'var(--neon)'; }
+    if (remanenteBsEl) remanenteBsEl.textContent = '';
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -3339,11 +3405,10 @@ function procesarVenta() {
   if (mixtoSection)  mixtoSection.style.display  = esMixto ? 'block' : 'none';
   if (vueltoEl)      vueltoEl.style.display = 'none';
   if (esMixto) {
-    ['mx-efusd','mx-efbs','mx-pm','mx-zelle','mx-punto','mx-trans'].forEach(function(id){
-      var el=document.getElementById(id); if(el) el.value='';
-    });
-    var rb=document.getElementById('remanenteBox'); if(rb) rb.style.display='none';
-    var dg=document.getElementById('mixtoDesglose'); if(dg) dg.style.display='none';
+    var m1v = document.getElementById('mixto-monto1'); if(m1v) m1v.value='';
+    var m1k = document.getElementById('mixto-metodo1'); if(m1k) m1k.selectedIndex=0;
+    var m2k = document.getElementById('mixto-metodo2'); if(m2k) m2k.selectedIndex=0;
+    var rb=document.getElementById('mixtoResumenBox'); if(rb) rb.style.display='none';
     var btn=document.getElementById('btnConfirmarVenta'); if(btn) btn.disabled=false;
   }
 
@@ -3377,13 +3442,13 @@ function confirmarVenta() {
   var esMixto = (STATE.payMethod||'').toLowerCase().includes('mixto');
   if (esMixto) {
     var tasa = STATE.tasa || 649;
-    var usd   = parseFloat(document.getElementById('mx-efusd').value)||0;
-    var bs    = (parseFloat(document.getElementById('mx-efbs').value)||0) / tasa;
-    var pm    = (parseFloat(document.getElementById('mx-pm').value)||0) / tasa;
-    var zelle = parseFloat(document.getElementById('mx-zelle').value)||0;
-    var punto = (parseFloat(document.getElementById('mx-punto').value)||0) / tasa;
-    var trans = (parseFloat(document.getElementById('mx-trans').value)||0) / tasa;
-    var pagado = usd + bs + pm + zelle + punto + trans;
+    var m1KeyEl = document.getElementById('mixto-metodo1');
+    var m1ValEl = document.getElementById('mixto-monto1');
+    var metodo1 = m1KeyEl ? m1KeyEl.value : 'efectivo_usd';
+    var monto1 = m1ValEl ? (parseFloat(m1ValEl.value) || 0) : 0;
+    var m1Info = MIXTO_LABELS[metodo1] || { moneda: 'USD' };
+    var m1USD = m1Info.moneda === 'BS' ? monto1 / tasa : monto1;
+    var pagado = m1USD;
     if (pagado < total - 0.005) {
       showToast('⚠️ El pago mixto no cubre el total. Faltan $' + (total-pagado).toFixed(2), 'warn');
       return;
@@ -7429,7 +7494,8 @@ window.confirmarAbrirCaja = confirmarAbrirCaja;
 window.confirmarAjusteStock = confirmarAjusteStock;
 window.confirmarDeudaProveedor = confirmarDeudaProveedor;
 window.confirmarDevolucion = confirmarDevolucion;
-window.calcMixtoRemanente = calcMixtoRemanente;
+window.calcMixtoRemanente = calcMixtoSplit;
+window.calcMixtoSplit = calcMixtoSplit;
 window.calcVuelto = calcVuelto;
 window.initOfflineMode = initOfflineMode;
 window.syncOfflineSales = syncOfflineSales;
