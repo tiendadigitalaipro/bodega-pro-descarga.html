@@ -1599,15 +1599,38 @@ canvas{max-width:100%!important}
         <div class="grid-2" style="margin-bottom:8px">
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">% Ganancia deseada</label>
-            <div style="display:flex;flex-wrap:wrap;gap:5px">
-              <input type="number" id="prod-ganancia-pct" class="form-input" placeholder="Ej: 30" min="0" max="200" oninput="calcPrecioAutomatico()" style="flex:1;min-width:60px">
-              <button type="button" data-pct-btn="15" onclick="setPct(15)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">15%</button>
-              <button type="button" data-pct-btn="20" onclick="setPct(20)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">20%</button>
-              <button type="button" data-pct-btn="25" onclick="setPct(25)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">25%</button>
-              <button type="button" data-pct-btn="30" onclick="setPct(30)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">30%</button>
-              <button type="button" data-pct-btn="40" onclick="setPct(40)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">40%</button>
-              <button type="button" data-pct-btn="50" onclick="setPct(50)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;transition:all 0.2s">50%</button>
+            <!-- Input oculto que usa el JS existente -->
+            <input type="hidden" id="prod-ganancia-pct" value="0">
+            <div style="display:flex;gap:6px;align-items:center">
+              <!-- Dropdown 10%–95% correlativo -->
+              <select id="pct-select" onchange="setPct(parseInt(this.value))"
+                style="flex:1;background:#1e1e1e;color:#fff;border:1px solid #444;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;cursor:pointer;appearance:auto">
+                <option value="" disabled selected>— Elige % —</option>
+                <option value="10">10% · Margen mínimo</option>
+                <option value="15">15%</option>
+                <option value="20">20%</option>
+                <option value="25">25%</option>
+                <option value="30">30% · Recomendado</option>
+                <option value="35">35%</option>
+                <option value="40">40%</option>
+                <option value="45">45%</option>
+                <option value="50">50% · Intermedio</option>
+                <option value="55">55%</option>
+                <option value="60">60%</option>
+                <option value="65">65%</option>
+                <option value="70">70%</option>
+                <option value="75">75% · Alto</option>
+                <option value="80">80%</option>
+                <option value="85">85%</option>
+                <option value="90">90%</option>
+                <option value="95">95% · Máximo</option>
+              </select>
+              <!-- Input manual para % personalizado -->
+              <input type="number" id="pct-manual" class="form-input" placeholder="Manual" min="1" max="99"
+                style="width:80px;font-size:13px;text-align:center"
+                oninput="document.getElementById('prod-ganancia-pct').value=this.value;document.getElementById('pct-select').value='';calcPrecioAutomatico()">
             </div>
+            <div style="font-size:10px;color:#666;margin-top:4px">Elige de la lista o escribe tu % personalizado en el campo manual</div>
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">IVA 16% incluido</label>
@@ -3813,14 +3836,15 @@ function calcPrecioUnitario() {
 
 function setPct(pct) {
   if(document.getElementById('prod-precio-fijo')&&document.getElementById('prod-precio-fijo').checked) return showToast('🔒 Precio fijo activo — desactívalo para recalcular','warn');
-  if (pct >= 100) { showToast('El margen no puede ser 100% o mas','warn'); return; }
+  if (pct >= 100) { showToast('El margen no puede ser 100% o más (límite: 95%)','warn'); return; }
   var el = document.getElementById('prod-ganancia-pct');
   if (el) el.value = pct;
-  document.querySelectorAll('[data-pct-btn]').forEach(function(b) {
-    var v = parseInt(b.getAttribute('data-pct-btn'));
-    b.style.background = v === pct ? 'var(--accent)' : '#444';
-    b.style.transform  = v === pct ? 'scale(1.08)' : 'scale(1)';
-  });
+  // Sincronizar select
+  var sel = document.getElementById('pct-select');
+  if (sel) sel.value = String(pct);
+  // Limpiar input manual si viene del select
+  var man = document.getElementById('pct-manual');
+  if (man && sel && sel.value === String(pct)) man.value = '';
   calcPrecioAutomatico();
 }
 
@@ -3965,6 +3989,8 @@ function saveProduct() {
   ['prod-costo-bulto','prod-unidades-bulto','prod-cant-bultos','prod-ganancia-pct','calc-total-unidades'].forEach(function(fid){
     var el = document.getElementById(fid); if(el) el.value = '';
   });
+  var pctSel = document.getElementById('pct-select'); if(pctSel) pctSel.value = '';
+  var pctMan = document.getElementById('pct-manual'); if(pctMan) pctMan.value = '';
   var res = document.getElementById('calc-resultado');
   if (res) res.style.display = 'none';
   var iva = document.getElementById('prod-iva');
