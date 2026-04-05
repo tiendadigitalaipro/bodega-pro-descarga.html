@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Bodega Pro v8.0 — A2K Digital Studio</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;0,9..40,900;1,9..40,400&family=Syne:wght@700;800;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════
@@ -972,7 +973,29 @@ canvas{max-width:100%!important}
       </div>
 
       <!-- ═══ INVENTARIO ═══ -->
-      <div id="page-inventario" style="display:none">
+      <div id="page-inventario" style="display:none;position:relative">
+        <!-- ══ PANTALLA DE BLOQUEO ══ -->
+        <div id="inv-lock-screen" style="display:none;position:absolute;inset:0;z-index:100;background:linear-gradient(135deg,rgba(10,10,18,0.98),rgba(18,16,24,0.98));backdrop-filter:blur(20px);flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px">
+          <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(157,91,244,0.1));display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 0 40px rgba(124,58,237,0.2)">🔒</div>
+          <div style="text-align:center;margin-top:8px">
+            <h2 style="color:#f0eef5;font-size:22px;font-weight:800;margin:0 0 6px">Inventario Bloqueado</h2>
+            <p style="color:rgba(240,238,245,0.5);font-size:13px;margin:0">Esta sección está protegida con clave</p>
+          </div>
+          <div style="width:100%;max-width:320px;margin-top:12px">
+            <div style="position:relative;display:flex;align-items:center;margin-bottom:14px">
+              <input type="password" id="inv-unlock-input" class="form-input" placeholder="Ingresa la clave" style="width:100%;padding:14px 46px 14px 18px;border-radius:12px;border:1.5px solid rgba(124,58,237,0.35);background:rgba(20,18,28,0.95);color:#f0eef5;font-size:16px;font-weight:700;text-align:center;letter-spacing:3px;outline:none;box-shadow:0 0 20px rgba(124,58,237,0.08)" onkeydown="if(event.key==='Enter')unlockInventario()">
+              <span onclick="toggleClaveVisibility('inv-unlock-input')" style="position:absolute;right:14px;cursor:pointer;font-size:18px;opacity:0.7" id="eye-inv-unlock-input">👁️</span>
+            </div>
+            <button onclick="unlockInventario()" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c3aed,#9d5bf4);color:#fff;font-weight:700;font-size:15px;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 20px rgba(124,58,237,0.3)">🔓 Desbloquear Inventario</button>
+            <p id="inv-lock-error" style="display:none;text-align:center;color:#ef4444;font-size:12px;font-weight:600;margin-top:10px">❌ Clave incorrecta — intenta de nuevo</p>
+          </div>
+          <div style="margin-top:20px;text-align:center">
+            <button onclick="goBackFromLockedInv()" style="background:none;border:1px solid rgba(240,238,245,0.15);color:rgba(240,238,245,0.5);padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer;transition:all 0.3s">← Volver atrás</button>
+          </div>
+        </div>
+
+        <!-- ══ CONTENIDO DEL INVENTARIO (se oculta cuando está bloqueado) ══ -->
+        <div id="inv-content-wrap">
         <div class="flex justify-between items-center mb-4">
           <div>
             <div class="section-title">Inventario</div>
@@ -983,6 +1006,7 @@ canvas{max-width:100%!important}
             <button class="btn btn-ghost btn-sm" onclick="abrirEtiquetas()" title="Imprimir etiquetas de productos">🏷️ Etiquetas</button>
             <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:700;border:none;border-radius:8px;padding:6px 12px;cursor:pointer" onclick="exportarInventarioWA()" title="Compartir por WhatsApp">📲 WhatsApp</button>
             <button class="btn btn-primary" onclick="openAddProduct()">+ Nuevo Producto</button>
+            <button class="btn btn-ghost btn-sm" onclick="lockInventario()" title="Bloquear Inventario" id="btn-lock-inv" style="display:none;background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3);font-weight:700">🔒 Bloquear</button>
           </div>
         </div>
         <div class="inv-toolbar">
@@ -1007,7 +1031,8 @@ canvas{max-width:100%!important}
             <tbody id="invTable"></tbody>
           </table>
         </div>
-      </div>
+        </div><!-- fin inv-content-wrap -->
+      </div><!-- fin page-inventario -->
 
       <!-- ═══ HISTORIAL ═══ -->
       <div id="page-historial" style="display:none">
@@ -1255,6 +1280,44 @@ canvas{max-width:100%!important}
                   <div onclick="setAccent(&#39;orange&#39;)" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#ea580c,#f97316);cursor:pointer;border:2px solid transparent" id="accent-orange"></div>
                   <div onclick="setAccent(&#39;pink&#39;)" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#db2777,#ec4899);cursor:pointer;border:2px solid transparent" id="accent-pink"></div>
                 </div>
+              </div>
+            </div>
+
+            <div class="card mb-4">
+              <div class="card-title mb-3">🔒 Bloqueo de Inventario</div>
+              <div class="alert alert-info" style="margin-bottom:14px">
+                <strong>📦 Protege tu Inventario</strong><br>
+                <span style="font-size:11px">Configura una clave para que solo el dueño pueda acceder al módulo de Inventario. Los empleados no podrán agregar, editar ni eliminar productos sin la clave.</span>
+              </div>
+              <div id="invLockStatus" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:10px 14px;margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:18px">🟢</span>
+                  <span style="color:#10b981;font-weight:700;font-size:13px">Inventario protegido con clave</span>
+                </div>
+              </div>
+              <div id="invUnlockStatus" style="background:var(--bg3);border-radius:10px;padding:10px 14px;margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:18px">⚪</span>
+                  <span style="color:var(--text2);font-weight:600;font-size:13px">Sin protección — cualquier usuario puede acceder</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">🔑 Nueva Clave (mínimo 4 dígitos)</label>
+                <div style="position:relative;display:flex;align-items:center">
+                  <input type="password" id="cfg-inv-clave" class="form-input" placeholder="••••" maxlength="20" style="padding-right:40px;border-color:var(--neon)">
+                  <span onclick="toggleClaveVisibility('cfg-inv-clave')" style="position:absolute;right:12px;cursor:pointer;font-size:16px;opacity:0.7" id="eye-cfg-inv-clave">👁️</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">🔑 Confirmar Clave</label>
+                <div style="position:relative;display:flex;align-items:center">
+                  <input type="password" id="cfg-inv-clave2" class="form-input" placeholder="••••" maxlength="20" style="padding-right:40px;border-color:var(--neon)">
+                  <span onclick="toggleClaveVisibility('cfg-inv-clave2')" style="position:absolute;right:12px;cursor:pointer;font-size:16px;opacity:0.7" id="eye-cfg-inv-clave2">👁️</span>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-neon" onclick="saveInvClave()" style="flex:1">🔒 Activar Protección</button>
+                <button class="btn btn-ghost" onclick="removeInvClave()" style="flex:1;color:var(--danger);border-color:var(--danger)">🔓 Quitar Clave</button>
               </div>
             </div>
 
@@ -1599,38 +1662,11 @@ canvas{max-width:100%!important}
         <div class="grid-2" style="margin-bottom:8px">
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">% Ganancia deseada</label>
-            <!-- Input oculto que usa el JS existente -->
-            <input type="hidden" id="prod-ganancia-pct" value="0">
-            <div style="display:flex;gap:6px;align-items:center">
-              <!-- Dropdown 10%–95% correlativo -->
-              <select id="pct-select" onchange="setPct(parseInt(this.value))"
-                style="flex:1;background:#1e1e1e;color:#fff;border:1px solid #444;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;cursor:pointer;appearance:auto">
-                <option value="" disabled selected>— Elige % —</option>
-                <option value="10">10% · Margen mínimo</option>
-                <option value="15">15%</option>
-                <option value="20">20%</option>
-                <option value="25">25%</option>
-                <option value="30">30% · Recomendado</option>
-                <option value="35">35%</option>
-                <option value="40">40%</option>
-                <option value="45">45%</option>
-                <option value="50">50% · Intermedio</option>
-                <option value="55">55%</option>
-                <option value="60">60%</option>
-                <option value="65">65%</option>
-                <option value="70">70%</option>
-                <option value="75">75% · Alto</option>
-                <option value="80">80%</option>
-                <option value="85">85%</option>
-                <option value="90">90%</option>
-                <option value="95">95% · Máximo</option>
-              </select>
-              <!-- Input manual para % personalizado -->
-              <input type="number" id="pct-manual" class="form-input" placeholder="Manual" min="1" max="99"
-                style="width:80px;font-size:13px;text-align:center"
-                oninput="document.getElementById('prod-ganancia-pct').value=this.value;document.getElementById('pct-select').value='';calcPrecioAutomatico()">
+            <div style="position:relative;display:flex;align-items:center">
+              <input type="text" id="prod-ganancia-pct" inputmode="decimal" placeholder="Ej: 30" oninput="handlePctInput(this)" onkeydown="allowOnlyNumbers(event)" style="width:100%;padding:10px 36px 10px 14px;border-radius:10px;border:1.5px solid rgba(212,175,55,0.45);background:linear-gradient(135deg,rgba(20,20,30,0.95),rgba(30,28,20,0.9));color:#f5f0e1;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;outline:none;transition:all 0.3s;box-shadow:0 0 0 0 rgba(212,175,55,0),inset 0 1px 0 rgba(255,255,255,0.03);letter-spacing:0.5px" onfocus="this.style.borderColor='rgba(212,175,55,0.8)';this.style.boxShadow='0 0 12px rgba(212,175,55,0.15),inset 0 1px 0 rgba(255,255,255,0.05)'" onblur="this.style.borderColor='rgba(212,175,55,0.45)';this.style.boxShadow='0 0 0 0 rgba(212,175,55,0)'">
+              <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:rgba(212,175,55,0.8);font-size:16px;font-weight:800;pointer-events:none;font-family:'DM Sans',sans-serif">%</span>
             </div>
-            <div style="font-size:10px;color:#666;margin-top:4px">Elige de la lista o escribe tu % personalizado en el campo manual</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:0.3px">Escribe el margen de ganancia deseado</div>
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">IVA 16% incluido</label>
@@ -1826,6 +1862,25 @@ canvas{max-width:100%!important}
   </div>
 </div>
 
+<!-- MODAL: QR SCANNER -->
+<div id="modalQRScanner" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(8px)">
+  <div style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:20px;width:90%;max-width:420px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.6)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="color:var(--accent);margin:0;font-family:var(--display);font-size:16px">📷 Escanear Código</h3>
+      <button onclick="closeQRScanner()" style="background:none;border:1px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Apunta la cámara al código de barras o QR del producto</div>
+    <div id="qr-reader" style="width:100%;border-radius:12px;overflow:hidden;margin-bottom:14px"></div>
+    <div id="qr-manual-section" style="margin-bottom:12px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="qr-manual-input" class="form-input" placeholder="Escribe código manualmente..." style="flex:1" onkeydown="if(event.key==='Enter')applyQRManual()">
+        <button onclick="applyQRManual()" class="btn btn-neon" style="padding:8px 14px;font-size:12px">OK</button>
+      </div>
+    </div>
+    <div id="qr-status" style="font-size:11px;color:var(--text2)">Listo para escanear...</div>
+  </div>
+</div>
+
 <!-- MODAL: COBRO -->
 <div class="modal-overlay" id="modalCobro">
   <div class="modal" style="max-width:420px">
@@ -1877,37 +1932,66 @@ canvas{max-width:100%!important}
       </div>
       <!-- PAGO MIXTO -->
       <div id="pagoMixtoSection" style="display:none">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;padding:8px;background:var(--bg3);border-radius:8px">Ingresa el monto en cada método. El <strong>remanente</strong> se actualiza en tiempo real.</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">💵 Efectivo $</label>
-            <input type="number" id="mx-efusd" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">💴 Efectivo Bs</label>
-            <input type="number" id="mx-efbs" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">📱 Pago Móvil (Bs)</label>
-            <input type="number" id="mx-pm" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">🏦 Zelle / Transferencia $</label>
-            <input type="number" id="mx-zelle" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">💳 Punto (Bs)</label>
-            <input type="number" id="mx-punto" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" style="font-size:9px">🔄 Otra Transferencia (Bs)</label>
-            <input type="number" id="mx-trans" class="form-input" placeholder="0.00" step="0.01" oninput="calcMixtoRemanente()">
+        <!-- Total de la venta -->
+        <div style="background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(157,91,244,0.04));border:1px solid rgba(124,58,237,0.2);border-radius:12px;padding:14px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;color:var(--text2);font-weight:600">💰 Total de la venta</span>
+            <span style="font-size:22px;font-weight:900;color:var(--neon);font-family:var(--mono)" id="mixtoTotalDisplay">$0.00</span>
           </div>
         </div>
-        <div id="remanenteBox" style="display:none;border-radius:8px;padding:10px 12px;text-align:center;margin-top:4px">
-          <div id="remanenteLabel" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px"></div>
-          <div id="remanenteValUsd" style="font-family:var(--mono);font-size:20px;font-weight:900"></div>
-          <div id="remanenteValBs" style="font-size:12px;margin-top:2px"></div>
+
+        <!-- Método 1: Lo que el cliente abonó -->
+        <div style="margin-bottom:10px">
+          <label class="form-label" style="font-size:11px;color:var(--text2);margin-bottom:6px">1️⃣ El cliente abona con:</label>
+          <select id="mixto-metodo1" class="form-select" onchange="calcMixtoSplit()" style="margin-bottom:6px;font-size:13px;font-weight:600">
+            <option value="efectivo_usd">💵 Efectivo ($)</option>
+            <option value="efectivo_bs">💴 Efectivo (Bs)</option>
+            <option value="punto">💳 Tarjeta Débito/Crédito (Bs)</option>
+            <option value="pago_movil">📱 Pago Móvil (Bs)</option>
+            <option value="zelle">🏦 Zelle ($)</option>
+            <option value="transferencia">🔄 Transferencia (Bs)</option>
+          </select>
+          <input type="number" id="mixto-monto1" class="form-input" placeholder="Monto que recibió..." step="0.01" oninput="calcMixtoSplit()" style="font-size:16px;font-weight:700;font-family:var(--mono);text-align:center;padding:12px">
+        </div>
+
+        <!-- Separador -->
+        <div style="display:flex;align-items:center;gap:8px;margin:12px 0">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:16px;color:var(--text3)">+</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+
+        <!-- Método 2: El complemento -->
+        <div style="margin-bottom:12px">
+          <label class="form-label" style="font-size:11px;color:var(--text2);margin-bottom:6px">2️⃣ El resto se cobra con:</label>
+          <select id="mixto-metodo2" class="form-select" onchange="calcMixtoSplit()" style="font-size:13px;font-weight:600">
+            <option value="punto">💳 Tarjeta Débito/Crédito (Bs)</option>
+            <option value="efectivo_usd">💵 Efectivo ($)</option>
+            <option value="efectivo_bs">💴 Efectivo (Bs)</option>
+            <option value="pago_movil">📱 Pago Móvil (Bs)</option>
+            <option value="zelle">🏦 Zelle ($)</option>
+            <option value="transferencia">🔄 Transferencia (Bs)</option>
+          </select>
+        </div>
+
+        <!-- RESUMEN DEL DESGLOSE -->
+        <div id="mixtoResumenBox" style="display:none;border-radius:12px;padding:14px;margin-top:4px">
+          <!-- Desglose método 1 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--border)">
+            <span style="font-size:12px;color:var(--text2)" id="mixtoResumenLabel1">💵 Efectivo ($)</span>
+            <span style="font-size:15px;font-weight:800;color:#f5f0e1;font-family:var(--mono)" id="mixtoResumenVal1">$0.00</span>
+          </div>
+          <!-- Desglose método 2 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed var(--border)">
+            <span style="font-size:12px;color:var(--text2)" id="mixtoResumenLabel2">💳 Tarjeta (Bs)</span>
+            <span style="font-size:15px;font-weight:800;color:#f5f0e1;font-family:var(--mono)" id="mixtoResumenVal2">$0.00</span>
+          </div>
+          <!-- Remanente / Vuelto -->
+          <div id="mixtoRemanenteFinal" style="text-align:center;padding:10px;border-radius:8px">
+            <div id="mixtoRemanenteLabel" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px"></div>
+            <div id="mixtoRemanenteVal" style="font-family:var(--mono);font-size:20px;font-weight:900"></div>
+            <div id="mixtoRemanenteBs" style="font-size:11px;margin-top:2px"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -2720,7 +2804,7 @@ function showPage(page, el) {
 
   if (page === 'dashboard') renderDashboard();
   if (page === 'pos') { renderPosProducts(); renderCart(); }
-  if (page === 'inventario') { renderInventario(); populateInvFilters(); }
+  if (page === 'inventario') { renderInventario(); populateInvFilters(); checkInvLock(); }
   if (page === 'historial') { renderHistorial(); renderHistStats(); }
   if (page === 'clientes') renderClientes();
   if (page === 'reportes') renderReportes();
@@ -2740,7 +2824,7 @@ function showPage(page, el) {
     document.getElementById('cfg-telefono').value = cfg.telefono || '';
     document.getElementById('cfg-rif').value = cfg.rif || '';
     document.getElementById('cfg-tasa').value = STATE.tasa;
-
+    refreshInvLockUI();
   }
 }
 
@@ -3111,46 +3195,106 @@ function selectPayMethod(method) {
   }
 }
 
-function calcMixtoRemanente() {
+// Nombres de métodos para el mixto
+var MIXTO_LABELS = {
+  efectivo_usd: { lbl: '💵 Efectivo ($)', moneda: 'USD' },
+  efectivo_bs:  { lbl: '💴 Efectivo (Bs)', moneda: 'BS' },
+  punto:        { lbl: '💳 Tarjeta Débito/Crédito (Bs)', moneda: 'BS' },
+  pago_movil:   { lbl: '📱 Pago Móvil (Bs)', moneda: 'BS' },
+  zelle:        { lbl: '🏦 Zelle ($)', moneda: 'USD' },
+  transferencia:{ lbl: '🔄 Transferencia (Bs)', moneda: 'BS' }
+};
+
+function calcMixtoSplit() {
   var total = STATE.cart ? STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0) : 0;
   var tasa = STATE.tasa || 649;
   var simb = STATE.simboloLocal || 'Bs';
-  var usd   = parseFloat(document.getElementById('mx-efusd').value)||0;
-  var bs    = (parseFloat(document.getElementById('mx-efbs').value)||0) / tasa;
-  var pm    = (parseFloat(document.getElementById('mx-pm').value)||0) / tasa;
-  var zelle = parseFloat(document.getElementById('mx-zelle').value)||0;
-  var punto = (parseFloat(document.getElementById('mx-punto').value)||0) / tasa;
-  var trans = (parseFloat(document.getElementById('mx-trans').value)||0) / tasa;
-  var pagado = usd + bs + pm + zelle + punto + trans;
-  var rem = total - pagado;
-  var rb  = document.getElementById('remanenteBox');
-  var rl  = document.getElementById('remanenteLabel');
-  var rv  = document.getElementById('remanenteValUsd');
-  var rvbs= document.getElementById('remanenteValBs');
+
+  // Mostrar total
+  var totalDisp = document.getElementById('mixtoTotalDisplay');
+  if (totalDisp) totalDisp.textContent = '$' + total.toFixed(2);
+
+  // Leer método 1 y monto
+  var m1Key = document.getElementById('mixto-metodo1');
+  var m1Val = document.getElementById('mixto-monto1');
+  var m2Key = document.getElementById('mixto-metodo2');
+  if (!m1Key || !m1Val || !m2Key) return;
+
+  var metodo1 = m1Key.value;
+  var metodo2 = m2Key.value;
+  var monto1 = parseFloat(m1Val.value) || 0;
+
+  // Convertir monto1 a USD si está en Bs
+  var m1Info = MIXTO_LABELS[metodo1] || { moneda: 'USD' };
+  var m1USD = m1Info.moneda === 'BS' ? monto1 / tasa : monto1;
+
+  // Calcular complemento en USD
+  var complementoUSD = total - m1USD;
+  var remanenteUSD = Math.abs(complementoUSD);
+
+  // Convertir complemento a moneda del método 2
+  var m2Info = MIXTO_LABELS[metodo2] || { moneda: 'USD' };
+  var complementoDisplay = m2Info.moneda === 'BS' ? (complementoUSD * tasa) : complementoUSD;
+  var simbolo2 = m2Info.moneda === 'BS' ? simb : '$';
+
+  // Actualizar resumen
+  var resumenBox = document.getElementById('mixtoResumenBox');
+  var resumenLabel1 = document.getElementById('mixtoResumenLabel1');
+  var resumenVal1 = document.getElementById('mixtoResumenVal1');
+  var resumenLabel2 = document.getElementById('mixtoResumenLabel2');
+  var resumenVal2 = document.getElementById('mixtoResumenVal2');
+  var remanenteFinal = document.getElementById('mixtoRemanenteFinal');
+  var remanenteLabel = document.getElementById('mixtoRemanenteLabel');
+  var remanenteVal = document.getElementById('mixtoRemanenteVal');
+  var remanenteBsEl = document.getElementById('mixtoRemanenteBs');
   var btn = document.getElementById('btnConfirmarVenta');
-  if (!rb) return;
-  rb.style.display = 'block';
-  if (rem > 0.005) {
-    rb.style.background = 'rgba(245,158,11,0.08)';
-    rb.style.border = '1px solid rgba(245,158,11,0.3)';
-    if (rl) { rl.textContent = '⚠️ Falta cubrir'; rl.style.color = 'var(--warn)'; }
-    if (rv) { rv.textContent = '$' + rem.toFixed(2); rv.style.color = 'var(--warn)'; }
-    if (rvbs) rvbs.textContent = simb + ' ' + fmt(rem * tasa);
-    if (btn)  btn.disabled = true;
-  } else if (rem < -0.005) {
-    rb.style.background = 'rgba(6,214,160,0.08)';
-    rb.style.border = '1px solid rgba(6,214,160,0.3)';
-    if (rl) { rl.textContent = '✅ Vuelto'; rl.style.color = 'var(--neon)'; }
-    if (rv) { rv.textContent = '$' + Math.abs(rem).toFixed(2); rv.style.color = 'var(--neon)'; }
-    if (rvbs) rvbs.textContent = simb + ' ' + fmt(Math.abs(rem) * tasa);
-    if (btn)  btn.disabled = false;
+
+  if (!resumenBox) return;
+
+  // Si no han escrito nada, ocultar resumen
+  if (monto1 <= 0) {
+    resumenBox.style.display = 'none';
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  resumenBox.style.display = 'block';
+
+  // Mostrar desglose método 1
+  var simbolo1 = m1Info.moneda === 'BS' ? simb : '$';
+  if (resumenLabel1) resumenLabel1.textContent = m1Info.lbl;
+  if (resumenVal1) resumenVal1.textContent = simbolo1 + ' ' + monto1.toFixed(2);
+
+  // Mostrar desglose método 2 (complemento)
+  if (resumenLabel2) resumenLabel2.textContent = m2Info.lbl;
+  if (resumenVal2) resumenVal2.textContent = simbolo2 + ' ' + Math.abs(complementoDisplay).toFixed(2);
+
+  if (!remanenteFinal) return;
+
+  if (complementoUSD > 0.005) {
+    // Falta dinero
+    remanenteFinal.style.background = 'rgba(245,158,11,0.08)';
+    remanenteFinal.style.border = '1px solid rgba(245,158,11,0.3)';
+    if (remanenteLabel) { remanenteLabel.textContent = '⚠️ FALTA COBRAR CON ' + (m2Info.lbl.split('(')[0]).trim().toUpperCase(); remanenteLabel.style.color = 'var(--warn)'; }
+    if (remanenteVal) { remanenteVal.textContent = simbolo2 + ' ' + complementoDisplay.toFixed(2); remanenteVal.style.color = 'var(--warn)'; }
+    if (remanenteBsEl) remanenteBsEl.textContent = m2Info.moneda === 'BS' ? '≈ $' + remanenteUSD.toFixed(2) : simb + ' ' + (remanenteUSD * tasa).toFixed(2);
+    if (btn) btn.disabled = true;
+  } else if (complementoUSD < -0.005) {
+    // Sobró dinero (vuelto)
+    remanenteFinal.style.background = 'rgba(6,214,160,0.08)';
+    remanenteFinal.style.border = '1px solid rgba(6,214,160,0.3)';
+    if (remanenteLabel) { remanenteLabel.textContent = '✅ VUELTO AL CLIENTE'; remanenteLabel.style.color = 'var(--neon)'; }
+    if (remanenteVal) { remanenteVal.textContent = simbolo1 + ' ' + Math.abs(complementoDisplay).toFixed(2); remanenteVal.style.color = 'var(--neon)'; }
+    if (remanenteBsEl) remanenteBsEl.textContent = m1Info.moneda === 'BS' ? '≈ $' + remanenteUSD.toFixed(2) : simb + ' ' + (remanenteUSD * tasa).toFixed(2);
+    if (btn) btn.disabled = false;
   } else {
-    rb.style.background = 'rgba(6,214,160,0.08)';
-    rb.style.border = '1px solid rgba(6,214,160,0.3)';
-    if (rl) { rl.textContent = '✅ Exacto'; rl.style.color = 'var(--neon)'; }
-    if (rv) { rv.textContent = '$0.00'; rv.style.color = 'var(--neon)'; }
-    if (rvbs) rvbs.textContent = '';
-    if (btn)  btn.disabled = false;
+    // Exacto
+    remanenteFinal.style.background = 'rgba(6,214,160,0.08)';
+    remanenteFinal.style.border = '1px solid rgba(6,214,160,0.3)';
+    if (remanenteLabel) { remanenteLabel.textContent = '✅ PAGO EXACTO — LISTO PARA COBRAR'; remanenteLabel.style.color = 'var(--neon)'; }
+    if (remanenteVal) { remanenteVal.textContent = '$0.00'; remanenteVal.style.color = 'var(--neon)'; }
+    if (remanenteBsEl) remanenteBsEl.textContent = '';
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -3261,10 +3405,11 @@ function procesarVenta() {
   if (mixtoSection)  mixtoSection.style.display  = esMixto ? 'block' : 'none';
   if (vueltoEl)      vueltoEl.style.display = 'none';
   if (esMixto) {
-    ['mx-efusd','mx-efbs','mx-pm','mx-zelle','mx-punto','mx-trans'].forEach(function(id){
-      var el=document.getElementById(id); if(el) el.value='';
-    });
-    var rb=document.getElementById('remanenteBox'); if(rb) rb.style.display='none';
+    var m1v = document.getElementById('mixto-monto1'); if(m1v) m1v.value='';
+    var m1k = document.getElementById('mixto-metodo1'); if(m1k) m1k.selectedIndex=0;
+    var m2k = document.getElementById('mixto-metodo2'); if(m2k) m2k.selectedIndex=0;
+    var rb=document.getElementById('mixtoResumenBox'); if(rb) rb.style.display='none';
+    var btn=document.getElementById('btnConfirmarVenta'); if(btn) btn.disabled=false;
   }
 
   // ── Adaptar label y hint según método de pago ──
@@ -3297,13 +3442,13 @@ function confirmarVenta() {
   var esMixto = (STATE.payMethod||'').toLowerCase().includes('mixto');
   if (esMixto) {
     var tasa = STATE.tasa || 649;
-    var usd   = parseFloat(document.getElementById('mx-efusd').value)||0;
-    var bs    = (parseFloat(document.getElementById('mx-efbs').value)||0) / tasa;
-    var pm    = (parseFloat(document.getElementById('mx-pm').value)||0) / tasa;
-    var zelle = parseFloat(document.getElementById('mx-zelle').value)||0;
-    var punto = (parseFloat(document.getElementById('mx-punto').value)||0) / tasa;
-    var trans = (parseFloat(document.getElementById('mx-trans').value)||0) / tasa;
-    var pagado = usd + bs + pm + zelle + punto + trans;
+    var m1KeyEl = document.getElementById('mixto-metodo1');
+    var m1ValEl = document.getElementById('mixto-monto1');
+    var metodo1 = m1KeyEl ? m1KeyEl.value : 'efectivo_usd';
+    var monto1 = m1ValEl ? (parseFloat(m1ValEl.value) || 0) : 0;
+    var m1Info = MIXTO_LABELS[metodo1] || { moneda: 'USD' };
+    var m1USD = m1Info.moneda === 'BS' ? monto1 / tasa : monto1;
+    var pagado = m1USD;
     if (pagado < total - 0.005) {
       showToast('⚠️ El pago mixto no cubre el total. Faltan $' + (total-pagado).toFixed(2), 'warn');
       return;
@@ -3834,17 +3979,52 @@ function calcPrecioUnitario() {
   calcMargenDesdePrecio();
 }
 
+function allowOnlyNumbers(e) {
+  // Permitir: Backspace, Delete, Tab, Escape, Enter, flechas, punto decimal
+  var permitted = [8,9,13,27,46,37,38,39,40,110,190];
+  if (permitted.indexOf(e.keyCode) !== -1) return true;
+  // Permitir números 0-9 y teclas numéricas del numpad
+  if ((e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105)) return true;
+  e.preventDefault();
+}
+
+function handlePctInput(el) {
+  if(document.getElementById('prod-precio-fijo')&&document.getElementById('prod-precio-fijo').checked) return showToast('🔒 Precio fijo activo — desactívalo para recalcular','warn');
+  var raw = el.value;
+  // Si el campo está vacío, permitirlo y recalcular con 0%
+  if (raw === '' || raw === null || raw === undefined) {
+    setPct(0);
+    return;
+  }
+  // Limpiar: solo permitir números y un punto decimal
+  raw = raw.replace(/[^0-9.]/g, '');
+  // No permitir más de un punto decimal
+  var parts = raw.split('.');
+  if (parts.length > 2) raw = parts[0] + '.' + parts.slice(1).join('');
+  // No permitir más de 1 decimal
+  if (parts.length === 2 && parts[1].length > 1) raw = parts[0] + '.' + parts[1].substring(0,1);
+  el.value = raw;
+  var val = parseFloat(raw);
+  if (isNaN(val) || val < 0) { setPct(0); return; }
+  if (val >= 100) {
+    el.value = '';
+    showToast('El margen no puede ser 100% o más','warn');
+    calcPrecioAutomatico();
+    return;
+  }
+  setPct(val);
+}
+
 function setPct(pct) {
   if(document.getElementById('prod-precio-fijo')&&document.getElementById('prod-precio-fijo').checked) return showToast('🔒 Precio fijo activo — desactívalo para recalcular','warn');
-  if (pct >= 100) { showToast('El margen no puede ser 100% o más (límite: 95%)','warn'); return; }
   var el = document.getElementById('prod-ganancia-pct');
-  if (el) el.value = pct;
-  // Sincronizar select
-  var sel = document.getElementById('pct-select');
-  if (sel) sel.value = String(pct);
-  // Limpiar input manual si viene del select
-  var man = document.getElementById('pct-manual');
-  if (man && sel && sel.value === String(pct)) man.value = '';
+  if (isNaN(pct) || pct === null || pct === undefined) pct = 0;
+  if (pct >= 100) {
+    if (el) el.value = '';
+    showToast('El margen no puede ser 100% o más','warn');
+    calcPrecioAutomatico();
+    return;
+  }
   calcPrecioAutomatico();
 }
 
@@ -3989,8 +4169,6 @@ function saveProduct() {
   ['prod-costo-bulto','prod-unidades-bulto','prod-cant-bultos','prod-ganancia-pct','calc-total-unidades'].forEach(function(fid){
     var el = document.getElementById(fid); if(el) el.value = '';
   });
-  var pctSel = document.getElementById('pct-select'); if(pctSel) pctSel.value = '';
-  var pctMan = document.getElementById('pct-manual'); if(pctMan) pctMan.value = '';
   var res = document.getElementById('calc-resultado');
   if (res) res.style.display = 'none';
   var iva = document.getElementById('prod-iva');
@@ -4746,6 +4924,159 @@ function renderChartDoughnut(id, labels, data) {
     data: {labels:labels, datasets:[{data:data, backgroundColor:colors.slice(0,data.length), borderWidth:0}]},
     options: {responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right',labels:{color:'#8888aa',font:{size:11}}}}}
   });
+}
+
+// ─── BLOQUEO DE INVENTARIO ─────────────────────────────────────
+// Estado de desbloqueo (en memoria, se pierde al recargar — seguridad)
+var _invUnlocked = false;
+
+// Función para mostrar/ocultar clave (ojo 👁️)
+function toggleClaveVisibility(inputId) {
+  var inp = document.getElementById(inputId);
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  var eye = document.getElementById('eye-' + inputId);
+  if (eye) eye.textContent = inp.type === 'password' ? '👁️' : '🙈';
+}
+
+// Actualizar indicador de estado en Configuración
+function refreshInvLockUI() {
+  var cfg = DB.get('config') || {};
+  var hasClave = !!(cfg.invClave);
+  var lockEl = document.getElementById('invLockStatus');
+  var unlockEl = document.getElementById('invUnlockStatus');
+  if (lockEl) lockEl.style.display = hasClave ? 'block' : 'none';
+  if (unlockEl) unlockEl.style.display = hasClave ? 'none' : 'block';
+}
+
+// Guardar clave de inventario
+function saveInvClave() {
+  var c1 = document.getElementById('cfg-inv-clave').value.trim();
+  var c2 = document.getElementById('cfg-inv-clave2').value.trim();
+
+  if (!c1 || c1.length < 4) {
+    return showToast('La clave debe tener al menos 4 caracteres', 'warn');
+  }
+  if (c1 !== c2) {
+    return showToast('Las claves no coinciden', 'warn');
+  }
+
+  var cfg = DB.get('config') || {};
+  cfg.invClave = c1;
+  DB.set('config', cfg);
+  _invUnlocked = false;
+
+  // Limpiar campos
+  document.getElementById('cfg-inv-clave').value = '';
+  document.getElementById('cfg-inv-clave2').value = '';
+
+  refreshInvLockUI();
+  showToast('🔒 Clave de Inventario activada correctamente', 'success');
+}
+
+// Quitar clave de inventario (requiere la clave actual)
+function removeInvClave() {
+  var cfg = DB.get('config') || {};
+  if (!cfg.invClave) {
+    return showToast('No hay clave configurada', 'info');
+  }
+
+  // Pedir la clave actual para confirmar
+  var currentClave = prompt('Ingresa la clave actual para eliminar la protección:');
+  if (!currentClave) return; // canceló
+  if (currentClave !== cfg.invClave) {
+    return showToast('❌ Clave incorrecta', 'warn');
+  }
+
+  delete cfg.invClave;
+  DB.set('config', cfg);
+  _invUnlocked = false;
+  refreshInvLockUI();
+  showToast('🔓 Protección de Inventario eliminada', 'success');
+}
+
+// Verificar si inventario está bloqueado y mostrar pantalla de bloqueo
+function checkInvLock() {
+  var cfg = DB.get('config') || {};
+  var hasClave = !!(cfg.invClave);
+  var lockScreen = document.getElementById('inv-lock-screen');
+  var contentWrap = document.getElementById('inv-content-wrap');
+  var btnLock = document.getElementById('btn-lock-inv');
+
+  if (!hasClave) {
+    // Sin protección — mostrar contenido normalmente
+    if (lockScreen) lockScreen.style.display = 'none';
+    if (contentWrap) contentWrap.style.display = 'block';
+    if (btnLock) btnLock.style.display = 'none';
+    _invUnlocked = true;
+    return;
+  }
+
+  // Hay clave configurada
+  if (_invUnlocked) {
+    // Ya está desbloqueado en esta sesión
+    if (lockScreen) lockScreen.style.display = 'none';
+    if (contentWrap) contentWrap.style.display = 'block';
+    if (btnLock) btnLock.style.display = 'inline-flex';
+  } else {
+    // Mostrar pantalla de bloqueo
+    if (lockScreen) {
+      lockScreen.style.display = 'flex';
+    }
+    if (contentWrap) contentWrap.style.display = 'none';
+    if (btnLock) btnLock.style.display = 'none';
+    // Limpiar input de desbloqueo
+    var inp = document.getElementById('inv-unlock-input');
+    if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 100); }
+    // Ocultar error
+    var err = document.getElementById('inv-lock-error');
+    if (err) err.style.display = 'none';
+  }
+}
+
+// Desbloquear inventario
+function unlockInventario() {
+  var inp = document.getElementById('inv-unlock-input');
+  var err = document.getElementById('inv-lock-error');
+  if (!inp) return;
+
+  var clave = inp.value.trim();
+  if (!clave) {
+    if (err) { err.textContent = '⚠️ Ingresa la clave'; err.style.display = 'block'; }
+    return;
+  }
+
+  var cfg = DB.get('config') || {};
+  if (clave !== cfg.invClave) {
+    if (err) { err.textContent = '❌ Clave incorrecta — intenta de nuevo'; err.style.display = 'block'; }
+    inp.value = '';
+    inp.focus();
+    // Temblar input
+    inp.style.borderColor = 'rgba(239,68,68,0.7)';
+    inp.style.boxShadow = '0 0 15px rgba(239,68,68,0.2)';
+    setTimeout(function(){
+      inp.style.borderColor = 'rgba(124,58,237,0.35)';
+      inp.style.boxShadow = '0 0 20px rgba(124,58,237,0.08)';
+    }, 1000);
+    return;
+  }
+
+  // Clave correcta
+  _invUnlocked = true;
+  checkInvLock();
+  showToast('🔓 Inventario desbloqueado', 'success');
+}
+
+// Bloquear inventario manualmente
+function lockInventario() {
+  _invUnlocked = false;
+  checkInvLock();
+  showToast('🔒 Inventario bloqueado', 'info');
+}
+
+// Volver atrás desde pantalla de bloqueo
+function goBackFromLockedInv() {
+  showPage('dashboard', document.querySelector('[data-page="dashboard"]'));
 }
 
 function saveConfig() {
@@ -6441,8 +6772,105 @@ function cerrarCaja() {
 // registrarMovCaja reemplazada por versión mejorada
 
 // ── QR SCANNER (stub) ──
+var _qrScanner = null;
+var _qrContext = ''; // 'pos' o 'producto'
+
 function openQRScanner(contexto) {
-  showToast('Escáner QR requiere cámara del dispositivo. Usa el buscador manual.','warn');
+  _qrContext = contexto;
+  var modal = document.getElementById('modalQRScanner');
+  if (!modal) return;
+  modal.style.display = 'flex';
+
+  // Limpiar estado
+  var statusEl = document.getElementById('qr-status');
+  var manualInput = document.getElementById('qr-manual-input');
+  if (statusEl) statusEl.textContent = 'Iniciando cámara...';
+  if (manualInput) manualInput.value = '';
+
+  // Destruir scanner anterior si existe
+  if (_qrScanner) {
+    try { _qrScanner.clear(); } catch(e) {}
+    _qrScanner = null;
+  }
+
+  // Limpiar contenedor
+  var readerDiv = document.getElementById('qr-reader');
+  if (readerDiv) readerDiv.innerHTML = '';
+
+  // Verificar si la librería está disponible
+  if (typeof Html5Qrcode === 'undefined') {
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--warn)">⚠️ Librería de escáner no disponible. Usa la entrada manual abajo.</span>';
+    if (manualInput) manualInput.focus();
+    return;
+  }
+
+  // Iniciar escáner
+  try {
+    _qrScanner = new Html5Qrcode('qr-reader');
+    _qrScanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.5 },
+      function(decodedText) {
+        onQRDetected(decodedText);
+      },
+      function() {} // silenciar errores de escaneo
+    ).then(function() {
+      if (statusEl) statusEl.textContent = '📷 Apunta la cámara al código de barras o QR';
+    }).catch(function(err) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--warn)">⚠️ No se pudo acceder a la cámara. Usa la entrada manual abajo.</span>';
+      if (manualInput) manualInput.focus();
+    });
+  } catch(e) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--warn)">⚠️ Error al iniciar escáner. Usa la entrada manual abajo.</span>';
+    if (manualInput) manualInput.focus();
+  }
+}
+
+function closeQRScanner() {
+  if (_qrScanner) {
+    try { _qrScanner.stop().then(function(){ _qrScanner.clear(); _qrScanner = null; }); } catch(e) { _qrScanner = null; }
+  }
+  var modal = document.getElementById('modalQRScanner');
+  if (modal) modal.style.display = 'none';
+  _qrContext = '';
+}
+
+function onQRDetected(code) {
+  if (!code || !code.trim()) return;
+  code = code.trim();
+
+  // Detener escáner
+  if (_qrScanner) {
+    try { _qrScanner.stop().then(function(){ _qrScanner.clear(); _qrScanner = null; }); } catch(e) { _qrScanner = null; }
+  }
+  closeQRScanner();
+
+  // Aplicar código según contexto
+  if (_qrContext === 'pos') {
+    // Buscar producto por código en el POS
+    var productos = DB.get('productos') || [];
+    var prod = productos.find(function(p){ return p.codigo === code; });
+    if (prod) {
+      agregarAlCarrito(prod.id);
+      showToast('✅ Producto encontrado: ' + prod.nombre, 'success');
+    } else {
+      showToast('❌ No se encontró producto con código: ' + code, 'warn');
+    }
+  } else if (_qrContext === 'producto') {
+    // Llenar campo de código en formulario de producto
+    var input = document.getElementById('prod-codigo');
+    if (input) {
+      input.value = code;
+      verificarCodigoExistente();
+      showToast('✅ Código asignado: ' + code, 'success');
+    }
+  }
+}
+
+function applyQRManual() {
+  var input = document.getElementById('qr-manual-input');
+  if (!input || !input.value.trim()) return;
+  onQRDetected(input.value.trim());
 }
 
 // ── AUTO EMOJI CATEGORIA ──
@@ -7066,7 +7494,8 @@ window.confirmarAbrirCaja = confirmarAbrirCaja;
 window.confirmarAjusteStock = confirmarAjusteStock;
 window.confirmarDeudaProveedor = confirmarDeudaProveedor;
 window.confirmarDevolucion = confirmarDevolucion;
-window.calcMixtoRemanente = calcMixtoRemanente;
+window.calcMixtoRemanente = calcMixtoSplit;
+window.calcMixtoSplit = calcMixtoSplit;
 window.calcVuelto = calcVuelto;
 window.initOfflineMode = initOfflineMode;
 window.syncOfflineSales = syncOfflineSales;
@@ -7137,6 +7566,9 @@ window.openAddProduct = openAddProduct;
 window.openMobileSidebar = openMobileSidebar;
 window.openModal = openModal;
 window.openQRScanner = openQRScanner;
+window.closeQRScanner = closeQRScanner;
+window.onQRDetected = onQRDetected;
+window.applyQRManual = applyQRManual;
 window.pagarProveedor = pagarProveedor;
 window.pausarLicencia = pausarLicencia;
 window.populateInvFilters = populateInvFilters;
@@ -7171,6 +7603,12 @@ window.resetearDatos = resetearDatos;
 window.resetearTodo = resetearTodo;
 window.saveCliente = saveCliente;
 window.saveConfig = saveConfig;
+window.saveInvClave = saveInvClave;
+window.removeInvClave = removeInvClave;
+window.toggleClaveVisibility = toggleClaveVisibility;
+window.unlockInventario = unlockInventario;
+window.lockInventario = lockInventario;
+window.goBackFromLockedInv = goBackFromLockedInv;
 window.saveFacturaConfig = saveFacturaConfig;
 window.saveLicenses = saveLicenses;
 window.savePayMethods = savePayMethods;
@@ -7184,6 +7622,8 @@ window.setAccent = setAccent;
 window.setCat = setCat;
 window.setPct = setPct;
 window.setPctManual = setPctManual;
+window.handlePctInput = handlePctInput;
+window.allowOnlyNumbers = allowOnlyNumbers;
 window.setTheme = setTheme;
 window.showLoginAlert = showLoginAlert;
 window.showPage = showPage;
