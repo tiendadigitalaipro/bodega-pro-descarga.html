@@ -2552,8 +2552,10 @@ function doLogin() {
   if (!negocio || !user || !pass) return showLoginAlert('Completa todos los campos', 'error');
   if (!code) return showLoginAlert('Ingresa tu código de activación', 'error');
 
-  // Códigos master siempre válidos
-  const MASTER = ['BPRO-DEMO-2024', 'BPRO-ABIG-2024', 'BPRO-ZYNC-2024'];
+  // Códigos master internos (sin expiración)
+  // BPRO-DEMO-2024 ya NO está en MASTER — es demo público con expiración de 5 días
+  const MASTER = ['BPRO-ABIG-2024', 'BPRO-ZYNC-2024'];
+  const isDemoPublico = (code === 'BPRO-DEMO-2024');
 
   // Device ya registrado con licencia
   const savedLicense = DB.get('license');
@@ -2615,10 +2617,10 @@ function doLogin() {
   if (hasFirmaResult === 'WRONG_DEVICE') {
     return showLoginAlert('🔐 Esta licencia PRO está vinculada a otro equipo. Contacta a A2K Digital Studio: +58 416 411 7331', 'error');
   }
-  if (!isMaster && !issuedLic && !hasFirma && !hasFirmaDemo) {
+  if (!isMaster && !isDemoPublico && !issuedLic && !hasFirma && !hasFirmaDemo) {
     return showLoginAlert('❌ Código de activación inválido. Verifica e intenta de nuevo.', 'error');
   }
-  // Verificar estado: bloqueada, pausada o vencida PRO
+  // Verificar estado: bloqueada, pausada o vencida PRO (siempre aplica, incluye código demo público)
   if (!isMaster) {
     var estadoLic = verificarEstadoLicencia(code);
     if (!estadoLic.ok) {
@@ -2642,7 +2644,7 @@ function doLogin() {
   }
 
   // Determinar tipo de licencia
-  var esDemo = verifyDemoSignature(code);
+  var esDemo = verifyDemoSignature(code) || isDemoPublico;
   var venceEn = null;
   if (esDemo) {
     // Buscar fecha en lista de licencias emitidas por el admin
