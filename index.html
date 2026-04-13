@@ -968,24 +968,29 @@ canvas{max-width:100%!important}
             <!-- ⚖️ PANEL VENTA POR GRAMOS -->
             <div class="gramos-panel" id="gramosPanel" style="display:none">
               <div class="gramos-panel-header">
-                <span style="font-size:18px">⚖️</span>
-                <span class="gramos-panel-title">Venta por Peso</span>
-                <button onclick="cerrarGramosPanel()" style="margin-left:auto;background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;line-height:1">×</button>
+                <span style="font-size:18px" id="gramosPanelIcon">⚖️</span>
+                <span class="gramos-panel-title" id="gramosPanelTitle">Venta por Peso / Volumen</span>
+                <!-- Toggle gr / ml -->
+                <div style="margin-left:auto;display:flex;align-items:center;gap:6px;margin-right:8px">
+                  <button id="btnModeGr" onclick="setGramosMode('gr')" style="padding:3px 10px;border-radius:20px;border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-size:11px;font-weight:800;cursor:pointer;transition:all .2s">gr</button>
+                  <button id="btnModeMl" onclick="setGramosMode('ml')" style="padding:3px 10px;border-radius:20px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;font-weight:800;cursor:pointer;transition:all .2s">ml</button>
+                </div>
+                <button onclick="cerrarGramosPanel()" style="background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;line-height:1">×</button>
               </div>
               <div class="gramos-prod-selector" id="gramosProdSelector" onclick="abrirSelectorProductoKg()">
                 <span class="gramos-prod-emoji" id="gramosProdEmoji">📦</span>
                 <div class="gramos-prod-info">
                   <div class="gramos-prod-name" id="gramosProdNombre">Toca para seleccionar producto</div>
-                  <div class="gramos-prod-price" id="gramosProdPrecio">Precio por kg no asignado</div>
+                  <div class="gramos-prod-price" id="gramosProdPrecio">Precio no asignado</div>
                 </div>
                 <span style="font-size:18px;color:var(--text3)">›</span>
               </div>
               <div class="gramos-input-row">
                 <div class="gramos-field-wrap">
-                  <span class="gramos-label">Cantidad en gramos</span>
+                  <span class="gramos-label" id="gramosInputLabel">Cantidad en gramos</span>
                   <div class="gramos-input-group">
                     <input type="number" class="gramos-input" id="gramosInput" min="1" placeholder="0" oninput="calcGramosPreview()" onkeydown="if(event.key==='Enter')agregarGramosAlCarrito()">
-                    <span class="gramos-unit">gr</span>
+                    <span class="gramos-unit" id="gramosUnitLabel">gr</span>
                   </div>
                 </div>
                 <button class="gramos-add-btn" id="gramosAddBtn" onclick="agregarGramosAlCarrito()" disabled>➕ Agregar</button>
@@ -2856,7 +2861,38 @@ function addToCart(prodId) {
 /* ═══════════════════════════════════════════════
    MÓDULO VENTA POR GRAMOS
 ═══════════════════════════════════════════════ */
-var GRAMOS_STATE = { prodId: null, nombre: '', emoji: '📦', precio: 0 };
+// modo: 'gr' = gramos→kg  |  'ml' = mililitros→litros
+var GRAMOS_STATE = { prodId: null, nombre: '', emoji: '📦', precio: 0, modo: 'gr' };
+
+function setGramosMode(modo) {
+  GRAMOS_STATE.modo = modo;
+  // Actualizar botones toggle
+  var btnGr = document.getElementById('btnModeGr');
+  var btnMl = document.getElementById('btnModeMl');
+  if (btnGr && btnMl) {
+    if (modo === 'gr') {
+      btnGr.style.background = 'var(--accent)'; btnGr.style.borderColor = 'var(--accent)'; btnGr.style.color = '#fff';
+      btnMl.style.background = 'transparent'; btnMl.style.borderColor = 'var(--border2)'; btnMl.style.color = 'var(--text2)';
+    } else {
+      btnMl.style.background = 'var(--neonb)'; btnMl.style.borderColor = 'var(--neonb)'; btnMl.style.color = '#fff';
+      btnGr.style.background = 'transparent'; btnGr.style.borderColor = 'var(--border2)'; btnGr.style.color = 'var(--text2)';
+    }
+  }
+  // Actualizar labels
+  var unitLbl = document.getElementById('gramosUnitLabel');
+  var inputLbl = document.getElementById('gramosInputLabel');
+  var panelIcon = document.getElementById('gramosPanelIcon');
+  if (unitLbl) unitLbl.textContent = modo === 'gr' ? 'gr' : 'ml';
+  if (inputLbl) inputLbl.textContent = modo === 'gr' ? 'Cantidad en gramos' : 'Cantidad en mililitros';
+  if (panelIcon) panelIcon.textContent = modo === 'gr' ? '⚖️' : '🧴';
+  // Actualizar precio del producto seleccionado si hay uno
+  if (GRAMOS_STATE.prodId) {
+    var unidBase = modo === 'gr' ? 'kg' : 'lt';
+    stext('gramosProdPrecio', '$' + GRAMOS_STATE.precio.toFixed(2) + ' por ' + unidBase);
+  }
+  // Recalcular preview
+  calcGramosPreview();
+}
 
 function toggleGramosPanel() {
   var p = document.getElementById('gramosPanel');
@@ -2878,12 +2914,14 @@ function toggleGramosPanel() {
 function cerrarGramosPanel() {
   var p = document.getElementById('gramosPanel');
   if (p) p.style.display = 'none';
-  GRAMOS_STATE = { prodId: null, nombre: '', emoji: '📦', precio: 0 };
+  GRAMOS_STATE = { prodId: null, nombre: '', emoji: '📦', precio: 0, modo: 'gr' };
   var sel = document.getElementById('gramosProdSelector');
   if (sel) sel.classList.remove('selected');
   stext('gramosProdNombre', 'Toca para seleccionar producto');
-  stext('gramosProdPrecio', 'Precio por kg no asignado');
+  stext('gramosProdPrecio', 'Precio no asignado');
   stext('gramosProdEmoji', '📦');
+  // Resetear modo a gr
+  setGramosMode('gr');
   var inp = document.getElementById('gramosInput');
   if (inp) inp.value = '';
   var prev = document.getElementById('gramosPreview');
@@ -2955,14 +2993,19 @@ function seleccionarProdKg(prodId) {
   // Asegurarse que el panel esté visible
   var panel = document.getElementById('gramosPanel');
   if (panel && panel.style.display === 'none') panel.style.display = 'block';
-  GRAMOS_STATE.prodId = prodId;
+  GRAMOS_STATE.prodId = pid;
   GRAMOS_STATE.nombre = prod.nombre;
   GRAMOS_STATE.emoji = prod.emoji || '📦';
   GRAMOS_STATE.precio = pKg;
+  // Auto-detectar modo según unidad del producto: lt→ml, resto→gr
+  var autoModo = (prod.unidad === 'lt' || prod.unidad === 'l' || prod.unidad === 'litro') ? 'ml' : 'gr';
+  GRAMOS_STATE.modo = autoModo;
+  setGramosMode(autoModo);
   // Actualizar UI del panel
   stext('gramosProdEmoji', GRAMOS_STATE.emoji);
   stext('gramosProdNombre', GRAMOS_STATE.nombre);
-  stext('gramosProdPrecio', '$' + pKg.toFixed(2) + ' por kg');
+  var unidBase = autoModo === 'ml' ? 'lt' : 'kg';
+  stext('gramosProdPrecio', '$' + pKg.toFixed(2) + ' por ' + unidBase);
   var sel = document.getElementById('gramosProdSelector');
   if (sel) sel.classList.add('selected');
   // Cerrar modal
@@ -2979,20 +3022,26 @@ function seleccionarProdKg(prodId) {
 
 function calcGramosPreview() {
   var inp = document.getElementById('gramosInput');
-  var gr = inp ? parseFloat(inp.value) : 0;
+  var cantidad = inp ? parseFloat(inp.value) : 0;
   var btn = document.getElementById('gramosAddBtn');
   var prev = document.getElementById('gramosPreview');
   var prevPrecio = document.getElementById('gramosPreviewPrecio');
   var prevDesc = document.getElementById('gramosPreviewDesc');
-  if (!GRAMOS_STATE.prodId || !gr || gr <= 0) {
+  if (!GRAMOS_STATE.prodId || !cantidad || cantidad <= 0) {
     if (prev) prev.classList.remove('visible');
     if (btn) btn.disabled = true;
     return;
   }
-  var kg = gr / 1000;
-  var total = kg * GRAMOS_STATE.precio;
+  var esMl = GRAMOS_STATE.modo === 'ml';
+  // ml→lt  /  gr→kg  (ambos dividen por 1000)
+  var unidBase = cantidad / 1000;
+  var total = unidBase * GRAMOS_STATE.precio;
   if (prevPrecio) prevPrecio.textContent = '$' + total.toFixed(2);
-  if (prevDesc) prevDesc.textContent = gr + ' gr = ' + kg.toFixed(3) + ' kg × $' + GRAMOS_STATE.precio.toFixed(2) + '/kg';
+  if (esMl) {
+    if (prevDesc) prevDesc.textContent = cantidad + ' ml = ' + unidBase.toFixed(3) + ' lt × $' + GRAMOS_STATE.precio.toFixed(2) + '/lt';
+  } else {
+    if (prevDesc) prevDesc.textContent = cantidad + ' gr = ' + unidBase.toFixed(3) + ' kg × $' + GRAMOS_STATE.precio.toFixed(2) + '/kg';
+  }
   if (prev) prev.classList.add('visible');
   if (btn) btn.disabled = false;
 }
@@ -3000,23 +3049,30 @@ function calcGramosPreview() {
 function agregarGramosAlCarrito() {
   if (!GRAMOS_STATE.prodId) { showToast('⚠️ Selecciona un producto primero','warn'); return; }
   var inp = document.getElementById('gramosInput');
-  var gr = inp ? parseFloat(inp.value) : 0;
-  if (!gr || gr <= 0) { showToast('⚠️ Ingresa los gramos','warn'); return; }
-  var kg = parseFloat((gr / 1000).toFixed(4));
-  var total = parseFloat((kg * GRAMOS_STATE.precio).toFixed(2));
-  // Verificar stock (si el producto lo tiene)
+  var cantidad = inp ? parseFloat(inp.value) : 0;
+  var esMl = GRAMOS_STATE.modo === 'ml';
+  if (!cantidad || cantidad <= 0) {
+    showToast('⚠️ Ingresa ' + (esMl ? 'los mililitros' : 'los gramos'), 'warn'); return;
+  }
+  // Conversión: ml→lt  /  gr→kg
+  var unidBase = parseFloat((cantidad / 1000).toFixed(4));
+  var total = parseFloat((unidBase * GRAMOS_STATE.precio).toFixed(2));
+  var unidLabel = esMl ? 'lt' : 'kg';
+  var cantLabel = esMl ? 'ml' : 'gr';
+  // Verificar stock
   var todosP = DB.get('productos') || [];
   var prod = todosP.find(function(p){ return p.id === GRAMOS_STATE.prodId; });
   if (prod && prod.stock !== undefined && prod.stock !== null && prod.stock > 0) {
-    if (kg > prod.stock) {
-      showToast('⚠️ Stock insuficiente. Disponible: ' + prod.stock + ' ' + (prod.unidad||'kg'),'warn');
+    if (unidBase > prod.stock) {
+      showToast('⚠️ Stock insuficiente. Disponible: ' + prod.stock + ' ' + (prod.unidad || unidLabel), 'warn');
       return;
     }
   }
-  // Buscar si ya existe en carrito
-  var existente = STATE.cart.find(function(i){ return i.productoId === GRAMOS_STATE.prodId && i.esPeso; });
+  // Buscar si ya existe en carrito (mismo producto, mismo modo)
+  var existente = STATE.cart.find(function(i){ return i.productoId === GRAMOS_STATE.prodId && i.esPeso && i.esMl === esMl; });
   if (existente) {
-    existente.gramos = (existente.gramos || Math.round(existente.qty*1000)) + gr;
+    var cantAnterior = existente.gramos || Math.round(existente.qty * 1000);
+    existente.gramos = cantAnterior + cantidad;
     existente.qty = parseFloat((existente.gramos / 1000).toFixed(4));
     existente.subtotal = parseFloat((existente.qty * existente.precio).toFixed(2));
   } else {
@@ -3025,39 +3081,43 @@ function agregarGramosAlCarrito() {
       nombre: GRAMOS_STATE.nombre,
       emoji: GRAMOS_STATE.emoji,
       precio: GRAMOS_STATE.precio,
-      qty: kg,
-      gramos: gr,
+      qty: unidBase,
+      gramos: cantidad,      // Guarda el valor en la unidad pequeña (gr ó ml)
+      esMl: esMl,            // true = mililitros, false = gramos
       subtotal: total,
       esPeso: true
     });
   }
   renderCart();
-  // Resetear input
   if (inp) inp.value = '';
   var prev = document.getElementById('gramosPreview');
   if (prev) prev.classList.remove('visible');
   var btn = document.getElementById('gramosAddBtn');
   if (btn) btn.disabled = true;
-  showToast('✅ ' + gr + ' gr de ' + GRAMOS_STATE.nombre + ' → $' + total.toFixed(2), 'success');
+  showToast('✅ ' + cantidad + ' ' + cantLabel + ' de ' + GRAMOS_STATE.nombre + ' → $' + total.toFixed(2), 'success');
 }
 
-function changeQtyGramos(prodId, deltaGr) {
+function changeQtyGramos(prodId, delta, esMl) {
   var pid = typeof prodId === 'string' ? (isNaN(prodId) ? prodId : parseInt(prodId,10)) : prodId;
-  var item = STATE.cart.find(function(i){ return i.productoId === pid && i.esPeso; });
+  var item = STATE.cart.find(function(i){ return i.productoId === pid && i.esPeso && (i.esMl === !!esMl); });
+  if (!item) {
+    // fallback si no coincide modo exacto
+    item = STATE.cart.find(function(i){ return i.productoId === pid && i.esPeso; });
+  }
   if (!item) return;
-  var nuevoGr = (item.gramos || Math.round(item.qty * 1000)) + deltaGr;
-  if (nuevoGr <= 0) { removeFromCart(pid); return; }
+  var nuevaCant = (item.gramos || Math.round(item.qty * 1000)) + delta;
+  if (nuevaCant <= 0) { removeFromCart(pid); return; }
   // Verificar stock al subir
-  if (deltaGr > 0) {
+  if (delta > 0) {
     var todosP2 = DB.get('productos') || [];
     var prod = todosP2.find(function(p){ return p.id === pid; });
     if (prod && prod.stock !== undefined && prod.stock !== null) {
-      var nuevoKg = nuevoGr / 1000;
-      if (nuevoKg > prod.stock) { showToast('⚠️ Stock máximo alcanzado','warn'); return; }
+      var nuevoBase = nuevaCant / 1000;
+      if (nuevoBase > prod.stock) { showToast('⚠️ Stock máximo alcanzado','warn'); return; }
     }
   }
-  item.gramos = nuevoGr;
-  item.qty = parseFloat((nuevoGr / 1000).toFixed(4));
+  item.gramos = nuevaCant;
+  item.qty = parseFloat((nuevaCant / 1000).toFixed(4));
   item.subtotal = parseFloat((item.qty * item.precio).toFixed(2));
   renderCart();
 }
@@ -3128,13 +3188,18 @@ function confirmarCobroRapido() {
 function renderCart() {
   const items = STATE.cart;
   const el = document.getElementById('cartItems');
-  // Contador especial: distinguir unidades normales de ítems de peso
+  // Contador especial: distinguir unidades normales de ítems de peso/volumen
   const unidades = items.filter(i=>!i.esPeso).reduce((s,i)=>s+i.qty,0);
-  const pesoItems = items.filter(i=>i.esPeso);
+  const pesoItems = items.filter(i=>i.esPeso && !i.esMl);
+  const volItems  = items.filter(i=>i.esPeso && i.esMl);
   let countTxt = items.length + ' producto(s) · ' + unidades + ' unidades';
   if (pesoItems.length) {
     const totalGr = pesoItems.reduce((s,i)=>s+(i.gramos||Math.round(i.qty*1000)),0);
     countTxt += ' · ' + totalGr + ' gr';
+  }
+  if (volItems.length) {
+    const totalMl = volItems.reduce((s,i)=>s+(i.gramos||Math.round(i.qty*1000)),0);
+    countTxt += ' · ' + totalMl + ' ml';
   }
   stext('cartCount', countTxt);
 
@@ -3148,18 +3213,23 @@ function renderCart() {
 
   el.innerHTML = items.map(it => {
     if (it.esPeso) {
-      const gr = it.gramos || Math.round(it.qty * 1000);
-      const kg = it.qty;
+      const cant  = it.gramos || Math.round(it.qty * 1000);
+      const base  = it.qty; // kg o lt
+      const esMl  = it.esMl;
+      const cantU = esMl ? 'ml' : 'gr';
+      const baseU = esMl ? 'lt' : 'kg';
+      const badge = esMl ? '🧴 lt' : '⚖️ kg';
+      const step  = esMl ? 50 : 50; // ±50 ml ó ±50 gr
       return `<div class="cart-item es-peso">
         <span style="font-size:20px">${it.emoji}</span>
         <div class="cart-item-info">
-          <div class="cart-item-name">${it.nombre} <span class="cart-item-kg-badge">⚖️ kg</span></div>
-          <div class="cart-item-price">${gr} gr = ${kg.toFixed(3)} kg · $${it.precio.toFixed(2)}/kg</div>
+          <div class="cart-item-name">${it.nombre} <span class="cart-item-kg-badge">${badge}</span></div>
+          <div class="cart-item-price">${cant} ${cantU} = ${base.toFixed(3)} ${baseU} · $${it.precio.toFixed(2)}/${baseU}</div>
         </div>
         <div class="qty-ctrl">
-          <button class="qty-btn" onclick="changeQtyGramos('${it.productoId}',-50)" title="-50gr">−</button>
-          <span class="qty-num" style="font-size:12px;min-width:44px">${gr}gr</span>
-          <button class="qty-btn" onclick="changeQtyGramos('${it.productoId}',50)" title="+50gr">+</button>
+          <button class="qty-btn" onclick="changeQtyGramos('${it.productoId}',-${step},${esMl})" title="-${step}${cantU}">−</button>
+          <span class="qty-num" style="font-size:11px;min-width:46px">${cant}${cantU}</span>
+          <button class="qty-btn" onclick="changeQtyGramos('${it.productoId}',${step},${esMl})" title="+${step}${cantU}">+</button>
         </div>
         <div class="cart-subtotal">$${it.subtotal.toFixed(2)}</div>
         <button class="remove-btn" onclick="removeFromCart('${it.productoId}')">✕</button>
@@ -7223,6 +7293,7 @@ window.actualizarVencePRO = actualizarVencePRO;
 window.addToCart = addToCart;
 window.abrirCobroRapido = abrirCobroRapido;
 window.toggleGramosPanel = toggleGramosPanel;
+window.setGramosMode = setGramosMode;
 window.cerrarGramosPanel = cerrarGramosPanel;
 window.abrirSelectorProductoKg = abrirSelectorProductoKg;
 window.renderSelKgList = renderSelKgList;
