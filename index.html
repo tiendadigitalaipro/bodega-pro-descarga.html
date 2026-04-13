@@ -2833,6 +2833,12 @@ function setCat(cat) {
 }
 
 function addToCart(prodId) {
+  // ── Si el panel de pesaje está abierto, enrutar al selector de gramos ──
+  var panelGramos = document.getElementById('gramosPanel');
+  if (panelGramos && panelGramos.style.display !== 'none') {
+    seleccionarProdKg(prodId);
+    return;
+  }
   const prods = DB.get('productos') || [];
   const prod = prods.find(p => p.id === prodId);
   if (!prod || prod.stock === 0) return;
@@ -2889,9 +2895,10 @@ function cerrarGramosPanel() {
 function abrirSelectorProductoKg() {
   var existente = document.getElementById('modalSelKg');
   if (existente) existente.remove();
-  var prods = (STATE.productos || []).filter(function(p){ return p.precioKg || p.esPeso || p.unidad === 'kg'; });
+  var todosProds = DB.get('productos') || [];
+  var prods = todosProds.filter(function(p){ return (p.stock||0) > 0; });
   if (!prods.length) {
-    showToast('⚠️ No hay productos configurados por kg. Edita un producto y marca su precio por kg.','warn');
+    showToast('⚠️ No hay productos con stock disponible.','warn');
     return;
   }
   var overlay = document.createElement('div');
@@ -2914,21 +2921,24 @@ function abrirSelectorProductoKg() {
 function renderSelKgList() {
   var q = (document.getElementById('selKgSearch') || {}).value || '';
   q = q.toLowerCase().trim();
-  var prods = (STATE.productos || []).filter(function(p){ return p.precioKg || p.esPeso || p.unidad === 'kg'; });
+  var todosProds = DB.get('productos') || [];
+  var prods = todosProds.filter(function(p){ return (p.stock||0) > 0; });
   if (q) prods = prods.filter(function(p){ return p.nombre.toLowerCase().includes(q); });
   var list = document.getElementById('selKgList');
   if (!list) return;
   if (!prods.length) {
-    list.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">No se encontraron productos por kg</div>';
+    list.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">No se encontraron productos</div>';
     return;
   }
   list.innerHTML = prods.map(function(p){
     var pKg = p.precioKg || p.precio;
-    return '<div class="sel-kg-item" onclick="seleccionarProdKg(\'' + p.id + '\')">' +
+    var unidLbl = p.unidad === 'kg' ? '/kg' : ('/'+( p.unidad||'und'));
+    var stockLbl = (p.stock||0) + ' ' + (p.unidad||'und');
+    return '<div class="sel-kg-item" onclick="seleccionarProdKg(' + p.id + ')">' +
       '<span style="font-size:22px">' + (p.emoji || '📦') + '</span>' +
       '<div style="flex:1">' +
         '<div style="font-weight:700;font-size:14px">' + p.nombre + '</div>' +
-        '<div style="font-size:12px;color:var(--neon);font-family:var(--mono)">$' + pKg.toFixed(2) + '/kg</div>' +
+        '<div style="font-size:12px;color:var(--neon);font-family:var(--mono)">$' + pKg.toFixed(2) + unidLbl + ' · Stock: ' + stockLbl + '</div>' +
       '</div>' +
       '<span style="color:var(--text3);font-size:18px">›</span>' +
     '</div>';
@@ -2936,9 +2946,15 @@ function renderSelKgList() {
 }
 
 function seleccionarProdKg(prodId) {
-  var prod = (STATE.productos || []).find(function(p){ return p.id === prodId; });
-  if (!prod) return;
+  // Normalizar: puede llegar como string o number
+  var pid = typeof prodId === 'string' ? (isNaN(prodId) ? prodId : parseInt(prodId, 10)) : prodId;
+  var todosProds = DB.get('productos') || [];
+  var prod = todosProds.find(function(p){ return p.id === pid; });
+  if (!prod) { showToast('⚠️ Producto no encontrado','warn'); return; }
   var pKg = prod.precioKg || prod.precio;
+  // Asegurarse que el panel esté visible
+  var panel = document.getElementById('gramosPanel');
+  if (panel && panel.style.display === 'none') panel.style.display = 'block';
   GRAMOS_STATE.prodId = prodId;
   GRAMOS_STATE.nombre = prod.nombre;
   GRAMOS_STATE.emoji = prod.emoji || '📦';
@@ -2989,10 +3005,11 @@ function agregarGramosAlCarrito() {
   var kg = parseFloat((gr / 1000).toFixed(4));
   var total = parseFloat((kg * GRAMOS_STATE.precio).toFixed(2));
   // Verificar stock (si el producto lo tiene)
-  var prod = (STATE.productos || []).find(function(p){ return p.id === GRAMOS_STATE.prodId; });
-  if (prod && prod.stock !== undefined && prod.stock !== null) {
+  var todosP = DB.get('productos') || [];
+  var prod = todosP.find(function(p){ return p.id === GRAMOS_STATE.prodId; });
+  if (prod && prod.stock !== undefined && prod.stock !== null && prod.stock > 0) {
     if (kg > prod.stock) {
-      showToast('⚠️ Stock insuficiente. Disponible: ' + prod.stock.toFixed(3) + ' kg','warn');
+      showToast('⚠️ Stock insuficiente. Disponible: ' + prod.stock + ' ' + (prod.unidad||'kg'),'warn');
       return;
     }
   }
@@ -3025,13 +3042,15 @@ function agregarGramosAlCarrito() {
 }
 
 function changeQtyGramos(prodId, deltaGr) {
-  var item = STATE.cart.find(function(i){ return i.productoId === prodId && i.esPeso; });
+  var pid = typeof prodId === 'string' ? (isNaN(prodId) ? prodId : parseInt(prodId,10)) : prodId;
+  var item = STATE.cart.find(function(i){ return i.productoId === pid && i.esPeso; });
   if (!item) return;
   var nuevoGr = (item.gramos || Math.round(item.qty * 1000)) + deltaGr;
-  if (nuevoGr <= 0) { removeFromCart(prodId); return; }
+  if (nuevoGr <= 0) { removeFromCart(pid); return; }
   // Verificar stock al subir
   if (deltaGr > 0) {
-    var prod = (STATE.productos || []).find(function(p){ return p.id === prodId; });
+    var todosP2 = DB.get('productos') || [];
+    var prod = todosP2.find(function(p){ return p.id === pid; });
     if (prod && prod.stock !== undefined && prod.stock !== null) {
       var nuevoKg = nuevoGr / 1000;
       if (nuevoKg > prod.stock) { showToast('⚠️ Stock máximo alcanzado','warn'); return; }
