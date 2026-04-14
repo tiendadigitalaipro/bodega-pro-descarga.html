@@ -1347,6 +1347,24 @@ canvas{max-width:100%!important}
           </div>
         </div>
 
+        <!-- ══ BACKUP Y RESTAURACIÓN ══ -->
+        <div class="card" style="border:2px solid var(--neon);margin-top:16px">
+          <div class="card-title mb-2" style="color:var(--neon)">💾 Backup y Restauración</div>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
+            Exporta todos tus datos (inventario, ventas, clientes, caja) a un archivo de respaldo. Puedes importarlo en cualquier momento para recuperar todo.
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+            <button class="btn btn-primary" onclick="exportarBackup()">
+              📤 Exportar Backup (.json)
+            </button>
+            <button class="btn" style="background:var(--accent);color:#fff;font-weight:700" onclick="document.getElementById('importBackupFile').click()">
+              📥 Importar Backup (.json)
+            </button>
+            <input type="file" id="importBackupFile" accept=".json" style="display:none" onchange="importarBackup(this)">
+          </div>
+          <div id="backupStatus" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:4px"></div>
+        </div>
+
         <!-- ══ ZONA DE PELIGRO — solo en Configuración ══ -->
         <div class="card" style="border:2px solid #ef4444;margin-top:16px">
           <div class="card-title mb-2" style="color:#ef4444">⚠️ Zona de Peligro</div>
@@ -6722,6 +6740,81 @@ function autoEmojiCategoria(select) {
 }
 
 // ── RESET DATOS ──
+function exportarBackup() {
+  var claves = ['productos','ventas','clientes','config','caja_estado','caja_movimientos',
+                'notasCredito','proveedores','payMethods','theme','accent','licenses_issued'];
+  var backup = { _version: '8.0', _fecha: new Date().toISOString(), datos: {} };
+  claves.forEach(function(k) {
+    var val = DB.get(k);
+    if (val !== null && val !== undefined) backup.datos[k] = val;
+  });
+  var prods    = (backup.datos.productos || []).length;
+  var ventas   = (backup.datos.ventas || []).length;
+  var clientes = (backup.datos.clientes || []).length;
+  var blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bodega-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  var st = document.getElementById('backupStatus');
+  if (st) {
+    st.style.display = 'block';
+    st.style.background = 'rgba(6,214,160,.12)';
+    st.style.color = 'var(--neon)';
+    st.style.border = '1px solid rgba(6,214,160,.3)';
+    st.textContent = '✅ Backup exportado — ' + prods + ' productos, ' + ventas + ' ventas, ' + clientes + ' clientes.';
+  }
+  showToast('✅ Backup descargado: ' + prods + ' productos · ' + ventas + ' ventas', 'success');
+}
+
+function importarBackup(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var backup = JSON.parse(e.target.result);
+      var datos = backup.datos || backup;
+      var claves = Object.keys(datos).filter(function(k){ return !k.startsWith('_'); });
+      if (!claves.length) throw new Error('Archivo vacío o formato inválido');
+      var prods    = (datos.productos || []).length;
+      var ventas   = (datos.ventas || []).length;
+      var clientes = (datos.clientes || []).length;
+      var actual   = (DB.get('productos') || []).length;
+      var msg = '¿Importar backup?\n\n📦 Productos: ' + prods + '\n💰 Ventas: ' + ventas + '\n👥 Clientes: ' + clientes + '\n\n';
+      if (actual > 0) msg += '⚠️ Tienes ' + actual + ' productos actuales. Se sobreescribirán.\n¿Continuar?';
+      else msg += '¿Continuar?';
+      if (!window.confirm(msg)) { input.value = ''; return; }
+      claves.forEach(function(k) {
+        if (datos[k] !== null && datos[k] !== undefined) DB.set(k, datos[k]);
+      });
+      input.value = '';
+      var st = document.getElementById('backupStatus');
+      if (st) {
+        st.style.display = 'block';
+        st.style.background = 'rgba(6,214,160,.12)';
+        st.style.color = 'var(--neon)';
+        st.style.border = '1px solid rgba(6,214,160,.3)';
+        st.textContent = '✅ Backup importado — ' + prods + ' productos, ' + ventas + ' ventas, ' + clientes + ' clientes. Recargando...';
+      }
+      showToast('✅ Importado — ' + prods + ' productos · ' + ventas + ' ventas · ' + clientes + ' clientes', 'success');
+      setTimeout(function(){ location.reload(); }, 1800);
+    } catch(err) {
+      var st = document.getElementById('backupStatus');
+      if (st) {
+        st.style.display = 'block';
+        st.style.background = 'rgba(239,68,68,.1)';
+        st.style.color = 'var(--danger)';
+        st.style.border = '1px solid rgba(239,68,68,.3)';
+        st.textContent = '❌ Error: ' + err.message;
+      }
+      showToast('❌ Error: ' + err.message, 'error');
+      input.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
 function resetearDatos() {
   if (!confirm('¿Borrar TODAS las ventas? Esta acción no se puede deshacer.')) return;
   DB.del('ventas'); DB.del('caja_movimientos'); DB.del('notasCredito');
@@ -7439,6 +7532,8 @@ window.renderProveedoresPage = renderProveedoresPage;
 window.renderReportes = renderReportes;
 window.resetearDatos = resetearDatos;
 window.resetearTodo = resetearTodo;
+window.exportarBackup = exportarBackup;
+window.importarBackup = importarBackup;
 window.saveCliente = saveCliente;
 window.saveConfig = saveConfig;
 window.saveFacturaConfig = saveFacturaConfig;
