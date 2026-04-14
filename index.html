@@ -1507,6 +1507,25 @@ canvas{max-width:100%!important}
           </div>
         </div>
       </div>
+      <!-- ══ FOTO DEL PRODUCTO ══ -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--text3);margin-bottom:10px">📸 FOTO DEL PRODUCTO <span style="color:var(--text3);font-weight:400">(opcional)</span></div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div id="prod-foto-preview-wrap" style="width:72px;height:72px;border-radius:12px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;background:var(--bg3);cursor:pointer" onclick="document.getElementById('prod-foto-file').click()">
+            <span id="prod-foto-placeholder" style="font-size:28px">📷</span>
+            <img id="prod-foto-preview" src="" alt="" style="display:none;width:72px;height:72px;object-fit:cover;border-radius:10px">
+          </div>
+          <div style="flex:1">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+              <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('prod-foto-file').click()" style="font-size:12px">📷 Cámara / Galería</button>
+              <button type="button" id="prod-foto-clear" class="btn btn-ghost btn-sm" onclick="clearProductPhoto()" style="font-size:12px;display:none;color:var(--danger)">🗑️ Quitar foto</button>
+            </div>
+            <div style="font-size:11px;color:var(--text3)">Toma una foto con la cámara o selecciona desde la galería / almacenamiento del dispositivo</div>
+          </div>
+        </div>
+        <input type="file" id="prod-foto-file" accept="image/*" style="display:none" onchange="handleProductPhoto(this)">
+        <input type="hidden" id="prod-foto-data">
+      </div>
       <div class="grid-2">
         <div class="form-group">
           <label class="form-label">Categoría</label>
@@ -1859,6 +1878,56 @@ canvas{max-width:100%!important}
           <div id="remanenteValBs" style="font-size:12px;margin-top:2px"></div>
         </div>
       </div>
+      <!-- ══ SECCIÓN CASHEA FINANCING ══ -->
+      <div id="casheaSection" style="display:none">
+        <div style="background:linear-gradient(135deg,#0d1525,#0f1a2e);border:1.5px solid #3b82f6;border-radius:14px;padding:14px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <div style="font-size:24px">🤝</div>
+            <div>
+              <div style="font-weight:800;color:#3b82f6;font-size:14px;letter-spacing:.5px">FINANCIAMIENTO CASHEA</div>
+              <div style="font-size:11px;color:var(--text2)">Compra ahora, paga en cuotas</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <div style="font-size:10px;letter-spacing:2px;color:#666;font-family:var(--mono);margin-bottom:8px">LÍNEA DE CRÉDITO</div>
+            <div style="display:flex;gap:8px">
+              <button type="button" id="cashea-btn-principal" onclick="selectCasheaLine('principal')" style="flex:1;padding:10px 8px;border-radius:10px;border:2px solid #3b82f6;background:#1a2540;color:#60a5fa;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;line-height:1.4">🏦 Principal<br><span style="font-size:10px;font-weight:400;color:#94a3b8">3 cuotas</span></button>
+              <button type="button" id="cashea-btn-cotidiana" onclick="selectCasheaLine('cotidiana')" style="flex:1;padding:10px 8px;border-radius:10px;border:2px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;line-height:1.4">📅 Cotidiana<br><span style="font-size:10px;font-weight:400">1 cuota</span></button>
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <div style="font-size:10px;letter-spacing:2px;color:#666;font-family:var(--mono);margin-bottom:8px">% PAGO INICIAL</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button type="button" id="cashea-pct-60" onclick="setCasheaPct(60)" style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid #3b82f6;background:#1a2540;color:#60a5fa;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s">60%</button>
+              <button type="button" id="cashea-pct-50" onclick="setCasheaPct(50)" style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s">50%</button>
+              <button type="button" id="cashea-pct-70" onclick="setCasheaPct(70)" style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s">70%</button>
+              <input type="number" id="cashea-pct-input" class="form-input" min="10" max="100" placeholder="%" oninput="setCasheaPctManual()" style="flex:1;text-align:center;font-weight:700;font-size:13px;padding:8px 4px">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label" style="font-size:10px;letter-spacing:2px;font-family:var(--mono)">REFERENCIA / CÓDIGO DE APROBACIÓN</label>
+            <input type="text" id="cashea-referencia" class="form-input" placeholder="Nro. de referencia Cashea">
+          </div>
+          <div id="casheaResumen" style="background:#060e1c;border-radius:10px;padding:12px;border:1px solid #1e3a5f">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span style="color:#888;font-size:12px">💰 Pago inicial hoy</span>
+              <div style="text-align:right">
+                <div id="cashea-inicial-usd" style="color:#22c55e;font-weight:800;font-size:16px">$0.00</div>
+                <div id="cashea-inicial-bs" style="font-size:10px;color:#888">0.00 Bs</div>
+              </div>
+            </div>
+            <div style="height:1px;background:#1e3a5f;margin:8px 0"></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <span style="color:#888;font-size:12px">📅 Plan de cuotas</span>
+              <span id="cashea-cuotas-txt" style="color:#60a5fa;font-weight:700;font-size:12px">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:#888;font-size:12px">💳 Saldo financiado</span>
+              <span id="cashea-financiado-txt" style="color:#f59e0b;font-weight:700;font-size:12px">$0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal('modalCobro')">Cancelar</button>
@@ -2026,7 +2095,7 @@ const PAISES = {
     tasaLabel: 'Tasa BCV (Bs por $1)',
     tasaDefault: 649,
     tasaPlaceholder: '649.00',
-    metodosDefault: ['efectivo_usd','efectivo_bs','pago_movil','punto_debito','punto_credito','transferencia','zelle','binance','zinli','bybit','apolo','biopago','fiado','mixto'],
+    metodosDefault: ['efectivo_usd','efectivo_bs','pago_movil','punto_debito','punto_credito','transferencia','zelle','binance','zinli','bybit','apolo','biopago','cashea','fiado','mixto'],
     metodosDisponibles: [
       { id:'efectivo_usd',  label:'Efectivo $',       icon:'💵', currency:'USD' },
       { id:'efectivo_bs',   label:'Efectivo Bs',      icon:'💴', currency:'LOCAL' },
@@ -2040,6 +2109,7 @@ const PAISES = {
       { id:'bybit',         label:'Bybit Pay',        icon:'⚡', currency:'USD' },
       { id:'apolo',         label:'Apolo Pay',        icon:'🚀', currency:'USD' },
       { id:'biopago',       label:'Bio Pago',         icon:'🟢', currency:'LOCAL' },
+      { id:'cashea',        label:'Cashea',           icon:'🤝', currency:'USD' },
       { id:'fiado',         label:'Fiado',            icon:'📝', currency:'LOCAL' },
       { id:'mixto',         label:'Pago Mixto',       icon:'🔀', currency:'MIX' },
     ],
@@ -2212,6 +2282,7 @@ const PAYMENT_METHODS = [
   { id: 'mixto',         label: 'Pago Mixto',          icon: '🔀', currency: 'MIX' },
   { id: 'fiado',         label: 'Fiado',               icon: '📝', currency: 'BS'  },
   { id: 'biopago', label: 'Bio Pago', icon: '🟢', currency: 'BS'  },
+  { id: 'cashea',  label: 'Cashea',   icon: '🤝', currency: 'USD' },
 ];
 
 const CAT_ICONS = {
@@ -2841,8 +2912,11 @@ function renderPosProducts() {
 
   document.getElementById('posProductsGrid').innerHTML = filtered.map(p => {
     const stockClass = (p.stock||0) === 0 ? 'stock-out' : (p.stock||0) <= p.stockMin ? 'stock-low' : '';
+    const imgOrEmoji = p.foto
+      ? `<img src="${p.foto}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto" alt="">`
+      : `<span class="p-emoji">${p.emoji}</span>`;
     return `<div class="product-card ${(p.stock||0) === 0 ? 'opacity-50' : ''}" onclick="addToCart(${p.id})" style="${(p.stock||0)===0?'opacity:0.5;pointer-events:none':''}">
-      <span class="p-emoji">${p.emoji}</span>
+      ${imgOrEmoji}
       <div class="p-name">${p.nombre}</div>
       <div class="p-price">$${(p.precio||0).toFixed(2)}</div>
       <div class="p-stock ${stockClass}">${(p.stock||0)===0?'Sin stock':(p.stock||0)+' '+p.unidad}</div>
@@ -3508,12 +3582,14 @@ function procesarVenta() {
     clientes.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
 
   // Mostrar sección de pago adecuada
-  var esMixto = (STATE.payMethod||'').toLowerCase().includes('mixto');
+  var esMixto   = (STATE.payMethod||'').toLowerCase().includes('mixto');
+  var esCashea  = (STATE.payMethod||'') === 'Cashea';
   var simpleSection = document.getElementById('pagoSimpleSection');
   var mixtoSection  = document.getElementById('pagoMixtoSection');
   var vueltoEl      = document.getElementById('vueltoInfo');
-  if (simpleSection) simpleSection.style.display = esMixto ? 'none' : 'block';
+  if (simpleSection) simpleSection.style.display = (esMixto || esCashea) ? 'none' : 'block';
   if (mixtoSection)  mixtoSection.style.display  = esMixto ? 'block' : 'none';
+  mostrarCasheaSection(esCashea);
   if (vueltoEl)      vueltoEl.style.display = 'none';
   if (esMixto) {
     ['mx-efusd','mx-efbs','mx-pm','mx-zelle','mx-punto','mx-trans'].forEach(function(id){
@@ -3549,7 +3625,18 @@ function confirmarVenta() {
   const clienteId = parseInt(document.getElementById('cobro-cliente').value) || null;
   const notas = document.getElementById('cobro-notas').value;
   var montoRecibido, vueltoUSD, vueltoBs;
-  var esMixto = (STATE.payMethod||'').toLowerCase().includes('mixto');
+  var esMixto  = (STATE.payMethod||'').toLowerCase().includes('mixto');
+  var esCashea = (STATE.payMethod||'') === 'Cashea';
+  // Validación Cashea
+  if (esCashea) {
+    var _ref = document.getElementById('cashea-referencia');
+    if (!_ref || !_ref.value.trim()) {
+      showToast('⚠️ Ingresa el número de referencia Cashea','warn');
+      return;
+    }
+    montoRecibido = total * (CASHEA_STATE.pct / 100);
+    vueltoUSD = 0; vueltoBs = 0;
+  } else
   if (esMixto) {
     var tasa = STATE.tasa || 649;
     var usd   = parseFloat(document.getElementById('mx-efusd').value)||0;
@@ -3604,6 +3691,14 @@ function confirmarVenta() {
       zelle:    parseFloat(document.getElementById('mx-zelle').value)||0,
       punto_bs: parseFloat(document.getElementById('mx-punto').value)||0,
       trans_bs: parseFloat(document.getElementById('mx-trans').value)||0
+    } : null,
+    casheaDetalle: esCashea ? {
+      linea:      CASHEA_STATE.linea,
+      pct:        CASHEA_STATE.pct,
+      cuotas:     CASHEA_STATE.linea === 'principal' ? 3 : 1,
+      pagoInicial: montoRecibido,
+      financiado:  total - montoRecibido,
+      referencia: (document.getElementById('cashea-referencia') ? document.getElementById('cashea-referencia').value.trim() : '')
     } : null,
   };
 
@@ -3953,7 +4048,8 @@ function renderInventario() {
     var bt = p.stock === 0 ? 'Sin stock' : p.stock <= p.stockMin ? 'Stock bajo' : 'Normal';
     var dotColor = p.stock===0?'var(--danger)':p.stock<=p.stockMin?'var(--warn)':'var(--success)';
     return '<tr>' +
-      '<td><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">' + p.emoji + '</span>' +
+      '<td><div style="display:flex;align-items:center;gap:8px">' +
+        (p.foto ? '<img src="'+p.foto+'" style="width:34px;height:34px;object-fit:cover;border-radius:8px;flex-shrink:0" alt="">' : '<span style="font-size:18px">'+p.emoji+'</span>') +
         '<div><div style="font-weight:600">' + p.nombre + '</div>' +
         '<div style="font-size:11px;color:var(--text2)">' + (p.codigo||'—') + '</div></div></div></td>' +
       '<td><span class="badge badge-purple">' + p.categoria + '</span></td>' +
@@ -3999,6 +4095,21 @@ function openAddProduct(id) {
     document.getElementById('prod-stockMin').value = p.stockMin;
     document.getElementById('prod-unidad').value = p.unidad;
     var pfEl = document.getElementById('prod-precio-fijo'); if(pfEl) pfEl.checked = p.precioFijo||false;
+    // Cargar foto del producto
+    var _fd = document.getElementById('prod-foto-data');
+    var _fp = document.getElementById('prod-foto-preview');
+    var _fph = document.getElementById('prod-foto-placeholder');
+    var _fcb = document.getElementById('prod-foto-clear');
+    if (_fd) _fd.value = p.foto || '';
+    if (p.foto) {
+      if (_fp) { _fp.src = p.foto; _fp.style.display = 'block'; }
+      if (_fph) _fph.style.display = 'none';
+      if (_fcb) _fcb.style.display = 'inline-flex';
+    } else {
+      if (_fp) { _fp.src = ''; _fp.style.display = 'none'; }
+      if (_fph) _fph.style.display = 'block';
+      if (_fcb) _fcb.style.display = 'none';
+    }
   } else {
     ['prod-id','prod-nombre','prod-emoji','prod-codigo','prod-costo','prod-precio','prod-stock','prod-stockMin','prod-costo-bulto','prod-unidades-bulto','prod-cant-bultos','prod-ganancia-pct','calc-total-unidades'].forEach(function(fid){
       var el = document.getElementById(fid); if(el) el.value = '';
@@ -4009,6 +4120,7 @@ function openAddProduct(id) {
     var res = document.getElementById('calc-resultado'); if(res) res.style.display='none';
     var iva = document.getElementById('prod-iva'); if(iva) iva.checked = false;
     var pfEl2 = document.getElementById('prod-precio-fijo'); if(pfEl2) pfEl2.checked = false;
+    clearProductPhoto();
     // Auto-emoji para Bebidas al abrir
     var emojiEl = document.getElementById('prod-emoji');
     if (emojiEl && !emojiEl.value.trim()) emojiEl.value = CAT_ICONS['Bebidas'] || '🥤';
@@ -4256,6 +4368,7 @@ function saveProduct() {
     stockMin: parseInt(document.getElementById('prod-stockMin').value) || 5,
     unidad: document.getElementById('prod-unidad').value,
     precioFijo: document.getElementById('prod-precio-fijo') ? document.getElementById('prod-precio-fijo').checked : false,
+    foto: (document.getElementById('prod-foto-data') ? document.getElementById('prod-foto-data').value : '') || '',
   };
 
   if (existingId) {
@@ -6245,11 +6358,145 @@ function abrirCobro() {
   }
   var notasEl = document.getElementById('cobro-notas');
   if (notasEl) notasEl.value = '';
+  // Mostrar sección de pago adecuada
+  var _esMixAb  = (STATE.payMethod||'').toLowerCase().includes('mixto');
+  var _esCashAb = (STATE.payMethod||'') === 'Cashea';
+  var _simAb = document.getElementById('pagoSimpleSection');
+  var _mixAb = document.getElementById('pagoMixtoSection');
+  if (_simAb) _simAb.style.display = (_esMixAb || _esCashAb) ? 'none' : 'block';
+  if (_mixAb) _mixAb.style.display = _esMixAb ? 'block' : 'none';
+  mostrarCasheaSection(_esCashAb);
   openModal('modalCobro');
 }
 
 // alias para compatibilidad
 function procesarVenta() { abrirCobro(); }
+
+// ═══════════════════════════════════════════════════════════════
+//  MÓDULO: FOTO DE PRODUCTO — A2K Digital Studio
+// ═══════════════════════════════════════════════════════════════
+function handleProductPhoto(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('⚠️ La imagen es muy grande. Máximo 10MB','warn');
+    input.value = '';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxSize = 480;
+      var w = img.width, h = img.height;
+      if (w > h) { if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; } }
+      else        { if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var compressed = canvas.toDataURL('image/jpeg', 0.78);
+      var _fd  = document.getElementById('prod-foto-data');
+      var _fp  = document.getElementById('prod-foto-preview');
+      var _fph = document.getElementById('prod-foto-placeholder');
+      var _fcb = document.getElementById('prod-foto-clear');
+      if (_fd)  _fd.value = compressed;
+      if (_fp)  { _fp.src = compressed; _fp.style.display = 'block'; }
+      if (_fph) _fph.style.display = 'none';
+      if (_fcb) _fcb.style.display = 'inline-flex';
+      showToast('✅ Foto cargada correctamente','success');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearProductPhoto() {
+  var _fd  = document.getElementById('prod-foto-data');
+  var _ff  = document.getElementById('prod-foto-file');
+  var _fp  = document.getElementById('prod-foto-preview');
+  var _fph = document.getElementById('prod-foto-placeholder');
+  var _fcb = document.getElementById('prod-foto-clear');
+  if (_fd)  _fd.value  = '';
+  if (_ff)  _ff.value  = '';
+  if (_fp)  { _fp.src = ''; _fp.style.display = 'none'; }
+  if (_fph) _fph.style.display = 'block';
+  if (_fcb) _fcb.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MÓDULO: CASHEA FINANCING — A2K Digital Studio
+// ═══════════════════════════════════════════════════════════════
+var CASHEA_STATE = { linea: 'principal', pct: 60 };
+
+function mostrarCasheaSection(show) {
+  var el   = document.getElementById('casheaSection');
+  var sim  = document.getElementById('pagoSimpleSection');
+  var mix  = document.getElementById('pagoMixtoSection');
+  if (!el) return;
+  if (show) {
+    el.style.display = 'block';
+    if (sim) sim.style.display = 'none';
+    CASHEA_STATE.linea = 'principal';
+    CASHEA_STATE.pct   = 60;
+    selectCasheaLine('principal');
+    setCasheaPct(60);
+    var refEl = document.getElementById('cashea-referencia');
+    if (refEl) refEl.value = '';
+  } else {
+    el.style.display = 'none';
+    var _esMixto = (STATE.payMethod||'').toLowerCase().includes('mixto');
+    if (sim) sim.style.display = _esMixto ? 'none' : 'block';
+    if (mix) mix.style.display = _esMixto ? 'block' : 'none';
+  }
+}
+
+function selectCasheaLine(linea) {
+  CASHEA_STATE.linea = linea;
+  var btnP = document.getElementById('cashea-btn-principal');
+  var btnC = document.getElementById('cashea-btn-cotidiana');
+  if (btnP) { btnP.style.borderColor = linea==='principal'?'#3b82f6':'var(--border)'; btnP.style.background = linea==='principal'?'#1a2540':'var(--bg3)'; btnP.style.color = linea==='principal'?'#60a5fa':'var(--text2)'; }
+  if (btnC) { btnC.style.borderColor = linea==='cotidiana'?'#3b82f6':'var(--border)'; btnC.style.background = linea==='cotidiana'?'#1a2540':'var(--bg3)'; btnC.style.color = linea==='cotidiana'?'#60a5fa':'var(--text2)'; }
+  calcCasheaResumen();
+}
+
+function setCasheaPct(pct) {
+  CASHEA_STATE.pct = pct;
+  var el = document.getElementById('cashea-pct-input');
+  if (el) el.value = pct;
+  [50,60,70].forEach(function(p) {
+    var btn = document.getElementById('cashea-pct-'+p);
+    if (btn) { btn.style.borderColor = (p===pct)?'#3b82f6':'var(--border)'; btn.style.background = (p===pct)?'#1a2540':'var(--bg3)'; btn.style.color = (p===pct)?'#60a5fa':'var(--text2)'; }
+  });
+  calcCasheaResumen();
+}
+
+function setCasheaPctManual() {
+  var val = parseInt(document.getElementById('cashea-pct-input').value) || 60;
+  CASHEA_STATE.pct = Math.max(10, Math.min(100, val));
+  [50,60,70].forEach(function(p) {
+    var btn = document.getElementById('cashea-pct-'+p);
+    if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg3)'; btn.style.color = 'var(--text2)'; }
+  });
+  calcCasheaResumen();
+}
+
+function calcCasheaResumen() {
+  var total     = STATE.cart ? STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0) : 0;
+  var tasa      = STATE.tasa || 1;
+  var pct       = CASHEA_STATE.pct / 100;
+  var inicial   = total * pct;
+  var financiado= total - inicial;
+  var cuotas    = CASHEA_STATE.linea === 'principal' ? 3 : 1;
+  var cuotaAmt  = cuotas > 1 ? (financiado / cuotas) : financiado;
+  var elIU   = document.getElementById('cashea-inicial-usd');
+  var elIB   = document.getElementById('cashea-inicial-bs');
+  var elCT   = document.getElementById('cashea-cuotas-txt');
+  var elFin  = document.getElementById('cashea-financiado-txt');
+  if (elIU)  elIU.textContent  = '$' + inicial.toFixed(2);
+  if (elIB)  elIB.textContent  = fmtLocal(inicial * tasa);
+  if (elCT)  elCT.textContent  = cuotas===1 ? '1 cuota única de $'+financiado.toFixed(2) : cuotas+' cuotas de $'+cuotaAmt.toFixed(2)+' c/u';
+  if (elFin) elFin.textContent = '$'+financiado.toFixed(2);
+}
 
 // ── DATOS DE MUESTRA ──
 function loadSampleData() {
