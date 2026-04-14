@@ -677,6 +677,37 @@ canvas{max-width:100%!important}
 #ia-input-area{padding:10px;border-top:1px solid rgba(57,255,20,0.15);display:flex;gap:8px}
 #ia-input{flex:1;background:#1C1C22;border:1px solid rgba(57,255,20,0.2);border-radius:8px;color:#F0EDE6;padding:8px 12px;font-size:13px;outline:none}
 #ia-input-area button{background:var(--neon,#39ff14);color:#0D0D0F;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:16px;font-weight:700}
+
+/* ═══ MODO EMPLEADO — Control de Acceso A2K ═══ */
+body.modo-empleado .emp-hidden { display:none !important; }
+body.modo-empleado .emp-locked { pointer-events:none !important; opacity:0.3 !important; filter:grayscale(1); }
+body.modo-empleado #emp-mode-badge { display:flex !important; }
+#emp-mode-badge {
+  display:none; position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+  background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff;
+  padding:9px 20px; border-radius:24px; font-size:12px; font-weight:700;
+  z-index:8999; align-items:center; gap:10px;
+  box-shadow:0 4px 24px rgba(220,38,38,0.5); white-space:nowrap;
+  animation:pulseRed 2s infinite;
+}
+@keyframes pulseRed {
+  0%,100%{box-shadow:0 4px 24px rgba(220,38,38,0.5);}
+  50%{box-shadow:0 4px 32px rgba(220,38,38,0.85);}
+}
+#emp-mode-badge .emp-unlock-btn {
+  background:rgba(255,255,255,0.2); border:none; color:#fff;
+  padding:4px 12px; border-radius:12px; cursor:pointer;
+  font-weight:800; font-size:11px; margin-left:4px;
+}
+#emp-mode-badge .emp-unlock-btn:hover { background:rgba(255,255,255,0.35); }
+.btn-modo-empleado {
+  width:100%; display:flex; align-items:center; gap:10px; padding:10px;
+  background:transparent; border:1px solid var(--border); border-radius:10px;
+  color:var(--text2); font-size:12px; font-family:var(--font); cursor:pointer;
+  transition:all 0.2s; margin-bottom:6px;
+}
+.btn-modo-empleado:hover { border-color:var(--danger); color:var(--danger); }
+body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--danger); background:rgba(220,38,38,0.08); }
 </style>
 </head>
 
@@ -791,17 +822,20 @@ canvas{max-width:100%!important}
       <div class="nav-item" onclick="showPage(&#39;clientes&#39;,this)" data-page="clientes">
         <span class="nav-icon">👥</span><span class="nav-label">Clientes / Fiados</span>
       </div>
-      <div class="nav-item" onclick="showPage(&#39;reportes&#39;,this)" data-page="reportes">
+      <div class="nav-item emp-hidden" onclick="showPage(&#39;reportes&#39;,this)" data-page="reportes">
         <span class="nav-icon">📈</span><span class="nav-label">Reportes</span>
       </div>
-      <div class="nav-item" onclick="showPage(&#39;proveedores&#39;,this)" data-page="proveedores">
+      <div class="nav-item emp-hidden" onclick="showPage(&#39;proveedores&#39;,this)" data-page="proveedores">
         <span class="nav-icon">🏭</span><span class="nav-label">Proveedores</span>
       </div>
-      <div class="nav-item" onclick="showPage(&#39;configuracion&#39;,this)" data-page="configuracion">
+      <div class="nav-item emp-hidden" onclick="showPage(&#39;configuracion&#39;,this)" data-page="configuracion">
         <span class="nav-icon">⚙️</span><span class="nav-label">Configuración</span>
       </div>
     </nav>
     <div class="sidebar-footer">
+      <button class="btn-modo-empleado" onclick="toggleModoEmpleado()" id="btnModoEmpleado">
+        <span id="empModeIcon">🔓</span><span id="empModeLabel" class="nav-label">Modo Empleado</span>
+      </button>
       <button class="sidebar-collapse-btn" onclick="toggleSidebar()">
         <span class="nav-icon" id="collapseIcon">◀</span>
         <span class="nav-label" id="collapseLabel">Colapsar</span>
@@ -1053,7 +1087,7 @@ canvas{max-width:100%!important}
             <button class="btn btn-ghost btn-sm" onclick="exportarInventarioExcel()" title="Exportar a Excel/CSV">📊 Excel</button>
             <button class="btn btn-ghost btn-sm" onclick="abrirEtiquetas()" title="Imprimir etiquetas de productos">🏷️ Etiquetas</button>
             <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:700;border:none;border-radius:8px;padding:6px 12px;cursor:pointer" onclick="exportarInventarioWA()" title="Compartir por WhatsApp">📲 WhatsApp</button>
-            <button class="btn btn-primary" onclick="openAddProduct()">+ Nuevo Producto</button>
+            <button class="btn btn-primary emp-hidden" onclick="openAddProduct()">+ Nuevo Producto</button>
           </div>
         </div>
         <div class="inv-toolbar">
@@ -1132,8 +1166,8 @@ canvas{max-width:100%!important}
           </div>
           <div class="flex gap-2">
             <button class="btn btn-primary" onclick="abrirCaja()">📂 Abrir Caja</button>
-            <button class="btn btn-danger" onclick="cerrarCaja()">🔒 Cerrar Caja</button>
-            <button class="btn btn-neon" onclick="declararCierreCaja()" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;box-shadow:0 4px 15px rgba(245,158,11,0.3)">🧾 Declarar Cierre</button>
+            <button class="btn btn-danger emp-hidden" onclick="cerrarCajaConPermisos()">🔒 Cerrar Caja</button>
+            <button class="btn btn-neon emp-hidden" onclick="declararCierreCaja()" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;box-shadow:0 4px 15px rgba(245,158,11,0.3)">🧾 Declarar Cierre</button>
           </div>
         </div>
         <div class="grid-4 mb-4" id="cajaStats"><div class="stat-card" style="--c1:var(--neon);--c2:var(--accent)"><div class="stat-label">Estado Caja</div><div class="stat-val" style="color:var(--danger)">CERRADA</div></div><div class="stat-card" style="--c1:var(--neon);--c2:var(--accent)"><div class="stat-label">Total en Caja</div><div class="stat-val neon-text">$0.00</div></div><div class="stat-card" style="--c1:var(--accent);--c2:var(--neonb)"><div class="stat-label">Ventas Hoy</div><div class="stat-val accent-glow">$0.00</div></div><div class="stat-card" style="--c1:var(--danger);--c2:var(--warn)"><div class="stat-label">Salidas</div><div class="stat-val" style="color:var(--danger)">$0.00</div></div></div>
@@ -2265,6 +2299,7 @@ let STATE = {
   payMethod: 'Efectivo $',
   charts: {},
   currentPage: 'dashboard',
+  userRole: 'admin', // 'admin' | 'empleado'
 };
 
 const PAYMENT_METHODS = [
@@ -2627,6 +2662,11 @@ function startApp() {
   // ── Botón ☰ móvil: activar AHORA que el app es visible ──
   checkMobile();
 
+  // Restaurar modo empleado si estaba activo
+  if (DB.get('userRole') === 'empleado') {
+    setTimeout(function(){ aplicarModoEmpleado(true); }, 300);
+  }
+
   // Cargar configuración guardada
   const cfg = DB.get('config') || {};
   STATE.tasa = cfg.tasa || 649;
@@ -2719,6 +2759,12 @@ function startApp() {
 
 // ─── NAVEGACIÓN ───────────────────────────────────────────────
 function showPage(page, el) {
+  // Control de acceso por rol
+  var _BLOQUEADAS_EMP = ['reportes','proveedores','configuracion'];
+  if (STATE.userRole === 'empleado' && _BLOQUEADAS_EMP.includes(page)) {
+    showToast('🔒 Acceso restringido — Solo el administrador puede ver esta sección','error');
+    return;
+  }
   document.querySelectorAll('[id^="page-"]').forEach(function(p){ p.style.display = 'none'; });
   var targetPage = document.getElementById('page-' + page);
   if (targetPage) targetPage.style.display = 'block';
@@ -4061,9 +4107,9 @@ function renderInventario() {
         p.stock + ' ' + p.unidad + '</div></td>' +
       '<td><span class="badge ' + bc + '">' + bt + '</span></td>' +
       '<td><div style="display:flex;gap:6px">' +
-        '<button class="btn btn-sm btn-outline" onclick="editProduct(' + p.id + ')">✏️</button>' +
-        '<button class="btn btn-sm btn-ghost" onclick="adjustStock(' + p.id + ')">📦</button>' +
-        '<button class="btn btn-sm btn-danger" onclick="deleteProduct(' + p.id + ')">🗑️</button>' +
+        '<button class="btn btn-sm btn-outline emp-hidden" onclick="editProduct(' + p.id + ')">✏️</button>' +
+        '<button class="btn btn-sm btn-ghost emp-hidden" onclick="adjustStock(' + p.id + ')">📦</button>' +
+        '<button class="btn btn-sm btn-danger emp-hidden" onclick="deleteProduct(' + p.id + ')">🗑️</button>' +
       '</div></td></tr>';
   }).join('') || '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text2)">No hay productos</td></tr>';
 }
@@ -4608,7 +4654,7 @@ function renderHistorial() {
       '<td><div style="display:flex;gap:4px">' +
         '<button class="btn btn-sm btn-outline" onclick="verDetalleVenta(' + v.id + ')">👁</button>' +
         '<button class="btn btn-sm btn-ghost" onclick="reimprimirRecibo(' + v.id + ')">🧾</button>' +
-        (!v.devuelta ? '<button class="btn btn-sm btn-danger" onclick="abrirDevolucion(' + v.id + ')" title="Devolver">↩️</button>' : '') +
+        (!v.devuelta ? '<button class="btn btn-sm btn-danger emp-hidden" onclick="abrirDevolucion(' + v.id + ')" title="Devolver">↩️</button>' : '') +
       '</div></td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">Sin ventas</td></tr>';
 }
@@ -6371,6 +6417,117 @@ function abrirCobro() {
 
 // alias para compatibilidad
 function procesarVenta() { abrirCobro(); }
+
+// ═══════════════════════════════════════════════════════════════
+//  MÓDULO: CONTROL DE ACCESO POR ROL — A2K Digital Studio
+//  Protección anti-robo para dueños de bodega
+// ═══════════════════════════════════════════════════════════════
+function aplicarModoEmpleado(activo) {
+  STATE.userRole = activo ? 'empleado' : 'admin';
+  DB.set('userRole', STATE.userRole);
+  if (activo) {
+    document.body.classList.add('modo-empleado');
+  } else {
+    document.body.classList.remove('modo-empleado');
+  }
+  var icon  = document.getElementById('empModeIcon');
+  var label = document.getElementById('empModeLabel');
+  if (icon)  icon.textContent  = activo ? '🔒' : '🔓';
+  if (label) label.textContent = activo ? 'Salir Modo Empleado' : 'Modo Empleado';
+  // Si el empleado estaba en una página restringida, redirigir al POS
+  if (activo) {
+    var _bloq = ['reportes','proveedores','configuracion'];
+    if (_bloq.includes(STATE.currentPage)) showPage('pos');
+  }
+}
+
+function toggleModoEmpleado() {
+  if (STATE.userRole === 'admin') {
+    if (window.confirm('¿Activar Modo Empleado?\n\nEn este modo los empleados NO podrán:\n• Editar ni agregar productos\n• Ver ni modificar reportes\n• Acceder a configuración\n• Acceder a proveedores\n• Cerrar la caja\n• Hacer devoluciones\n\nPara desactivar se requerirá la contraseña de administrador.')) {
+      aplicarModoEmpleado(true);
+      showToast('🔒 Modo Empleado activado — Acceso restringido','warn');
+    }
+  } else {
+    salirModoEmpleado();
+  }
+}
+
+function salirModoEmpleado() {
+  // Crear prompt de contraseña inline
+  var overlay = document.createElement('div');
+  overlay.id = 'modalEmpUnlock';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99998;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:var(--card);border:2px solid var(--danger);border-radius:18px;padding:32px;width:90%;max-width:360px;text-align:center;box-shadow:0 30px 80px rgba(220,38,38,0.4)';
+  box.innerHTML = '<div style="font-size:40px;margin-bottom:12px">🔐</div>'
+    + '<div style="color:var(--danger);font-weight:900;font-size:16px;margin-bottom:6px">Desbloquear Modo Admin</div>'
+    + '<div style="color:var(--text2);font-size:13px;margin-bottom:20px">Ingresa la contraseña de administrador</div>'
+    + '<input type="password" id="empUnlockPw" class="form-input" placeholder="Contraseña admin" style="text-align:center;font-size:15px;letter-spacing:3px;margin-bottom:8px">'
+    + '<div id="empUnlockErr" style="color:var(--danger);font-size:12px;margin-bottom:10px;min-height:16px"></div>'
+    + '<div style="display:flex;gap:10px">'
+    + '<button id="empUnlockCancel" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:14px">Cancelar</button>'
+    + '<button id="empUnlockOk" style="flex:2;padding:12px;border-radius:10px;border:none;background:var(--danger);color:#fff;cursor:pointer;font-size:14px;font-weight:800">Desbloquear</button>'
+    + '</div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  var inp = document.getElementById('empUnlockPw');
+  document.getElementById('empUnlockCancel').onclick = function(){ overlay.remove(); };
+  function _verificarEmpPw() {
+    var pw = inp ? inp.value.trim() : '';
+    var validos = ['ZYNC2024admin','admin','zync','a2k2026'];
+    if (validos.indexOf(pw) < 0) {
+      var err = document.getElementById('empUnlockErr');
+      if (err) err.textContent = '❌ Contraseña incorrecta';
+      if (inp) { inp.value = ''; inp.focus(); }
+      return;
+    }
+    overlay.remove();
+    aplicarModoEmpleado(false);
+    showToast('🔓 Modo Administrador restaurado','success');
+  }
+  document.getElementById('empUnlockOk').onclick = _verificarEmpPw;
+  if (inp) {
+    inp.onkeydown = function(e){ if(e.key==='Enter') _verificarEmpPw(); };
+    setTimeout(function(){ inp.focus(); }, 100);
+  }
+}
+
+function cerrarCajaConPermisos() {
+  if (STATE.userRole === 'empleado') {
+    showToast('🔒 Solo el administrador puede cerrar la caja','error');
+    // Pedir contraseña admin para cerrar caja excepcionalmente
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99998;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:var(--card);border:2px solid var(--warn);border-radius:18px;padding:32px;width:90%;max-width:360px;text-align:center';
+    box.innerHTML = '<div style="font-size:40px;margin-bottom:12px">🔒</div>'
+      + '<div style="color:var(--warn);font-weight:900;font-size:16px;margin-bottom:6px">Cierre de Caja</div>'
+      + '<div style="color:var(--text2);font-size:13px;margin-bottom:20px">Requiere contraseña de administrador</div>'
+      + '<input type="password" id="cajaPw" class="form-input" placeholder="Contraseña admin" style="text-align:center;font-size:15px;letter-spacing:3px;margin-bottom:8px">'
+      + '<div id="cajaPwErr" style="color:var(--danger);font-size:12px;margin-bottom:10px;min-height:16px"></div>'
+      + '<div style="display:flex;gap:10px">'
+      + '<button id="cajaPwCancel" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">Cancelar</button>'
+      + '<button id="cajaPwOk" style="flex:2;padding:12px;border-radius:10px;border:none;background:var(--warn);color:#000;cursor:pointer;font-weight:800">Continuar</button>'
+      + '</div>';
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    var inp = document.getElementById('cajaPw');
+    document.getElementById('cajaPwCancel').onclick = function(){ overlay.remove(); };
+    document.getElementById('cajaPwOk').onclick = function(){
+      var pw = inp ? inp.value.trim() : '';
+      if (['ZYNC2024admin','admin','zync','a2k2026'].indexOf(pw) < 0) {
+        document.getElementById('cajaPwErr').textContent = '❌ Contraseña incorrecta';
+        if (inp) { inp.value=''; inp.focus(); }
+        return;
+      }
+      overlay.remove();
+      cerrarCaja();
+    };
+    if (inp) { inp.onkeydown = function(e){ if(e.key==='Enter') document.getElementById('cajaPwOk').click(); }; setTimeout(function(){ inp.focus(); }, 100); }
+    return;
+  }
+  cerrarCaja();
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  MÓDULO: FOTO DE PRODUCTO — A2K Digital Studio
@@ -8372,6 +8529,12 @@ function enviarIA(){
     <input type="text" id="ia-input" placeholder="Pregunta por un producto..." onkeydown="if(event.key==='Enter')enviarIA()"/>
     <button onclick="enviarIA()">📤</button>
   </div>
+</div>
+
+<!-- ══ BADGE MODO EMPLEADO ══ -->
+<div id="emp-mode-badge">
+  🔒 MODO EMPLEADO ACTIVO
+  <button class="emp-unlock-btn" onclick="salirModoEmpleado()">🔓 Desbloquear</button>
 </div>
 
 <div id="modalServerInfo" class="modal-overlay" style="display: none;"><div class="modal" style="max-width: 460px;"><div class="modal-header"><span class="modal-title">Servidor Local A2K</span><button class="btn-close" id="closeServerModal">x</button></div><div class="modal-body"><div style="background:var(--bg2);border-radius:12px;padding:14px;margin-bottom:12px"><div class="bento-label" style="margin-bottom:7px">QUE CONTROLA EL SERVIDOR LOCAL</div><div style="font-size:13px;color:var(--text2);line-height:1.9">Impresoras termicas directo al puerto<br>Gaveta de dinero (cajon monedero)<br>Balanzas digitales por puerto serial<br>Terminales POS fisicos</div></div><div style="background:var(--bg2);border-radius:12px;padding:14px;margin-bottom:12px"><div class="bento-label" style="margin-bottom:7px">COMO OBTENERLO</div><div style="font-size:13px;color:var(--text2);line-height:1.9">Contacta a A2K Digital Studio:<br><strong style="color:var(--neon)">+58 416 411 7331</strong> (WhatsApp)<br><strong style="color:var(--accent)">a2kdigitalstudio2025@gmail.com</strong><br><br>Puerto: <strong style="color:var(--neon);font-family:var(--mono)">localhost:9100</strong></div></div><div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:11px;font-size:12px;color:var(--text2)">Sin servidor: Bodega Pro funciona completo para ventas, inventario y reportes.</div></div><div class="modal-footer"><button class="btn btn-ghost" id="closeServerModal2">Cerrar</button><a href="https://wa.me/584164117331?text=Hola%20A2K%2C%20quiero%20el%20servidor%20local" target="_blank" class="btn btn-primary">Contactar A2K por WhatsApp</a></div></div></div></body></html>
