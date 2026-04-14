@@ -1399,6 +1399,31 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
           <div id="backupStatus" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:4px"></div>
         </div>
 
+        <!-- ══ CLAVE MODO EMPLEADO ══ -->
+        <div class="card" style="border:2px solid var(--accent);margin-top:16px">
+          <div class="card-title mb-1" style="color:var(--accent)">🔒 Clave de Bloqueo Empleados</div>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
+            Esta clave protege las secciones sensibles. Se pide cuando un empleado intenta desactivar el Modo Empleado o cerrar la caja.
+          </p>
+          <div id="empClaveStatus" style="display:none;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px"></div>
+          <div class="form-group">
+            <label class="form-label">Clave actual</label>
+            <input type="password" id="emp-clave-actual" class="form-input" placeholder="Ingresa la clave actual para confirmar">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nueva clave</label>
+            <input type="password" id="emp-clave-nueva" class="form-input" placeholder="Mínimo 4 caracteres">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirmar nueva clave</label>
+            <input type="password" id="emp-clave-confirmar" class="form-input" placeholder="Repite la nueva clave">
+          </div>
+          <button class="btn btn-primary" onclick="cambiarClaveEmpleado()">🔐 Guardar Clave</button>
+          <div style="margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:8px;font-size:12px;color:var(--text2)">
+            💡 <strong>Clave por defecto:</strong> <code style="color:var(--neon);font-family:var(--mono)">admin</code> — cámbiala antes de entregarle el teléfono al empleado.
+          </div>
+        </div>
+
         <!-- ══ ZONA DE PELIGRO — solo en Configuración ══ -->
         <div class="card" style="border:2px solid #ef4444;margin-top:16px">
           <div class="card-title mb-2" style="color:#ef4444">⚠️ Zona de Peligro</div>
@@ -6507,7 +6532,7 @@ function salirModoEmpleado() {
   document.getElementById('empUnlockCancel').onclick = function(){ overlay.remove(); };
   function _verificarEmpPw() {
     var pw = inp ? inp.value.trim() : '';
-    var validos = ['ZYNC2024admin','admin','zync','a2k2026'];
+    var validos = getClaveEmpleado();
     if (validos.indexOf(pw) < 0) {
       var err = document.getElementById('empUnlockErr');
       if (err) err.textContent = '❌ Contraseña incorrecta';
@@ -6548,7 +6573,7 @@ function cerrarCajaConPermisos() {
     document.getElementById('cajaPwCancel').onclick = function(){ overlay.remove(); };
     document.getElementById('cajaPwOk').onclick = function(){
       var pw = inp ? inp.value.trim() : '';
-      if (['ZYNC2024admin','admin','zync','a2k2026'].indexOf(pw) < 0) {
+      if (getClaveEmpleado().indexOf(pw) < 0) {
         document.getElementById('cajaPwErr').textContent = '❌ Contraseña incorrecta';
         if (inp) { inp.value=''; inp.focus(); }
         return;
@@ -6857,11 +6882,42 @@ function _cerrarModalAdmin() {
   if (old) old.style.display = 'none';
 }
 
+function getClaveEmpleado() {
+  // Lee la clave personalizada del dueño — si no tiene, usa 'admin' por defecto
+  var custom = DB.get('emp_clave');
+  var defaults = ['ZYNC2024admin','admin','zync','a2k2026'];
+  if (custom && custom.length >= 4) return [custom].concat(defaults);
+  return defaults;
+}
+function cambiarClaveEmpleado() {
+  var actual   = (document.getElementById('emp-clave-actual')     || {}).value || '';
+  var nueva    = (document.getElementById('emp-clave-nueva')      || {}).value || '';
+  var confirma = (document.getElementById('emp-clave-confirmar')  || {}).value || '';
+  var statusEl = document.getElementById('empClaveStatus');
+  function showStatus(msg, ok) {
+    if (!statusEl) return;
+    statusEl.style.display = 'block';
+    statusEl.style.background = ok ? 'rgba(0,255,136,0.1)' : 'rgba(239,68,68,0.1)';
+    statusEl.style.color = ok ? 'var(--neon)' : 'var(--danger)';
+    statusEl.style.border = '1px solid ' + (ok ? 'var(--neon)' : 'var(--danger)');
+    statusEl.textContent = msg;
+  }
+  if (getClaveEmpleado().indexOf(actual) < 0) { showStatus('❌ La clave actual es incorrecta', false); return; }
+  if (!nueva || nueva.length < 4) { showStatus('❌ La nueva clave debe tener al menos 4 caracteres', false); return; }
+  if (nueva !== confirma) { showStatus('❌ Las claves no coinciden', false); return; }
+  DB.set('emp_clave', nueva);
+  // Limpiar campos
+  ['emp-clave-actual','emp-clave-nueva','emp-clave-confirmar'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value = '';
+  });
+  showStatus('✅ Clave actualizada correctamente', true);
+  showToast('🔐 Clave de empleados actualizada','success');
+}
 function _verificarPasswordAdmin() {
   var inp = document.getElementById('adminPwInputDyn') || document.getElementById('adminPwInput');
   var err = document.getElementById('adminPwErrDyn')  || document.getElementById('adminPwError');
   var pw = inp ? inp.value.trim() : '';
-  var validos = ['ZYNC2024admin','admin','zync','a2k2026'];
+  var validos = getClaveEmpleado();
   if (validos.indexOf(pw) < 0) {
     if (err) err.textContent = 'Contrasena incorrecta';
     if (inp) { inp.value=''; inp.focus(); }
