@@ -1399,44 +1399,37 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
           <div id="backupStatus" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:4px"></div>
         </div>
 
-        <!-- ══ CLAVE MODO EMPLEADO ══ -->
-        <div class="card" style="border:2px solid var(--accent);margin-top:16px">
-          <div class="card-title mb-1" style="color:var(--accent)">🔒 Clave de Bloqueo Empleados</div>
-          <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
-            Esta clave protege las secciones sensibles. Se pide cuando un empleado intenta desactivar el Modo Empleado o cerrar la caja.
-          </p>
-          <div id="empClaveStatus" style="display:none;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px"></div>
-          <div class="form-group">
-            <label class="form-label">Clave actual <span style="font-size:11px;color:var(--text2)">(dejar vacío si es primera vez)</span></label>
-            <input type="password" id="emp-clave-actual" class="form-input" placeholder="Vacío si nunca configuraste una clave">
+        <!-- ══ CLAVE EMPLEADOS (compacto) ══ -->
+        <div class="card" style="border:1px solid var(--accent);margin-top:12px;padding:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--accent)">🔒 Clave Modo Empleado</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px">Protege inventario, caja y secciones sensibles</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('empClaveForm').style.display=document.getElementById('empClaveForm').style.display==='none'?'block':'none'">Cambiar clave</button>
           </div>
-          <div class="form-group">
-            <label class="form-label">Nueva clave</label>
-            <input type="password" id="emp-clave-nueva" class="form-input" placeholder="Mínimo 4 caracteres">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Confirmar nueva clave</label>
-            <input type="password" id="emp-clave-confirmar" class="form-input" placeholder="Repite la nueva clave">
-          </div>
-          <button class="btn btn-primary" onclick="cambiarClaveEmpleado()">🔐 Guardar Clave</button>
-          <div style="margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:8px;font-size:12px;color:var(--text2)">
-            💡 <strong>Clave por defecto:</strong> <code style="color:var(--neon);font-family:var(--mono)">admin</code> — si nunca configuraste una, deja el campo "Clave actual" vacío.
+          <div id="empClaveForm" style="display:none">
+            <div id="empClaveStatus" style="display:none;padding:6px 10px;border-radius:8px;font-size:12px;margin-bottom:8px"></div>
+            <div style="display:grid;gap:8px">
+              <input type="password" id="emp-clave-actual" class="form-input" placeholder="Clave actual (vacío si es primera vez)" style="font-size:13px;padding:8px 12px">
+              <input type="password" id="emp-clave-nueva" class="form-input" placeholder="Nueva clave (mín. 4 caracteres)" style="font-size:13px;padding:8px 12px">
+              <input type="password" id="emp-clave-confirmar" class="form-input" placeholder="Confirmar nueva clave" style="font-size:13px;padding:8px 12px">
+              <button class="btn btn-primary btn-sm" onclick="cambiarClaveEmpleado()">🔐 Guardar clave</button>
+            </div>
           </div>
         </div>
 
-        <!-- ══ ZONA DE PELIGRO — solo en Configuración ══ -->
-        <div class="card" style="border:2px solid #ef4444;margin-top:16px">
-          <div class="card-title mb-2" style="color:#ef4444">⚠️ Zona de Peligro</div>
-          <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
-            Estas acciones son irreversibles. Úsalas solo cuando quieras entregar la app limpia a un cliente.
-          </p>
-          <div style="display:flex;flex-wrap:wrap;gap:10px">
-            <button class="btn" style="background:#ef4444;color:#fff;font-weight:700" onclick="resetearDatos()">
-              🗑️ Borrar Ventas e Historial
-            </button>
-            <button class="btn" style="background:#ef4444;color:#fff;font-weight:700" onclick="resetearTodo()">
-              💣 Resetear App Completa
-            </button>
+        <!-- ══ ZONA DE PELIGRO ══ -->
+        <div class="card" style="border:1px solid #ef4444;margin-top:12px;padding:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#ef4444">⚠️ Zona de Peligro</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px">Acciones irreversibles — úsalas con cuidado</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-sm" style="background:#ef4444;color:#fff;font-weight:700" onclick="resetearDatos()">🗑️ Borrar Ventas</button>
+              <button class="btn btn-sm" style="background:#ef4444;color:#fff;font-weight:700" onclick="resetearTodo()">💣 Resetear Todo</button>
+            </div>
           </div>
         </div>
 
