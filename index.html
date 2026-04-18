@@ -7210,7 +7210,129 @@ function cerrarCaja() {
 
 // ── QR SCANNER (stub) ──
 function openQRScanner(contexto) {
-  showToast('Escáner QR requiere cámara del dispositivo. Usa el buscador manual.','warn');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Tu navegador no soporta cámara. Usa Chrome actualizado.', 'warn');
+    return;
+  }
+  var overlay = document.createElement('div');
+  overlay.id = 'qr-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+  overlay.innerHTML = [
+    '<div style="position:relative;width:min(340px,90vw);border-radius:16px;overflow:hidden;box-shadow:0 0 0 3px #7c3aed">',
+      '<video id="qr-video" autoplay playsinline muted style="width:100%;display:block;border-radius:16px"></video>',
+      '<div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center">',
+        '<div style="width:70%;height:2px;background:#06d6a0;box-shadow:0 0 8px #06d6a0;animation:qrscan 2s linear infinite"></div>',
+      '</div>',
+    '</div>',
+    '<p style="color:#e8e8f0;margin:14px 0 4px;font-size:14px">📷 Apunta al código de barras o QR</p>',
+    '<button onclick="cerrarQRScanner()" style="margin-top:10px;background:#7c3aed;color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">✖ Cerrar</button>',
+    '<style>@keyframes qrscan{0%{transform:translateY(-60px)}50%{transform:translateY(60px)}100%{transform:translateY(-60px)}}</style>'
+  ].join('');
+  document.body.appendChild(overlay);
+
+  var stream = null;
+  var animFrame = null;
+  var detector = null;
+  var jsqrLib = null;
+
+  window.cerrarQRScanner = function() {
+    if (animFrame) cancelAnimationFrame(animFrame);
+    if (stream) stream.getTracks().forEach(function(t){ t.stop(); });
+    var el = document.getElementById('qr-overlay');
+    if (el) el.remove();
+  };
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(function(s) {
+      stream = s;
+      var video = document.getElementById('qr-video');
+      if (!video) { cerrarQRScanner(); return; }
+      video.srcObject = stream;
+      video.play();
+
+      var barcodeFormats = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code','data_matrix','itf','codabar'];
+
+      function onScan(codigo) {
+        cerrarQRScanner();
+        if (contexto === 'pos') {
+          var inp = document.getElementById('posSearch');
+          if (inp) { inp.value = codigo; inp.dispatchEvent(new Event('input')); }
+          showToast('✅ Código leído: ' + codigo, 'success');
+        } else {
+          var inp2 = document.getElementById('prod-codigo');
+          if (inp2) { inp2.value = codigo; inp2.dispatchEvent(new Event('input')); }
+          showToast('✅ Código escaneado: ' + codigo, 'success');
+        }
+      }
+
+      // ── Opción 1: BarcodeDetector (nativo Chrome, sin internet) ──
+      if ('BarcodeDetector' in window) {
+        try {
+          detector = new BarcodeDetector({ formats: barcodeFormats });
+          (function tick() {
+            if (!document.getElementById('qr-overlay')) return;
+            var v = document.getElementById('qr-video');
+            if (v && v.readyState === v.HAVE_ENOUGH_DATA) {
+              detector.detect(v).then(function(results) {
+                if (results && results.length > 0) {
+                  onScan(results[0].rawValue);
+                } else {
+                  animFrame = requestAnimationFrame(tick);
+                }
+              }).catch(function() {
+                animFrame = requestAnimationFrame(tick);
+              });
+            } else {
+              animFrame = requestAnimationFrame(tick);
+            }
+          })();
+          return;
+        } catch(e) { /* fallback */ }
+      }
+
+      // ── Opción 2: jsQR (CDN, solo QR codes) ──
+      var canvas = document.createElement('canvas');
+      var ctx = canvas.getContext('2d');
+      function loadJsQR(cb) {
+        if (window.jsQR) { cb(window.jsQR); return; }
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
+        s.onload = function() { cb(window.jsQR); };
+        s.onerror = function() { cb(null); };
+        document.head.appendChild(s);
+      }
+      loadJsQR(function(jsQR) {
+        if (!jsQR) {
+          showToast('❌ No se pudo cargar el lector. Verifica conexión.', 'error');
+          cerrarQRScanner();
+          return;
+        }
+        (function tick() {
+          if (!document.getElementById('qr-overlay')) return;
+          var v = document.getElementById('qr-video');
+          if (v && v.readyState === v.HAVE_ENOUGH_DATA) {
+            canvas.width = v.videoWidth;
+            canvas.height = v.videoHeight;
+            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code && code.data) {
+              onScan(code.data);
+              return;
+            }
+          }
+          animFrame = requestAnimationFrame(tick);
+        })();
+      });
+    })
+    .catch(function(err) {
+      cerrarQRScanner();
+      if (err.name === 'NotAllowedError') {
+        showToast('❌ Permiso de cámara denegado. Permite el acceso en el navegador.', 'error');
+      } else {
+        showToast('❌ No se pudo activar la cámara: ' + err.message, 'error');
+      }
+    });
 }
 
 // ── AUTO EMOJI CATEGORIA ──
