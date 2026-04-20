@@ -1371,6 +1371,106 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
                 <span style="font-size:11px" id="licenseDeviceId">Device ID: DEV-DZR3-1YU8</span><br>
                 <span style="font-size:11px">Licencia ligada a este dispositivo. Máx. 2 terminales por código.</span>
               </div>
+
+              <!-- Botón Admin -->
+              <div id="adminBtnWrap" style="display:none">
+                <button class="btn btn-outline btn-sm" onclick="toggleAdminPanel(event)" style="border-color:var(--accent);color:var(--accent);width:100%">
+                  🔑 Panel Admin A2K
+                </button>
+              </div>
+            </div>
+
+            <!-- ══ PANEL ADMIN LICENCIAS ══ -->
+            <div id="adminLicPanel" style="display:none">
+              <div class="card mb-4" style="border:2px solid var(--accent)">
+                <div class="card-title mb-3" style="color:var(--accent)">🔑 Administrador de Licencias</div>
+
+                <!-- Tabs -->
+                <div style="display:flex;gap:8px;margin-bottom:16px">
+                  <button id="tabPro" class="btn btn-primary" style="flex:1;font-weight:700" onclick="switchLicTab('pro')">⭐ PRO</button>
+                  <button id="tabDemo" class="btn btn-ghost" style="flex:1;font-weight:700" onclick="switchLicTab('demo')">🎁 DEMO</button>
+                </div>
+
+                <!-- Panel PRO -->
+                <div id="panelLicPro">
+                  <div class="form-group">
+                    <label class="form-label">Nombre del Negocio / Cliente</label>
+                    <input type="text" id="lic-negocio" class="form-input" placeholder="Bodega El Tuy / Juan Pérez">
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div class="form-group">
+                      <label class="form-label">Meses de validez</label>
+                      <select id="lic-meses" class="form-select">
+                        <option value="1">1 mes</option>
+                        <option value="3">3 meses</option>
+                        <option value="6">6 meses</option>
+                        <option value="12" selected>12 meses</option>
+                        <option value="24">24 meses</option>
+                        <option value="0">Permanente</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Terminales</label>
+                      <select id="lic-terminales" class="form-select">
+                        <option value="1" selected>1 terminal</option>
+                        <option value="2">2 terminales</option>
+                        <option value="3">3 terminales</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Device ID (opcional — bloquea a 1 equipo)</label>
+                    <input type="text" id="lic-device-id" class="form-input" placeholder="DEV-XXXX-XXXX (dejar vacío = multi-terminal)">
+                  </div>
+                  <button class="btn btn-primary" onclick="generarLicencia()" style="width:100%;margin-bottom:10px">⚡ Generar Licencia PRO</button>
+                  <!-- Resultado PRO -->
+                  <div id="licResultado" style="display:none;background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:10px">
+                    <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Código generado:</div>
+                    <div id="licCodigoDisplay" style="font-family:var(--mono);font-size:13px;color:var(--neon);font-weight:700;word-break:break-all;margin-bottom:6px"></div>
+                    <div id="licInfoDisplay" style="font-size:11px;color:var(--text2);margin-bottom:8px"></div>
+                    <div style="display:flex;gap:8px">
+                      <button class="btn btn-outline btn-sm" onclick="copiarCodigo()" style="flex:1">📋 Copiar</button>
+                      <button class="btn btn-outline btn-sm" onclick="compartirUltimaLicencia()" style="flex:1;border-color:#25D366;color:#25D366">📤 WhatsApp</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Panel DEMO -->
+                <div id="panelLicDemo" style="display:none">
+                  <div class="form-group">
+                    <label class="form-label">Nombre del Negocio / Cliente</label>
+                    <input type="text" id="demo-negocio" class="form-input" placeholder="Bodega El Tuy / Juan Pérez">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Días de demo — <strong id="demo-dias-label">5 días</strong></label>
+                    <select id="demo-dias" class="form-select" disabled style="pointer-events:none;opacity:0.6" onchange="actualizarVenceEl()">
+                      <option value="5" selected>5 días</option>
+                    </select>
+                  </div>
+                  <button class="btn btn-primary" onclick="generarLicenciaDemo()" style="width:100%;background:var(--warn);border-color:var(--warn);margin-bottom:10px">🎁 Generar DEMO</button>
+                  <!-- Resultado DEMO -->
+                  <div id="demoResultado" style="display:none;background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:10px">
+                    <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Código DEMO:</div>
+                    <div id="demoCodigoDisplay" style="font-family:var(--mono);font-size:13px;color:var(--warn);font-weight:700;word-break:break-all;margin-bottom:6px"></div>
+                    <div id="demoInfoDisplay" style="font-size:11px;color:var(--text2);margin-bottom:8px"></div>
+                    <div style="display:flex;gap:8px">
+                      <button class="btn btn-outline btn-sm" onclick="copiarCodigoDemo()" style="flex:1">📋 Copiar</button>
+                      <button class="btn btn-outline btn-sm" onclick="compartirUltimaDemo()" style="flex:1;border-color:#25D366;color:#25D366">📤 WhatsApp</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tabla de licencias -->
+                <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+                    <div style="font-size:12px;font-weight:700;color:var(--text2)">
+                      Licencias generadas: <span id="licTableCount" style="color:var(--neon)">0</span>
+                    </div>
+                    <input type="text" id="licTableSearch" class="form-input" placeholder="🔍 Buscar..." oninput="renderLicTable()" style="max-width:160px;padding:5px 10px;font-size:12px">
+                  </div>
+                  <div id="licTable" style="max-height:300px;overflow-y:auto;font-size:12px"></div>
+                </div>
+              </div>
             </div>
 
             <div class="card">
@@ -1746,6 +1846,11 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
               </div>
             </div>
           </div>
+          <!-- Margen real y comprobación -->
+          <div style="margin-top:8px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.15);border-radius:8px;padding:8px 12px;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+            <span id="calc-margen-real" style="font-weight:700;color:var(--neon)">0.0% sobre PVP</span>
+            <span id="calc-comprobacion" style="color:var(--text2);font-size:11px">Comprobación: —</span>
+          </div>
           <button type="button" onclick="aplicarPrecioCalculado()" style="margin-top:10px;width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;cursor:pointer;font-size:14px">
             ✅ Aplicar este precio al producto
           </button>
@@ -2036,6 +2141,22 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
     <div class="modal-footer">
       <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal('modalCobro')">Cancelar</button>
       <button class="btn btn-primary" id="btnConfirmarVenta" onclick="confirmarVenta()">✅ Confirmar Venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL DETALLE VENTA ══ -->
+<div class="modal-overlay" id="modalDetalleVenta">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <span class="modal-title">🧾 Detalle de Venta</span>
+      <button class="btn-close" onclick="closeModal('modalDetalleVenta')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="detalleVentaBody"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalDetalleVenta')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -7110,12 +7231,24 @@ function copiarCodigo() {
   navigator.clipboard.writeText(el.textContent || '')
     .then(function(){ showToast('Código copiado','success'); })
     .catch(function(){
-      // Fallback
       var ta = document.createElement('textarea');
       ta.value = el.textContent || '';
       document.body.appendChild(ta); ta.select();
       document.execCommand('copy'); document.body.removeChild(ta);
       showToast('Código copiado','success');
+    });
+}
+function copiarCodigoDemo() {
+  var el = document.getElementById('demoCodigoDisplay');
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent || '')
+    .then(function(){ showToast('Código DEMO copiado','success'); })
+    .catch(function(){
+      var ta = document.createElement('textarea');
+      ta.value = el.textContent || '';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      showToast('Código DEMO copiado','success');
     });
 }
 
