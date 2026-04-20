@@ -1425,6 +1425,32 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
           </div>
         </div>
 
+        <!-- ══ PIN DE ACCESO RÁPIDO ══ -->
+        <div class="card" style="border:1px solid var(--neon);margin-top:12px;padding:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--neon)">🔢 PIN de Acceso Rápido</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px">Ingresa rápido desde móvil sin escribir contraseña</div>
+            </div>
+            <div id="pinEstadoBadge" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(6,214,160,.1);color:var(--neon);border:1px solid rgba(6,214,160,.3)">No configurado</div>
+          </div>
+          <div id="pinSetupForm">
+            <div style="display:grid;gap:8px">
+              <input type="password" id="pin-nuevo" inputmode="numeric" maxlength="4" class="form-input"
+                placeholder="PIN de 4 dígitos" style="font-size:20px;letter-spacing:8px;text-align:center;padding:10px"
+                oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)">
+              <input type="password" id="pin-confirmar" inputmode="numeric" maxlength="4" class="form-input"
+                placeholder="Confirmar PIN" style="font-size:20px;letter-spacing:8px;text-align:center;padding:10px"
+                oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)">
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" onclick="activarPIN()">🔐 Activar PIN</button>
+                <button class="btn btn-sm" style="background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.3)" onclick="desactivarPIN()">🗑️ Eliminar PIN</button>
+              </div>
+            </div>
+          </div>
+          <div id="pinStatus" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:8px"></div>
+        </div>
+
         <!-- ══ CLAVE EMPLEADOS (compacto) ══ -->
         <div class="card" style="border:1px solid var(--accent);margin-top:12px;padding:14px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -2835,6 +2861,9 @@ function startApp() {
 
   // Iniciar backup automático si estaba configurado
   setTimeout(function(){ try{ iniciarBackupAutomatico(); }catch(e){} }, 1000);
+
+  // Mostrar PIN de acceso rápido si está configurado
+  setTimeout(function(){ try{ checkPinLogin(); }catch(e){} }, 200);
 }
 
 // ─── NAVEGACIÓN ───────────────────────────────────────────────
@@ -2887,8 +2916,9 @@ function showPage(page, el) {
     document.getElementById('cfg-rif').value = cfg.rif || '';
     document.getElementById('cfg-tasa').value = STATE.tasa;
 
-    // Sincronizar UI de backup automático
+    // Sincronizar UI de backup automático y PIN
     try { _backupAutoUISync(); } catch(e) {}
+    try { _pinUISync(); } catch(e) {}
   }
 }
 
@@ -7555,6 +7585,213 @@ function iniciarBackupAutomatico() {
   _backupAutoTimer = setInterval(_runBackupAuto, 60000);
 }
 
+// ══ PIN DE ACCESO RÁPIDO ══
+function _pinHash(pin) {
+  // Ofuscación simple — suficiente para almacenamiento local
+  var h = 0;
+  for (var i = 0; i < pin.length; i++) {
+    h = ((h << 5) - h) + pin.charCodeAt(i);
+    h |= 0;
+  }
+  return 'p' + Math.abs(h).toString(36);
+}
+
+function activarPIN() {
+  var p1 = (document.getElementById('pin-nuevo')    || {}).value || '';
+  var p2 = (document.getElementById('pin-confirmar') || {}).value || '';
+  var st = document.getElementById('pinStatus');
+  function showPinMsg(msg, ok) {
+    if (!st) return;
+    st.style.display = 'block';
+    st.style.background = ok ? 'rgba(6,214,160,.12)' : 'rgba(239,68,68,.1)';
+    st.style.color = ok ? 'var(--neon)' : 'var(--danger)';
+    st.style.border = ok ? '1px solid rgba(6,214,160,.3)' : '1px solid rgba(239,68,68,.3)';
+    st.textContent = msg;
+  }
+  if (p1.length !== 4) return showPinMsg('❌ El PIN debe tener exactamente 4 dígitos', false);
+  if (p1 !== p2)       return showPinMsg('❌ Los PINs no coinciden', false);
+  if (!/^\d{4}$/.test(p1)) return showPinMsg('❌ Solo se permiten números', false);
+  var pinCfg = {
+    hash:    _pinHash(p1),
+    negocio: STATE.user ? STATE.user.negocio : '',
+    user:    STATE.user ? STATE.user.user    : '',
+    activo:  true
+  };
+  DB.set('pin_config', pinCfg);
+  if (document.getElementById('pin-nuevo'))    document.getElementById('pin-nuevo').value = '';
+  if (document.getElementById('pin-confirmar')) document.getElementById('pin-confirmar').value = '';
+  showPinMsg('✅ PIN activado. La próxima vez podrás ingresar con 4 dígitos.', true);
+  _pinUISync();
+  showToast('🔢 PIN de acceso rápido activado', 'success');
+}
+
+function desactivarPIN() {
+  if (!confirm('¿Eliminar el PIN de acceso rápido?')) return;
+  DB.del('pin_config');
+  _pinUISync();
+  var st = document.getElementById('pinStatus');
+  if (st) {
+    st.style.display = 'block';
+    st.style.background = 'rgba(239,68,68,.1)';
+    st.style.color = 'var(--danger)';
+    st.style.border = '1px solid rgba(239,68,68,.3)';
+    st.textContent = '🗑️ PIN eliminado. Se usará el login completo.';
+  }
+  showToast('PIN eliminado', 'warn');
+}
+
+function _pinUISync() {
+  var cfg    = DB.get('pin_config');
+  var badge  = document.getElementById('pinEstadoBadge');
+  if (!badge) return;
+  if (cfg && cfg.activo) {
+    badge.textContent = '✅ Activo — ' + (cfg.user || '');
+    badge.style.background = 'rgba(6,214,160,.15)';
+    badge.style.color = 'var(--neon)';
+    badge.style.border = '1px solid rgba(6,214,160,.4)';
+  } else {
+    badge.textContent = 'No configurado';
+    badge.style.background = 'rgba(6,214,160,.1)';
+    badge.style.color = 'var(--neon)';
+    badge.style.border = '1px solid rgba(6,214,160,.3)';
+  }
+}
+
+function checkPinLogin() {
+  var cfg = DB.get('pin_config');
+  if (!cfg || !cfg.activo || !cfg.hash) return;
+  var savedLic = DB.get('license');
+  if (!savedLic) return; // Sin licencia activa, login normal
+
+  var intentos = 0;
+  var pinActual = '';
+
+  var overlay = document.createElement('div');
+  overlay.id = 'pinLoginOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99998;background:var(--bg,#0d0d14);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px';
+  overlay.innerHTML = [
+    '<div style="width:100%;max-width:320px">',
+      '<div style="text-align:center;margin-bottom:28px">',
+        '<div style="font-size:36px;margin-bottom:8px">🔢</div>',
+        '<div style="font-size:20px;font-weight:800;color:var(--text,#e8e8f0)">Acceso Rápido</div>',
+        '<div style="font-size:13px;color:var(--text2,#888);margin-top:4px">' + (cfg.negocio || '') + ' · ' + (cfg.user || '') + '</div>',
+      '</div>',
+      '<div id="pinDots" style="display:flex;justify-content:center;gap:14px;margin-bottom:28px">',
+        '<div class="pdot" style="width:18px;height:18px;border-radius:50%;border:2px solid #7c3aed;transition:background .15s"></div>',
+        '<div class="pdot" style="width:18px;height:18px;border-radius:50%;border:2px solid #7c3aed;transition:background .15s"></div>',
+        '<div class="pdot" style="width:18px;height:18px;border-radius:50%;border:2px solid #7c3aed;transition:background .15s"></div>',
+        '<div class="pdot" style="width:18px;height:18px;border-radius:50%;border:2px solid #7c3aed;transition:background .15s"></div>',
+      '</div>',
+      '<div id="pinMsg" style="text-align:center;font-size:12px;color:var(--text2,#888);min-height:18px;margin-bottom:16px"></div>',
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;margin:0 auto">',
+        '[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map(function(d){',
+        '  return d===0||typeof d==="number"',
+        '    ? \'<button onclick="_pinKey('+d+')" style="padding:16px 0;font-size:22px;font-weight:700;background:var(--surface,#1a1a2e);border:1px solid var(--border,#2a2a3e);border-radius:12px;color:var(--text,#e8e8f0);cursor:pointer;touch-action:manipulation">\'+d+\'</button>\'',
+        '    : d==="⌫"',
+        '      ? \'<button onclick="_pinDel()" style="padding:16px 0;font-size:22px;background:var(--surface,#1a1a2e);border:1px solid var(--border,#2a2a3e);border-radius:12px;color:var(--text2,#888);cursor:pointer;touch-action:manipulation">⌫</button>\'',
+        '      : \'<div></div>\'',
+        '}).join("")',
+      '</div>',
+      '<div style="text-align:center;margin-top:22px">',
+        '<button onclick="_pinUsarLogin()" style="background:none;border:none;color:var(--text2,#888);font-size:12px;cursor:pointer;text-decoration:underline">Usar contraseña completa</button>',
+      '</div>',
+    '</div>',
+    '<style>',
+      '@keyframes pinShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}',
+      '.pin-shake{animation:pinShake .35s ease}',
+    '</style>'
+  ].join('');
+
+  // El innerHTML con lógica JS no funciona así — construyo el numpad directo
+  var numpadHTML = '';
+  [1,2,3,4,5,6,7,8,9,'',0,'⌫'].forEach(function(d) {
+    if (d === '' ) { numpadHTML += '<div></div>'; return; }
+    if (d === '⌫') {
+      numpadHTML += '<button onclick="_pinDel()" style="padding:16px 0;font-size:22px;background:var(--surface,#1a1a2e);border:1px solid var(--border,#2a2a3e);border-radius:12px;color:var(--text2,#888);cursor:pointer;touch-action:manipulation">⌫</button>';
+    } else {
+      numpadHTML += '<button onclick="_pinKey(' + d + ')" style="padding:16px 0;font-size:22px;font-weight:700;background:var(--surface,#1a1a2e);border:1px solid var(--border,#2a2a3e);border-radius:12px;color:var(--text,#e8e8f0);cursor:pointer;touch-action:manipulation">' + d + '</button>';
+    }
+  });
+
+  overlay.innerHTML = [
+    '<div style="width:100%;max-width:320px">',
+      '<div style="text-align:center;margin-bottom:28px">',
+        '<div style="font-size:36px;margin-bottom:8px">🔢</div>',
+        '<div style="font-size:20px;font-weight:800;color:var(--text,#e8e8f0)">Acceso Rápido</div>',
+        '<div style="font-size:13px;color:var(--text2,#888);margin-top:4px">' + (cfg.negocio || '') + ' · ' + (cfg.user || '') + '</div>',
+      '</div>',
+      '<div id="pinDots" style="display:flex;justify-content:center;gap:14px;margin-bottom:28px">',
+        '<div class="pdot" style="width:18px;height:18px;border-radius:50%;border:2px solid #7c3aed;transition:background .15s"></div>',
+        '<div class="pdot" style="width:18px;height:18px;border-radius:50%;border:2px solid #7c3aed;transition:background .15s"></div>',
+        '<div class="pdot" style="width:18px;height:18px;border-radius:50%;border:2px solid #7c3aed;transition:background .15s"></div>',
+        '<div class="pdot" style="width:18px;height:18px;border-radius:50%;border:2px solid #7c3aed;transition:background .15s"></div>',
+      '</div>',
+      '<div id="pinMsg" style="text-align:center;font-size:12px;color:var(--text2,#888);min-height:18px;margin-bottom:16px"></div>',
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;margin:0 auto">' + numpadHTML + '</div>',
+      '<div style="text-align:center;margin-top:22px">',
+        '<button onclick="_pinUsarLogin()" style="background:none;border:none;color:var(--text2,#888);font-size:12px;cursor:pointer;text-decoration:underline">Usar contraseña completa</button>',
+      '</div>',
+    '</div>',
+    '<style>@keyframes pinShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}.pin-shake{animation:pinShake .35s ease}</style>'
+  ].join('');
+
+  document.body.appendChild(overlay);
+
+  function updateDots() {
+    var dots = overlay.querySelectorAll('.pdot');
+    dots.forEach(function(d, i) {
+      d.style.background = i < pinActual.length ? '#7c3aed' : 'transparent';
+    });
+  }
+
+  function shakeAndClear(msg) {
+    var dotsEl = document.getElementById('pinDots');
+    var msgEl  = document.getElementById('pinMsg');
+    if (dotsEl) { dotsEl.classList.remove('pin-shake'); void dotsEl.offsetWidth; dotsEl.classList.add('pin-shake'); }
+    if (msgEl) { msgEl.style.color = 'var(--danger,#ef4444)'; msgEl.textContent = msg; }
+    setTimeout(function() {
+      pinActual = '';
+      updateDots();
+      if (msgEl) { msgEl.style.color = 'var(--text2,#888)'; msgEl.textContent = ''; }
+    }, 800);
+  }
+
+  window._pinKey = function(d) {
+    if (pinActual.length >= 4) return;
+    pinActual += String(d);
+    updateDots();
+    if (pinActual.length === 4) {
+      setTimeout(function() {
+        if (_pinHash(pinActual) === cfg.hash) {
+          // PIN correcto — iniciar sesión
+          var session = { negocio: cfg.negocio, user: cfg.user, deviceId: DEVICE_ID, loginAt: new Date().toISOString() };
+          DB.set('session', session);
+          STATE.user = session;
+          overlay.remove();
+          startApp();
+        } else {
+          intentos++;
+          if (intentos >= 3) {
+            overlay.remove();
+            showToast('❌ PIN incorrecto 3 veces. Usa el login completo.', 'error');
+          } else {
+            shakeAndClear('❌ PIN incorrecto (' + (3 - intentos) + ' intento' + (3 - intentos !== 1 ? 's' : '') + ' restante' + (3 - intentos !== 1 ? 's' : '') + ')');
+          }
+        }
+      }, 120);
+    }
+  };
+
+  window._pinDel = function() {
+    pinActual = pinActual.slice(0, -1);
+    updateDots();
+  };
+
+  window._pinUsarLogin = function() {
+    overlay.remove();
+  };
+}
+
 function resetearDatos() {
   if (!confirm('¿Borrar TODAS las ventas? Esta acción no se puede deshacer.')) return;
   DB.del('ventas'); DB.del('caja_movimientos'); DB.del('notasCredito');
@@ -8277,6 +8514,9 @@ window.importarBackup = importarBackup;
 window.toggleBackupAuto        = toggleBackupAuto;
 window.guardarConfigBackupAuto = guardarConfigBackupAuto;
 window.iniciarBackupAutomatico = iniciarBackupAutomatico;
+window.activarPIN   = activarPIN;
+window.desactivarPIN = desactivarPIN;
+window.checkPinLogin = checkPinLogin;
 window.saveCliente = saveCliente;
 window.saveConfig = saveConfig;
 window.saveFacturaConfig = saveFacturaConfig;
