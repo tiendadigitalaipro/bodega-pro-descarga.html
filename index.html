@@ -1385,6 +1385,30 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
               <div class="card mb-4" style="border:2px solid var(--accent)">
                 <div class="card-title mb-3" style="color:var(--accent)">🔑 Administrador de Licencias</div>
 
+                <!-- Stats Dashboard -->
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px" id="statsGrid">
+                  <div style="background:var(--bg3);border-radius:8px;padding:8px 4px;text-align:center">
+                    <div id="statTotal" style="font-size:20px;font-weight:900;color:var(--text);font-family:var(--mono)">0</div>
+                    <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Total</div>
+                  </div>
+                  <div style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);border-radius:8px;padding:8px 4px;text-align:center">
+                    <div id="statActivas" style="font-size:20px;font-weight:900;color:var(--neon);font-family:var(--mono)">0</div>
+                    <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Activas</div>
+                  </div>
+                  <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 4px;text-align:center">
+                    <div id="statVencidas" style="font-size:20px;font-weight:900;color:var(--danger);font-family:var(--mono)">0</div>
+                    <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Vencidas</div>
+                  </div>
+                  <div style="background:rgba(100,116,139,0.1);border:1px solid rgba(100,116,139,0.2);border-radius:8px;padding:8px 4px;text-align:center">
+                    <div id="statInactivas" style="font-size:20px;font-weight:900;color:var(--text2);font-family:var(--mono)">0</div>
+                    <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Inactivas</div>
+                  </div>
+                  <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:8px 4px;text-align:center">
+                    <div id="statDemos" style="font-size:20px;font-weight:900;color:var(--warn);font-family:var(--mono)">0</div>
+                    <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Demos</div>
+                  </div>
+                </div>
+
                 <!-- Tabs -->
                 <div style="display:flex;gap:8px;margin-bottom:16px">
                   <button id="tabPro" class="btn btn-primary" style="flex:1;font-weight:700" onclick="switchLicTab('pro')">⭐ PRO</button>
@@ -1396,6 +1420,16 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
                   <div class="form-group">
                     <label class="form-label">Nombre del Negocio / Cliente</label>
                     <input type="text" id="lic-negocio" class="form-input" placeholder="Bodega El Tuy / Juan Pérez">
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+                    <div class="form-group" style="margin-bottom:0">
+                      <label class="form-label">Teléfono / WhatsApp</label>
+                      <input type="text" id="lic-telefono" class="form-input" placeholder="+58 424-0000000">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                      <label class="form-label">Email <span style="color:var(--text2);font-weight:400">(opc.)</span></label>
+                      <input type="text" id="lic-email" class="form-input" placeholder="cliente@email.com">
+                    </div>
                   </div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                     <div class="form-group">
@@ -1440,6 +1474,14 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
                   <div class="form-group">
                     <label class="form-label">Nombre del Negocio / Cliente</label>
                     <input type="text" id="demo-negocio" class="form-input" placeholder="Bodega El Tuy / Juan Pérez">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Teléfono / WhatsApp</label>
+                    <input type="text" id="demo-telefono" class="form-input" placeholder="+58 424-0000000">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Device ID del Cliente <span style="color:var(--text2);font-weight:400">(opcional)</span></label>
+                    <input type="text" id="demo-device-id" class="form-input" placeholder="DEV-XXXX-XXXX — el cliente lo ve al activar">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Días de demo — <strong id="demo-dias-label">5 días</strong></label>
@@ -7013,7 +7055,7 @@ function toggleAdminPanel(event) {
     if (!panel) return;
     var visible = panel.style.display === 'block';
     panel.style.display = visible ? 'none' : 'block';
-    if (!visible) { try { renderLicTable(); } catch(e){} }
+    if (!visible) { try { actualizarStats(); } catch(e){} try { renderLicTable(); } catch(e){} }
     return;
   }
   // Pedir contraseña
@@ -7111,6 +7153,7 @@ function _verificarPasswordAdmin() {
   var panel = document.getElementById('adminLicPanel');
   if (panel) {
     panel.style.display = 'block';
+    try { actualizarStats(); } catch(ex){}
     try { renderLicTable(); } catch(ex){}
     setTimeout(function(){ panel.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 200);
   }
@@ -7143,6 +7186,8 @@ function switchLicTab(tab) {
 
 function generarLicencia() {
   var negocio  = gval('lic-negocio') || gval('ln-negocio') || 'Cliente';
+  var telefono = (gval('lic-telefono') || '').trim();
+  var email    = (gval('lic-email') || '').trim();
   var maxT     = parseInt(gval('lic-terminales')) || 1;
   var meses    = parseInt(gval('lic-meses')) || 12;
   var deviceId = (gval('lic-device-id') || '').trim().toUpperCase();
@@ -7153,6 +7198,7 @@ function generarLicencia() {
     : generateLicenseCode(negocio.trim(), meses);
   var lics = getLicenses();
   var lic  = { id: Date.now(), code: code, negocio: negocio.trim(),
+    telefono: telefono || null, email: email || null,
     tipo: 'PRO', maxTerminales: esLocked ? 1 : maxT,
     devices: esLocked ? [deviceId] : [],
     deviceLocked: esLocked ? deviceId : null,
@@ -7160,34 +7206,62 @@ function generarLicencia() {
   lics.push(lic); saveLicenses(lics);
   _ultimaLicGenerada = lic;
   stext('licCodigoDisplay', code);
-  var info = negocio + (esLocked ? ' — 🔐 Bloqueada a: ' + deviceId : ' — Max ' + maxT + ' terminal(es)');
+  var info = negocio + (esLocked ? ' — 🔐 Bloqueada a: ' + deviceId : ' — Max ' + maxT + ' terminal(es)') + (telefono ? ' · ' + telefono : '');
   stext('licInfoDisplay', info);
   var res = document.getElementById('licResultado');
   if (res) res.style.display = 'block';
-  // Limpiar campo Device ID después de generar
   var dEl = document.getElementById('lic-device-id'); if(dEl) dEl.value = '';
+  try { actualizarStats(); } catch(e){}
   try { renderLicTable(); } catch(e){}
   showToast((esLocked ? '🔐 Licencia device-locked: ' : '✅ Código PRO: ') + code, 'success');
 }
 
 function generarLicenciaDemo() {
-  var negocio = gval('demo-negocio') || gval('ln-negocio') || 'Cliente';
-  var dias    = parseInt(gval('demo-dias')) || 3;
+  var negocio  = gval('demo-negocio') || gval('ln-negocio') || 'Cliente';
+  var telefono = (gval('demo-telefono') || '').trim();
+  var deviceId = (gval('demo-device-id') || '').trim().toUpperCase();
+  var dias     = parseInt(gval('demo-dias')) || 5;
   if (!negocio || negocio.trim() === '') { showToast('Ingresa el nombre del negocio','warn'); return; }
   var code  = generateDemoCode(negocio.trim(), dias);
   var vence = new Date(); vence.setDate(vence.getDate() + dias);
   var lics  = getLicenses();
   var lic   = { id: Date.now(), code: code, negocio: negocio.trim(),
-    tipo: 'DEMO', dias: dias, devices: [], activo: true,
+    telefono: telefono || null,
+    tipo: 'DEMO', dias: dias,
+    devices: deviceId.length >= 8 ? [deviceId] : [],
+    deviceLocked: deviceId.length >= 8 ? deviceId : null,
+    activo: true,
     creadoEn: new Date().toISOString(), venceEn: vence.toISOString() };
   lics.push(lic); saveLicenses(lics);
   _ultimaDemoGenerada = lic;
   stext('demoCodigoDisplay', code);
-  stext('demoInfoDisplay', negocio + ' — Vence: ' + vence.toLocaleDateString('es-VE'));
+  stext('demoInfoDisplay', negocio + ' — Vence: ' + vence.toLocaleDateString('es-VE') + (telefono ? ' · ' + telefono : ''));
   var res = document.getElementById('demoResultado');
   if (res) res.style.display = 'block';
+  try { actualizarStats(); } catch(e){}
   try { renderLicTable(); } catch(e){}
   showToast('Código DEMO generado: ' + code, 'success');
+}
+
+function actualizarStats() {
+  var lics = getLicenses();
+  var total = lics.length, activas = 0, vencidas = 0, inactivas = 0, demos = 0;
+  var hoy = new Date();
+  lics.forEach(function(l) {
+    if (l.bloqueada || l.pausada || !l.activo) { inactivas++; return; }
+    if (l.tipo === 'DEMO') {
+      demos++;
+      if (l.venceEn && new Date(l.venceEn) < hoy) vencidas++;
+      else activas++;
+    } else {
+      var vp = extraerVenceEnDePRO(l.code);
+      if (vp && vp < hoy) vencidas++;
+      else activas++;
+    }
+  });
+  function _s(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+  _s('statTotal', total); _s('statActivas', activas); _s('statVencidas', vencidas);
+  _s('statInactivas', inactivas); _s('statDemos', demos);
 }
 
 function compartirUltimaLicencia() {
