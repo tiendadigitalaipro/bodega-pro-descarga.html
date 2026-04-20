@@ -7208,12 +7208,23 @@ function cerrarCaja() {
 
 // registrarMovCaja reemplazada por versión mejorada
 
-// ── QR SCANNER (stub) ──
+// ── QR SCANNER ──
 function openQRScanner(contexto) {
+  if (contexto !== 'pos' && contexto !== 'producto') return;
+  if (document.getElementById('qr-overlay')) return;
+
+  var proto = location.protocol;
+  var host  = location.hostname;
+  var esSeguro = proto === 'https:' || proto === 'file:' || host === 'localhost' || host === '127.0.0.1';
+  if (!esSeguro) {
+    showToast('⚠️ La cámara requiere HTTPS. Abre la app desde una conexión segura.', 'warn');
+    return;
+  }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showToast('Tu navegador no soporta cámara. Usa Chrome actualizado.', 'warn');
     return;
   }
+
   var overlay = document.createElement('div');
   overlay.id = 'qr-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
@@ -7225,22 +7236,28 @@ function openQRScanner(contexto) {
       '</div>',
     '</div>',
     '<p style="color:#e8e8f0;margin:14px 0 4px;font-size:14px">📷 Apunta al código de barras o QR</p>',
-    '<button onclick="cerrarQRScanner()" style="margin-top:10px;background:#7c3aed;color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">✖ Cerrar</button>',
+    '<button id="qr-btn-cerrar" style="margin-top:10px;background:#7c3aed;color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">✖ Cerrar</button>',
     '<style>@keyframes qrscan{0%{transform:translateY(-60px)}50%{transform:translateY(60px)}100%{transform:translateY(-60px)}}</style>'
   ].join('');
   document.body.appendChild(overlay);
 
-  var stream = null;
+  var stream    = null;
   var animFrame = null;
-  var detector = null;
-  var jsqrLib = null;
+  var detector  = null;
+  var scanned   = false;
+  var closing   = false;
 
   window.cerrarQRScanner = function() {
-    if (animFrame) cancelAnimationFrame(animFrame);
-    if (stream) stream.getTracks().forEach(function(t){ t.stop(); });
+    if (closing) return;
+    closing = true;
+    if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+    if (stream)   { stream.getTracks().forEach(function(t){ t.stop(); }); stream = null; }
+    detector = null;
     var el = document.getElementById('qr-overlay');
     if (el) el.remove();
   };
+
+  document.getElementById('qr-btn-cerrar').onclick = function() { cerrarQRScanner(); };
 
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     .then(function(s) {
@@ -7253,6 +7270,8 @@ function openQRScanner(contexto) {
       var barcodeFormats = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code','data_matrix','itf','codabar'];
 
       function onScan(codigo) {
+        if (scanned) return;
+        scanned = true;
         cerrarQRScanner();
         if (contexto === 'pos') {
           var inp = document.getElementById('posSearch');
@@ -7272,7 +7291,7 @@ function openQRScanner(contexto) {
           (function tick() {
             if (!document.getElementById('qr-overlay')) return;
             var v = document.getElementById('qr-video');
-            if (v && v.readyState === v.HAVE_ENOUGH_DATA) {
+            if (v && v.readyState >= 2) {
               detector.detect(v).then(function(results) {
                 if (results && results.length > 0) {
                   onScan(results[0].rawValue);
@@ -7287,7 +7306,7 @@ function openQRScanner(contexto) {
             }
           })();
           return;
-        } catch(e) { /* fallback */ }
+        } catch(e) { /* fallback a jsQR */ }
       }
 
       // ── Opción 2: jsQR (CDN, solo QR codes) ──
@@ -7296,22 +7315,27 @@ function openQRScanner(contexto) {
       function loadJsQR(cb) {
         if (window.jsQR) { cb(window.jsQR); return; }
         var s = document.createElement('script');
+        var timedOut = false;
+        var timer = setTimeout(function() {
+          timedOut = true;
+          cb(null);
+        }, 8000);
         s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
-        s.onload = function() { cb(window.jsQR); };
-        s.onerror = function() { cb(null); };
+        s.onload = function() { if (!timedOut) { clearTimeout(timer); cb(window.jsQR); } };
+        s.onerror = function() { clearTimeout(timer); cb(null); };
         document.head.appendChild(s);
       }
       loadJsQR(function(jsQR) {
         if (!jsQR) {
-          showToast('❌ No se pudo cargar el lector. Verifica conexión.', 'error');
+          showToast('❌ No se pudo cargar el lector. Verifica conexión a internet.', 'error');
           cerrarQRScanner();
           return;
         }
         (function tick() {
           if (!document.getElementById('qr-overlay')) return;
           var v = document.getElementById('qr-video');
-          if (v && v.readyState === v.HAVE_ENOUGH_DATA) {
-            canvas.width = v.videoWidth;
+          if (v && v.readyState >= 2) {
+            canvas.width  = v.videoWidth;
             canvas.height = v.videoHeight;
             ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
             var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -7328,9 +7352,15 @@ function openQRScanner(contexto) {
     .catch(function(err) {
       cerrarQRScanner();
       if (err.name === 'NotAllowedError') {
-        showToast('❌ Permiso de cámara denegado. Permite el acceso en el navegador.', 'error');
+        showToast('❌ Permiso de cámara denegado. Ve a Configuración del navegador y permite el acceso.', 'error');
+      } else if (err.name === 'NotFoundError') {
+        showToast('❌ No se encontró cámara en este dispositivo.', 'error');
+      } else if (err.name === 'NotReadableError') {
+        showToast('❌ La cámara está en uso por otra app. Ciérrala e intenta de nuevo.', 'error');
+      } else if (err.name === 'SecurityError') {
+        showToast('⚠️ La cámara requiere HTTPS para funcionar.', 'error');
       } else {
-        showToast('❌ No se pudo activar la cámara: ' + err.message, 'error');
+        showToast('❌ No se pudo activar la cámara: ' + (err.message || err.name), 'error');
       }
     });
 }
