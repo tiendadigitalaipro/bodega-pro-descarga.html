@@ -1384,7 +1384,7 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
         <!-- ══ BACKUP Y RESTAURACIÓN ══ -->
         <div class="card" style="border:2px solid var(--neon);margin-top:16px">
           <div class="card-title mb-2" style="color:var(--neon)">💾 Backup y Restauración</div>
-          <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:12px">
             Exporta todos tus datos (inventario, ventas, clientes, caja) a un archivo de respaldo. Puedes importarlo en cualquier momento para recuperar todo.
           </p>
           <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
@@ -1397,6 +1397,32 @@ body.modo-empleado .btn-modo-empleado { border-color:var(--danger); color:var(--
             <input type="file" id="importBackupFile" accept=".json" style="display:none" onchange="importarBackup(this)">
           </div>
           <div id="backupStatus" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:4px"></div>
+
+          <!-- Backup automático -->
+          <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--neon)">⏰ Backup Automático</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:2px">El sistema descarga el respaldo a la hora que elijas</div>
+              </div>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+                <span id="backupAutoLabel" style="font-size:11px;color:var(--text2)">Desactivado</span>
+                <div style="position:relative;width:40px;height:22px" onclick="toggleBackupAuto()">
+                  <div id="backupAutoTrack" style="width:40px;height:22px;border-radius:11px;background:var(--border);transition:background .2s"></div>
+                  <div id="backupAutoThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+                </div>
+              </label>
+            </div>
+            <div id="backupAutoHoraRow" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:12px;color:var(--text2)">Hora del respaldo:</span>
+                <input type="time" id="backupAutoHora" value="23:00"
+                  style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 10px;font-size:13px;font-family:var(--mono)">
+              </div>
+              <button class="btn btn-sm btn-primary" onclick="guardarConfigBackupAuto()">💾 Guardar horario</button>
+            </div>
+            <div id="backupAutoUltimo" style="margin-top:8px;font-size:11px;color:var(--text2)"></div>
+          </div>
         </div>
 
         <!-- ══ CLAVE EMPLEADOS (compacto) ══ -->
@@ -2806,6 +2832,9 @@ function startApp() {
   if (_licCheck && _licCheck.esDemo && _licCheck.venceEn) {
     setTimeout(function(){ iniciarDemoWatchdog(); }, 2000);
   }
+
+  // Iniciar backup automático si estaba configurado
+  setTimeout(function(){ try{ iniciarBackupAutomatico(); }catch(e){} }, 1000);
 }
 
 // ─── NAVEGACIÓN ───────────────────────────────────────────────
@@ -2858,6 +2887,8 @@ function showPage(page, el) {
     document.getElementById('cfg-rif').value = cfg.rif || '';
     document.getElementById('cfg-tasa').value = STATE.tasa;
 
+    // Sincronizar UI de backup automático
+    try { _backupAutoUISync(); } catch(e) {}
   }
 }
 
@@ -7456,6 +7487,74 @@ function importarBackup(input) {
   reader.readAsText(file);
 }
 
+// ══ BACKUP AUTOMÁTICO ══
+var _backupAutoTimer = null;
+
+function _backupAutoUISync() {
+  var cfg = DB.get('backup_auto_config') || { enabled: false, hora: '23:00', ultimoBackup: null };
+  var track = document.getElementById('backupAutoTrack');
+  var thumb = document.getElementById('backupAutoThumb');
+  var label = document.getElementById('backupAutoLabel');
+  var horaInput = document.getElementById('backupAutoHora');
+  var ultimoEl  = document.getElementById('backupAutoUltimo');
+  if (track) track.style.background = cfg.enabled ? 'var(--neon)' : 'var(--border)';
+  if (thumb) thumb.style.left = cfg.enabled ? '21px' : '3px';
+  if (label) label.textContent = cfg.enabled ? 'Activado' : 'Desactivado';
+  if (horaInput && cfg.hora) horaInput.value = cfg.hora;
+  if (ultimoEl) {
+    ultimoEl.textContent = cfg.ultimoBackup
+      ? '✅ Último respaldo: ' + new Date(cfg.ultimoBackup).toLocaleString('es-VE')
+      : 'Aún no se ha realizado ningún respaldo automático.';
+  }
+}
+
+function toggleBackupAuto() {
+  var cfg = DB.get('backup_auto_config') || { enabled: false, hora: '23:00', ultimoBackup: null };
+  cfg.enabled = !cfg.enabled;
+  DB.set('backup_auto_config', cfg);
+  _backupAutoUISync();
+  showToast(cfg.enabled ? '⏰ Backup automático activado — ' + cfg.hora : '⏰ Backup automático desactivado', cfg.enabled ? 'success' : 'warn');
+}
+
+function guardarConfigBackupAuto() {
+  var horaInput = document.getElementById('backupAutoHora');
+  if (!horaInput || !horaInput.value) return showToast('Selecciona una hora válida', 'warn');
+  var cfg = DB.get('backup_auto_config') || { enabled: false, hora: '23:00', ultimoBackup: null };
+  cfg.hora = horaInput.value;
+  DB.set('backup_auto_config', cfg);
+  _backupAutoUISync();
+  showToast('✅ Horario guardado: ' + cfg.hora + (cfg.enabled ? ' (activo)' : ' — activa el toggle para comenzar'), 'success');
+}
+
+function _runBackupAuto() {
+  var cfg = DB.get('backup_auto_config');
+  if (!cfg || !cfg.enabled || !cfg.hora) return;
+  var ahora = new Date();
+  var hh = String(ahora.getHours()).padStart(2, '0');
+  var mm = String(ahora.getMinutes()).padStart(2, '0');
+  var horaActual = hh + ':' + mm;
+  if (horaActual !== cfg.hora) return;
+  // Evitar doble descarga en el mismo minuto
+  if (cfg.ultimoBackup) {
+    var ultimo = new Date(cfg.ultimoBackup);
+    if (ultimo.getFullYear() === ahora.getFullYear() &&
+        ultimo.getMonth()    === ahora.getMonth()    &&
+        ultimo.getDate()     === ahora.getDate()      &&
+        ultimo.getHours()    === ahora.getHours()     &&
+        ultimo.getMinutes()  === ahora.getMinutes()) return;
+  }
+  // Ejecutar backup
+  exportarBackup();
+  cfg.ultimoBackup = ahora.toISOString();
+  DB.set('backup_auto_config', cfg);
+  _backupAutoUISync();
+}
+
+function iniciarBackupAutomatico() {
+  if (_backupAutoTimer) clearInterval(_backupAutoTimer);
+  _backupAutoTimer = setInterval(_runBackupAuto, 60000);
+}
+
 function resetearDatos() {
   if (!confirm('¿Borrar TODAS las ventas? Esta acción no se puede deshacer.')) return;
   DB.del('ventas'); DB.del('caja_movimientos'); DB.del('notasCredito');
@@ -8175,6 +8274,9 @@ window.resetearDatos = resetearDatos;
 window.resetearTodo = resetearTodo;
 window.exportarBackup = exportarBackup;
 window.importarBackup = importarBackup;
+window.toggleBackupAuto        = toggleBackupAuto;
+window.guardarConfigBackupAuto = guardarConfigBackupAuto;
+window.iniciarBackupAutomatico = iniciarBackupAutomatico;
 window.saveCliente = saveCliente;
 window.saveConfig = saveConfig;
 window.saveFacturaConfig = saveFacturaConfig;
