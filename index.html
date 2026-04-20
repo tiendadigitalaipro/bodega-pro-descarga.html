@@ -5200,6 +5200,7 @@ function verFiado(id) {
             '<div>' +
               '<div style="font-size:12px;color:var(--text2)">' + new Date(v.fecha).toLocaleDateString('es-VE') + '</div>' +
               '<div style="font-size:11px;color:var(--text3)">' + (v.items||[]).map(function(i){ return i.nombre; }).join(', ').substring(0,40) + '</div>' +
+              (v.notas ? '<div style="font-size:11px;color:var(--accent2);margin-top:2px">📝 ' + v.notas + '</div>' : '') +
             '</div>' +
             '<span style="color:var(--warn);font-weight:700;font-family:var(--mono)">$' + v.totalUSD.toFixed(2) + '</span>' +
           '</div>';
