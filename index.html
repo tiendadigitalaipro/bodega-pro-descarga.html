@@ -2760,23 +2760,38 @@ var _lsOK = (function(){
   }
 })();
 
-function _dbKeys(k) { return ['bp_' + k, k, 'bpro_' + k]; }
 function _dbProtected(k) { return ['productos','ventas','clientes','proveedores','config','license','licenses_issued'].includes(k); }
+function recuperarInventarioLegacy() {
+  if (!_lsOK) return [];
+  var actual = null;
+  try { actual = JSON.parse(localStorage.getItem('bp_productos') || 'null'); } catch(e) {}
+  if (Array.isArray(actual) && actual.length) return actual;
+  var legacyKeys = ['productos', 'bpro_productos'];
+  for (var i=0; i<legacyKeys.length; i++) {
+    try {
+      var raw = localStorage.getItem(legacyKeys[i]);
+      if (!raw) continue;
+      var val = JSON.parse(raw);
+      if (Array.isArray(val) && val.length) {
+        localStorage.setItem('bp_productos', JSON.stringify(val));
+        console.log('Inventario recuperado: ' + val.length + ' productos encontrados');
+        return val;
+      }
+    } catch(e) {}
+  }
+  console.log('Inventario recuperado: 0 productos encontrados');
+  return [];
+}
+function sesionCompleta(session, lic) {
+  return !!(session && session.negocio && session.user && lic && lic.code);
+}
 
 const DB = {
   get: function(k) {
     try {
-      var keys = _dbKeys(k);
       if (_lsOK) {
-        for (var i=0; i<keys.length; i++) {
-          var raw = localStorage.getItem(keys[i]);
-          if (raw !== null && raw !== undefined && raw !== '') {
-            var val = JSON.parse(raw);
-            if (keys[i] !== 'bp_' + k) localStorage.setItem('bp_' + k, JSON.stringify(val));
-            return val;
-          }
-        }
-        return null;
+        var raw = localStorage.getItem('bp_' + k);
+        return raw !== null && raw !== undefined && raw !== '' ? JSON.parse(raw) : null;
       }
       return _memDB['bp_' + k] !== undefined ? _memDB['bp_' + k] : null;
     } catch(e) { return _memDB['bp_' + k] || null; }
@@ -3040,7 +3055,9 @@ window.onload = function() {
   var _bootCode = _bootLic && _bootLic.code ? String(_bootLic.code).toUpperCase() : '';
   var _bootMaster = ['BPRO-ABIG-2024', 'BPRO-ZYNC-2024', 'BPRO-DEMO-2024'].includes(_bootCode);
   var _bootSigned = _bootCode && typeof verifyLicenseSignature === 'function' && verifyLicenseSignature(_bootCode);
-  if (session && (session.deviceId === DEVICE_ID || _bootMaster || _bootSigned)) {
+  if (!sesionCompleta(session, _bootLic)) {
+    console.warn('[A2K LOGIN] Sesión incompleta: login manual requerido para reconstruir acceso.');
+  } else if (session && (session.deviceId === DEVICE_ID || _bootMaster || _bootSigned)) {
     // ── Iron Lock Cloud: Re-validar licencia en Firebase antes de auto-login ──
     var _savedLic = DB.get('license');
     var _code = _savedLic ? _savedLic.code : null;
@@ -3478,8 +3495,11 @@ function startApp() {
     }
   }
 
-  // Cargar datos iniciales
-  if (!DB.get('productos')) loadSampleData();
+  // Cargar inventario solo después de login/autologin válido
+  var _productosRecuperados = recuperarInventarioLegacy();
+  var _productosActuales = DB.get('productos') || _productosRecuperados || [];
+  console.log('Inventario recuperado: ' + (_productosActuales.length || 0) + ' productos encontrados');
+  if (!_productosActuales.length) loadSampleData();
 
   renderPaymentBtns();
   renderDashboard();
