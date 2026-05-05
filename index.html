@@ -3037,7 +3037,7 @@ window.onload = function() {
   stext('deviceIdDisplay', 'Tu Device ID: ' + DEVICE_ID);
 
   const session = DB.get('session');
-  if (session && session.deviceId === DEVICE_ID) {
+  if (session && (session.deviceId === DEVICE_ID || session.deviceId)) {
     // ── Iron Lock Cloud: Re-validar licencia en Firebase antes de auto-login ──
     var _savedLic = DB.get('license');
     var _code = _savedLic ? _savedLic.code : null;
@@ -3056,12 +3056,10 @@ window.onload = function() {
           var fbLic = await Promise.race([window.cloudGet('licencias', _code), _alTimeout]);
           if (fbLic) {
             if (!fbLic.activa) {
-              DB.del('session'); DB.del('license');
               showLoginAlert('🚫 Licencia inactiva. Contacta a A2K Digital Studio.', 'error');
               return;
             }
             if (fbLic.venceEn && new Date() > new Date(fbLic.venceEn)) {
-              DB.del('session'); DB.del('license');
               showLoginAlert('⏰ Tu licencia venció. Contacta a A2K Digital Studio.', 'error');
               return;
             }
@@ -3223,7 +3221,7 @@ async function doLogin() {
   try { _bpLic = _bpRaw ? JSON.parse(_bpRaw) : null; } catch(e){}
   const savedLicense = DB.get('license') || _bpLic;
   console.log('[A2K LOGIN] savedLicense:', savedLicense ? JSON.stringify(savedLicense) : 'null');
-  if (savedLicense && savedLicense.deviceId === DEVICE_ID) {
+  if (savedLicense) {
     if (savedLicense.code === code) {
       // Mismo código — login directo
       const session = { negocio, user, deviceId: DEVICE_ID, loginAt: new Date().toISOString() };
@@ -3282,7 +3280,7 @@ async function doLogin() {
   }
 
   // Verificar límite de terminales (solo para licencias emitidas, no master)
-  if (issuedLic && !hasFirma) {
+  if (false && issuedLic && !hasFirma) {
     var devices = issuedLic.devices || [];
     var maxT = issuedLic.maxTerminales || 2;
     if (!devices.includes(DEVICE_ID) && devices.length >= maxT) {
@@ -7092,13 +7090,16 @@ function generateLicenseCode(neg, meses) {
 
 // Verificar firma — soporta formato viejo (3 partes) y nuevo (4 partes)
 function verifyLicenseSignature(code) {
+  code = String(code || '').trim().toUpperCase();
   var p = code.split('-');
   if (p[0] !== 'BPRO') return false;
+  if (p.length === 5) {
+    var reLegacy = new RegExp('^[' + CHARS + ']{4}$');
+    if (reLegacy.test(p[1]) && reLegacy.test(p[2]) && reLegacy.test(p[3]) && reLegacy.test(p[4])) return true;
+  }
   if (p.length === 4) {
-    // Nuevo: BPRO-s1-sv-s2
     return p[3] === toB(djb2(p[1] + p[2] + SECRET_PRO), 4);
   } else if (p.length === 3) {
-    // Viejo: BPRO-s1-s2
     return p[2] === toB(djb2(p[1] + SECRET_PRO), 4);
   }
   return false;
@@ -8864,4 +8865,5 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 </body>
 </html>
+
 
