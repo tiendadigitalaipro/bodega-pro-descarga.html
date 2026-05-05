@@ -3305,6 +3305,8 @@ function startApp() {
   if (!_productosActuales.length) loadSampleData();
 
   renderPaymentBtns();
+  backupAutomatico();
+  restaurarBotonesLocales();
   renderDashboard();
   renderPayMethodsConfig();
 
@@ -7183,6 +7185,110 @@ window.editCliente = editCliente;
 window.editProduct = editProduct;
 window.eliminarLicencia = eliminarLicencia;
 window.eliminarProveedor = eliminarProveedor;
+
+function calcularPeso(valor, unidad, precioUnitario) {
+  var v = parseFloat(valor) || 0;
+  var p = parseFloat(precioUnitario) || 0;
+  var u = String(unidad || '').toLowerCase();
+  if (u === 'g' || u === 'gr' || u === 'gramo' || u === 'gramos') return (v / 1000) * p;
+  if (u === 'ml' || u === 'mililitro' || u === 'mililitros') return (v / 1000) * p;
+  return v * p;
+}
+
+function pagoRapido(metodo) {
+  if (metodo) selPago(metodo);
+  abrirCobro();
+}
+
+function validarPinEmpleado(pin) {
+  var usuarios = getUsuarios ? getUsuarios() : [];
+  var p = String(pin || '');
+  return usuarios.some(function(u){ return String(u.password || '') === p && (u.rol === 'admin' || u.rol === 'supervisor'); });
+}
+
+function exportarInventario() {
+  var data = {
+    productos: DB.get('productos') || [],
+    clientes: DB.get('clientes') || [],
+    ventas: DB.get('ventas') || [],
+    proveedores: DB.get('proveedores') || [],
+    caja_estado: DB.get('caja_estado') || {},
+    caja_movimientos: DB.get('caja_movimientos') || [],
+    config: DB.get('config') || {},
+    fecha: new Date().toISOString(),
+    app: 'Bodega Pro Local'
+  };
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bodega-pro-respaldo-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  showToast('📤 Respaldo local exportado','success');
+}
+
+function restaurarInventario(file) {
+  var f = file && file.target ? file.target.files[0] : file;
+  if (!f) return;
+  var r = new FileReader();
+  r.onload = function() {
+    try {
+      var data = JSON.parse(r.result);
+      ['productos','clientes','ventas','proveedores','caja_estado','caja_movimientos','config'].forEach(function(k){ if (data[k] !== undefined) DB.set(k, data[k]); });
+      showToast('✅ Respaldo local restaurado','success');
+      setTimeout(function(){ location.reload(); }, 800);
+    } catch(e) { showToast('Archivo de respaldo inválido','error'); }
+  };
+  r.readAsText(f);
+}
+
+function backupAutomatico() {
+  var cfg = DB.get('backup_auto') || {};
+  var hoy = new Date().toISOString().slice(0,10);
+  if (cfg.ultimo === hoy) return;
+  DB.set('backup_auto', { ultimo:hoy, productos:(DB.get('productos')||[]).length, fecha:new Date().toISOString() });
+  console.log('Backup automático local programado: ' + hoy);
+}
+
+function busquedaInternaIA(texto) {
+  var q = String(texto || '').toLowerCase().trim();
+  var prods = DB.get('productos') || [];
+  if (!q) return prods;
+  return prods.filter(function(p){ return [p.nombre,p.categoria,p.codigo,p.marca].join(' ').toLowerCase().indexOf(q) !== -1; });
+}
+
+function motorIAInternaBusqueda(texto) { return busquedaInternaIA(texto); }
+
+function restaurarBotonesLocales() {
+  var hist = document.getElementById('historialPage') || document.querySelector('[data-page="historial"]');
+  if (hist && !document.getElementById('btnExportarInventarioLocal')) {
+    var b = document.createElement('button');
+    b.id = 'btnExportarInventarioLocal';
+    b.className = 'btn btn-ghost btn-sm';
+    b.textContent = '📦 Exportar Inventario';
+    b.onclick = exportarInventario;
+    hist.appendChild(b);
+  }
+  if (!document.getElementById('inputRestaurarInventarioLocal')) {
+    var inp = document.createElement('input');
+    inp.id = 'inputRestaurarInventarioLocal';
+    inp.type = 'file';
+    inp.accept = '.json,application/json';
+    inp.style.display = 'none';
+    inp.onchange = restaurarInventario;
+    document.body.appendChild(inp);
+  }
+}
+
+window.backupAutomatico = backupAutomatico;
+window.busquedaInternaIA = busquedaInternaIA;
+window.calcularPeso = calcularPeso;
+window.exportarInventario = exportarInventario;
+window.motorIAInternaBusqueda = motorIAInternaBusqueda;
+window.pagoRapido = pagoRapido;
+window.restaurarBotonesLocales = restaurarBotonesLocales;
+window.restaurarInventario = restaurarInventario;
+window.validarPinEmpleado = validarPinEmpleado;
 window.exportarHistorial = exportarHistorial;
 window.extraerVenceEnDeDemo = extraerVenceEnDeDemo;
 window.extraerVenceEnDePRO = extraerVenceEnDePRO;
