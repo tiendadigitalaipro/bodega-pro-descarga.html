@@ -1,4 +1,4 @@
-﻿El resaltado de sintaxis se ha deshabilitado debido al tamaño del código.
+El resaltado de sintaxis se ha deshabilitado debido al tamaño del código.
 <!DOCTYPE html>
 <!-- saved from url=(0057)file:///C:/Users/ASUS/Downloads/bodega-pro-v8-cierre.html -->
 <html lang="es" data-theme="dark"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -2723,21 +2723,6 @@ window._adminUnlocked = false;
 
 // ── HELPER: getElementById null-safe ──
 function gel(id) { return document.getElementById(id); }
-function bpNum(v) { v = Number(v); return Number.isFinite(v) ? v : 0; }
-function money(v) { return Math.round((bpNum(v) + Number.EPSILON) * 100) / 100; }
-function qtyNum(v) { return Math.max(0, Math.round((bpNum(v) + Number.EPSILON) * 1000) / 1000); }
-function calcLineSubtotal(price, qty) { return money(bpNum(price) * qtyNum(qty)); }
-function calcCartTotal(items) { return money((items || []).reduce(function(s, i) { return s + calcLineSubtotal(i.precio, i.qty); }, 0)); }
-function validarStockCarrito(cart, prods) {
-  var errors = [];
-  (cart || []).forEach(function(item) {
-    var p = (prods || []).find(function(x) { return x.id === item.productoId; });
-    if (!p) errors.push(item.nombre + ': producto no existe');
-    else if (qtyNum(item.qty) <= 0) errors.push(item.nombre + ': cantidad inválida');
-    else if (qtyNum(item.qty) - qtyNum(p.stock) > 0.0001) errors.push(item.nombre + ': stock insuficiente (' + p.stock + ' disponible)');
-  });
-  return errors;
-}
 function gval(id) { var el = document.getElementById(id); return el ? el.value : ''; }
 function gnum(id) { var el = document.getElementById(id); return el ? (parseFloat(el.value)||0) : 0; }
 function stext(id, txt) { var el = document.getElementById(id); if(el) el.textContent = txt; }
@@ -3037,7 +3022,7 @@ window.onload = function() {
   stext('deviceIdDisplay', 'Tu Device ID: ' + DEVICE_ID);
 
   const session = DB.get('session');
-  if (session && (session.deviceId === DEVICE_ID || session.deviceId)) {
+  if (session && session.deviceId === DEVICE_ID) {
     // ── Iron Lock Cloud: Re-validar licencia en Firebase antes de auto-login ──
     var _savedLic = DB.get('license');
     var _code = _savedLic ? _savedLic.code : null;
@@ -3056,10 +3041,12 @@ window.onload = function() {
           var fbLic = await Promise.race([window.cloudGet('licencias', _code), _alTimeout]);
           if (fbLic) {
             if (!fbLic.activa) {
+              DB.del('session'); DB.del('license');
               showLoginAlert('🚫 Licencia inactiva. Contacta a A2K Digital Studio.', 'error');
               return;
             }
             if (fbLic.venceEn && new Date() > new Date(fbLic.venceEn)) {
+              DB.del('session'); DB.del('license');
               showLoginAlert('⏰ Tu licencia venció. Contacta a A2K Digital Studio.', 'error');
               return;
             }
@@ -3221,7 +3208,7 @@ async function doLogin() {
   try { _bpLic = _bpRaw ? JSON.parse(_bpRaw) : null; } catch(e){}
   const savedLicense = DB.get('license') || _bpLic;
   console.log('[A2K LOGIN] savedLicense:', savedLicense ? JSON.stringify(savedLicense) : 'null');
-  if (savedLicense) {
+  if (savedLicense && savedLicense.deviceId === DEVICE_ID) {
     if (savedLicense.code === code) {
       // Mismo código — login directo
       const session = { negocio, user, deviceId: DEVICE_ID, loginAt: new Date().toISOString() };
@@ -3280,7 +3267,7 @@ async function doLogin() {
   }
 
   // Verificar límite de terminales (solo para licencias emitidas, no master)
-  if (false && issuedLic && !hasFirma) {
+  if (issuedLic && !hasFirma) {
     var devices = issuedLic.devices || [];
     var maxT = issuedLic.maxTerminales || 2;
     if (!devices.includes(DEVICE_ID) && devices.length >= maxT) {
@@ -3683,9 +3670,9 @@ function addToCart(prodId) {
   if (existing) {
     if (existing.qty >= prod.stock) return showToast('⚠️ Stock insuficiente','warn');
     existing.qty++;
-    existing.subtotal = calcLineSubtotal(existing.precio, existing.qty);
+    existing.subtotal = existing.qty * existing.precio;
   } else {
-    STATE.cart.push({ productoId: prodId, nombre: prod.nombre, emoji: prod.emoji, precio: money(prod.precio), qty: 1, subtotal: calcLineSubtotal(prod.precio, 1) });
+    STATE.cart.push({ productoId: prodId, nombre: prod.nombre, emoji: prod.emoji, precio: prod.precio, qty: 1, subtotal: prod.precio });
   }
   renderCart();
 }
@@ -3720,7 +3707,7 @@ function renderCart() {
     </div>`
   ).join('');
 
-  const total = calcCartTotal(items);
+  const total = items.reduce((s, i) => s + i.subtotal, 0);
   stext('cartTotal', '$' + total.toFixed(2));
   stext('cartTotalBs', fmtLocal(total * STATE.tasa) + ' · Tasa ' + STATE.tasa);
   renderPaymentBtns();
@@ -3743,7 +3730,7 @@ function changeQty(prodId, delta) {
   const item = STATE.cart.find(i => i.productoId === prodId);
   if (!item) return;
   item.qty = Math.max(1, Math.min(item.qty + delta, prod ? prod.stock : 999));
-  item.subtotal = calcLineSubtotal(item.precio, item.qty);
+  item.subtotal = item.qty * item.precio;
   renderCart();
 }
 
@@ -3820,7 +3807,7 @@ function selectPayMethod(method) {
 }
 
 function calcVuelto() {
-  var total = STATE.cart ? calcCartTotal(STATE.cart) : 0;
+  var total = STATE.cart ? STATE.cart.reduce(function(s,i){ return s + (i.subtotal||0); }, 0) : 0;
   var montoEl  = document.getElementById('montoRecibido');
   var vueltoEl = document.getElementById('vueltoInfo');
   var recibido = montoEl ? (parseFloat(montoEl.value) || 0) : 0;
@@ -3850,7 +3837,7 @@ function procesarVenta() {
     return;
   }
 
-  const total = calcCartTotal(STATE.cart);
+  const total = STATE.cart.reduce((s,i) => s + (i.subtotal||0), 0);
   const clientes = DB.get('clientes') || [];
 
   // Llenar modal cobro
@@ -3873,14 +3860,14 @@ function procesarVenta() {
 
 function confirmarVenta() {
   if (!STATE.cart.length) return showToast('El carrito está vacío','warn');
-  var total = calcCartTotal(STATE.cart);
+  var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
   var clienteId = parseInt(document.getElementById('cobro-cliente').value) || null;
   var notas = document.getElementById('cobro-notas').value;
 
   // Validar Pago Mixto
   if (STATE.payMethod === 'Pago Mixto') {
     if (!STATE.pagosMixtos.length) return showToast('Agrega al menos un método de pago mixto','warn');
-    var pagado = money(STATE.pagosMixtos.reduce(function(s,p){ return s + bpNum(p.monto); }, 0));
+    var pagado = STATE.pagosMixtos.reduce(function(s,p){ return s+p.monto; }, 0);
     if (pagado < total - 0.001) return showToast('Faltan $'+(total-pagado).toFixed(2)+' por cubrir','error');
   }
 
@@ -3900,11 +3887,6 @@ function confirmarVenta() {
 }
 
 function _ejecutarVenta(total, clienteId, notas) {
-  var prodsPre = DB.get('productos') || [];
-  var stockErrors = validarStockCarrito(STATE.cart, prodsPre);
-  if (stockErrors.length) return showToast('Venta bloqueada: ' + stockErrors.join(' | '), 'error');
-  STATE.cart.forEach(function(i){ i.qty = qtyNum(i.qty); i.precio = money(i.precio); i.subtotal = calcLineSubtotal(i.precio, i.qty); });
-  total = calcCartTotal(STATE.cart);
   var esMixto = STATE.payMethod === 'Pago Mixto';
   // Capturar ID de transacción POS/Biopago si fue ingresado
   var txIdEl = document.getElementById('posTxId');
@@ -3913,8 +3895,8 @@ function _ejecutarVenta(total, clienteId, notas) {
     id: Date.now(),
     fecha: new Date().toISOString(),
     items: STATE.cart.map(function(i){ return Object.assign({}, i); }),
-    totalUSD: money(total),
-    totalBs: money(total * STATE.tasa),
+    totalUSD: total,
+    totalBs: total * STATE.tasa,
     metodo: esMixto ? 'Pago Mixto' : STATE.payMethod,
     pagos: esMixto ? STATE.pagosMixtos.slice() : null,
     cliente: clienteId,
@@ -3933,7 +3915,7 @@ function _ejecutarVenta(total, clienteId, notas) {
   var prods = DB.get('productos') || [];
   STATE.cart.forEach(function(item) {
     var p = prods.find(function(p){ return p.id === item.productoId; });
-    if (p) p.stock = qtyNum(p.stock - item.qty);
+    if (p) p.stock = Math.max(0, p.stock - item.qty);
   });
   DB.set('productos', prods);
 
@@ -3941,7 +3923,7 @@ function _ejecutarVenta(total, clienteId, notas) {
   if (STATE.payMethod === 'Fiado' && clienteId) {
     var clientes = DB.get('clientes') || [];
     var cli = clientes.find(function(c){ return c.id === clienteId; });
-    if (cli) { cli.deuda = money((cli.deuda || 0) + total); cli.ultimaVenta = new Date().toISOString(); }
+    if (cli) { cli.deuda = (cli.deuda || 0) + total; cli.ultimaVenta = new Date().toISOString(); }
     DB.set('clientes', clientes);
   }
 
@@ -3959,7 +3941,7 @@ function _ejecutarVenta(total, clienteId, notas) {
       id: Date.now(),
       fecha: new Date().toISOString(),
       tipo: 'entrada',
-      monto: money(total),
+      monto: total,
       descripcion: 'Venta #' + venta.id.toString().slice(-5) + ' — ' + metodoPago,
       metodo: tipoMetodo,
       esEfectivo: esEfectivoUSD || esEfectivoBs,
@@ -4128,8 +4110,8 @@ async function _leerSerialPOS() {
 
 // ── PAGO MIXTO ────────────────────────────────────────────────
 function renderMixtoPanel() {
-  var total = calcCartTotal(STATE.cart);
-  var pagado = money(STATE.pagosMixtos.reduce(function(s,p){ return s + bpNum(p.monto); }, 0));
+  var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
+  var pagado = STATE.pagosMixtos.reduce(function(s,p){ return s+p.monto; }, 0);
   var remanente = total - pagado;
 
   // Llenar selector de métodos (excluir Mixto y Fiado)
@@ -5749,7 +5731,7 @@ function _actualizarDisplayBalanza(kg) {
   var subtotal = prod.precio*kg;
   sub.textContent = '$'+subtotal.toFixed(2);
   var item = STATE.cart.find(function(c){return c.productoId===prodId;});
-  if(item&&kg>0){ item.qty=kg; item.subtotal=calcLineSubtotal(prod.precio, kg); renderCart(); }
+  if(item&&kg>0){ item.qty=kg; item.subtotal=parseFloat((prod.precio*kg).toFixed(2)); renderCart(); }
 }
 
 function agregarCarritoBalanza(prodId) {
@@ -6304,7 +6286,7 @@ function abrirCobro() {
   if (!STATE.cart.length) { showToast('Agrega productos al carrito', 'warn'); return; }
   if (!STATE.payMethod)   { showToast('Selecciona un método de pago', 'warn'); return; }
   // Llenar resumen de cobro
-  var total = calcCartTotal(STATE.cart);
+  var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
   var resumen = document.getElementById('cobroResumen');
   if (resumen) {
     resumen.innerHTML = STATE.cart.map(function(it){
@@ -7090,16 +7072,13 @@ function generateLicenseCode(neg, meses) {
 
 // Verificar firma — soporta formato viejo (3 partes) y nuevo (4 partes)
 function verifyLicenseSignature(code) {
-  code = String(code || '').trim().toUpperCase();
   var p = code.split('-');
   if (p[0] !== 'BPRO') return false;
-  if (p.length === 5) {
-    var reLegacy = new RegExp('^[' + CHARS + ']{4}$');
-    if (reLegacy.test(p[1]) && reLegacy.test(p[2]) && reLegacy.test(p[3]) && reLegacy.test(p[4])) return true;
-  }
   if (p.length === 4) {
+    // Nuevo: BPRO-s1-sv-s2
     return p[3] === toB(djb2(p[1] + p[2] + SECRET_PRO), 4);
   } else if (p.length === 3) {
+    // Viejo: BPRO-s1-s2
     return p[2] === toB(djb2(p[1] + SECRET_PRO), 4);
   }
   return false;
@@ -7881,24 +7860,17 @@ setTimeout(_actualizarIndicadorRed, 500);
 var _ejecutarVentaOrig = window._ejecutarVenta || _ejecutarVenta;
 window._ejecutarVentaOfflinePatch = function(total, clienteId, notas) {
   if (!navigator.onLine) {
-    var prodsOffline = DB.get('productos') || [];
-    var offlineErrors = validarStockCarrito(STATE.cart, prodsOffline);
-    if (offlineErrors.length) return showToast('Venta bloqueada: ' + offlineErrors.join(' | '), 'error');
-    STATE.cart.forEach(function(i){ i.qty = qtyNum(i.qty); i.precio = money(i.precio); i.subtotal = calcLineSubtotal(i.precio, i.qty); });
-    total = calcCartTotal(STATE.cart);
     // Guardar en cola offline
     var pendientes = DB.get('ventas_pendientes') || [];
     pendientes.push({
       id: Date.now(), fecha: new Date().toISOString(),
       items: STATE.cart.map(function(i){ return Object.assign({}, i); }),
-      totalUSD: money(total), totalBs: money(total * STATE.tasa),
+      totalUSD: total, totalBs: total * STATE.tasa,
       metodo: STATE.payMethod === 'Pago Mixto' ? 'Pago Mixto' : STATE.payMethod,
       pagos: STATE.payMethod === 'Pago Mixto' ? STATE.pagosMixtos.slice() : null,
       cliente: clienteId, notas: notas, tasa: STATE.tasa, _pendiente: true
     });
     DB.set('ventas_pendientes', pendientes);
-    STATE.cart.forEach(function(item){ var p = prodsOffline.find(function(x){ return x.id === item.productoId; }); if (p) p.stock = qtyNum(p.stock - item.qty); });
-    DB.set('productos', prodsOffline);
     showToast('📴 Sin internet — venta guardada localmente', 'warn');
     closeModal('modalCobro');
     STATE.cart = []; STATE.pagosMixtos = [];
@@ -8865,5 +8837,3 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 </body>
 </html>
-
-
