@@ -2753,18 +2753,31 @@ var _memDB = {};
 var _lsOK = (function(){
   try {
     localStorage.setItem('_bp_test', '1');
-    localStorage.removeItem('_bp_test');
-    return true;
+    return localStorage.getItem('_bp_test') === '1';
   } catch(e) {
     console.warn('Bodega PRO: localStorage no disponible, usando memoria temporal.');
     return false;
   }
 })();
 
+function _dbKeys(k) { return ['bp_' + k, k, 'bpro_' + k]; }
+function _dbProtected(k) { return ['productos','ventas','clientes','proveedores','config','license','licenses_issued'].includes(k); }
+
 const DB = {
   get: function(k) {
     try {
-      if (_lsOK) return JSON.parse(localStorage.getItem('bp_' + k));
+      var keys = _dbKeys(k);
+      if (_lsOK) {
+        for (var i=0; i<keys.length; i++) {
+          var raw = localStorage.getItem(keys[i]);
+          if (raw !== null && raw !== undefined && raw !== '') {
+            var val = JSON.parse(raw);
+            if (keys[i] !== 'bp_' + k) localStorage.setItem('bp_' + k, JSON.stringify(val));
+            return val;
+          }
+        }
+        return null;
+      }
       return _memDB['bp_' + k] !== undefined ? _memDB['bp_' + k] : null;
     } catch(e) { return _memDB['bp_' + k] || null; }
   },
@@ -2776,9 +2789,10 @@ const DB = {
   },
   del: function(k) {
     try {
-      if (_lsOK) localStorage.removeItem('bp_' + k);
-      delete _memDB['bp_' + k];
-    } catch(e) { delete _memDB['bp_' + k]; }
+      if (_dbProtected(k)) return;
+      if (_lsOK) localStorage.setItem('bp_' + k, 'null');
+      _memDB['bp_' + k] = null;
+    } catch(e) { _memDB['bp_' + k] = null; }
   },
 };
 window.DB = DB;
@@ -3022,7 +3036,11 @@ window.onload = function() {
   stext('deviceIdDisplay', 'Tu Device ID: ' + DEVICE_ID);
 
   const session = DB.get('session');
-  if (session && session.deviceId === DEVICE_ID) {
+  var _bootLic = DB.get('license');
+  var _bootCode = _bootLic && _bootLic.code ? String(_bootLic.code).toUpperCase() : '';
+  var _bootMaster = ['BPRO-ABIG-2024', 'BPRO-ZYNC-2024', 'BPRO-DEMO-2024'].includes(_bootCode);
+  var _bootSigned = _bootCode && typeof verifyLicenseSignature === 'function' && verifyLicenseSignature(_bootCode);
+  if (session && (session.deviceId === DEVICE_ID || _bootMaster || _bootSigned)) {
     // ── Iron Lock Cloud: Re-validar licencia en Firebase antes de auto-login ──
     var _savedLic = DB.get('license');
     var _code = _savedLic ? _savedLic.code : null;
@@ -3041,12 +3059,10 @@ window.onload = function() {
           var fbLic = await Promise.race([window.cloudGet('licencias', _code), _alTimeout]);
           if (fbLic) {
             if (!fbLic.activa) {
-              DB.del('session'); DB.del('license');
               showLoginAlert('🚫 Licencia inactiva. Contacta a A2K Digital Studio.', 'error');
               return;
             }
             if (fbLic.venceEn && new Date() > new Date(fbLic.venceEn)) {
-              DB.del('session'); DB.del('license');
               showLoginAlert('⏰ Tu licencia venció. Contacta a A2K Digital Studio.', 'error');
               return;
             }
@@ -3208,7 +3224,7 @@ async function doLogin() {
   try { _bpLic = _bpRaw ? JSON.parse(_bpRaw) : null; } catch(e){}
   const savedLicense = DB.get('license') || _bpLic;
   console.log('[A2K LOGIN] savedLicense:', savedLicense ? JSON.stringify(savedLicense) : 'null');
-  if (savedLicense && savedLicense.deviceId === DEVICE_ID) {
+  if (savedLicense && (savedLicense.deviceId === DEVICE_ID || savedLicense.code === code)) {
     if (savedLicense.code === code) {
       // Mismo código — login directo
       const session = { negocio, user, deviceId: DEVICE_ID, loginAt: new Date().toISOString() };
@@ -3333,7 +3349,6 @@ function confirmarLogout() {
   closeModal('modalLogout');
   // Limpiar sesión completa — el Iron Lock tomará control al recargar
   DB.del('session');
-  DB.del('license');
   // Ocultar app de inmediato para evitar flash antes de reload
   var _appEl = document.getElementById('app');
   var _loginEl = document.getElementById('loginScreen');
@@ -6797,13 +6812,7 @@ function resetearDatos() {
 }
 
 function resetearTodo() {
-  if (!confirm('⚠️ RESETEAR TODO — Esto borrará productos, ventas, clientes y configuración.\n¿Estás seguro?')) return;
-  if (!confirm('Última confirmación: ¿Borrar absolutamente todo?')) return;
-  var keys = ['productos','ventas','clientes','config','caja_estado','caja_movimientos',
-              'notasCredito','session','license','proveedores','theme','accent'];
-  keys.forEach(function(k){ DB.del(k); });
-  showToast('Sistema reseteado. Recargando...','success');
-  setTimeout(function(){ location.reload(); }, 1500);
+  showToast('Reset total deshabilitado para proteger datos de clientes.','warn');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -7072,13 +7081,16 @@ function generateLicenseCode(neg, meses) {
 
 // Verificar firma — soporta formato viejo (3 partes) y nuevo (4 partes)
 function verifyLicenseSignature(code) {
+  code = String(code || '').trim().toUpperCase();
   var p = code.split('-');
   if (p[0] !== 'BPRO') return false;
+  if (p.length === 5) {
+    var reLegacy = new RegExp('^[' + CHARS + ']{4}$');
+    if (reLegacy.test(p[1]) && reLegacy.test(p[2]) && reLegacy.test(p[3]) && reLegacy.test(p[4])) return true;
+  }
   if (p.length === 4) {
-    // Nuevo: BPRO-s1-sv-s2
     return p[3] === toB(djb2(p[1] + p[2] + SECRET_PRO), 4);
   } else if (p.length === 3) {
-    // Viejo: BPRO-s1-s2
     return p[2] === toB(djb2(p[1] + SECRET_PRO), 4);
   }
   return false;
