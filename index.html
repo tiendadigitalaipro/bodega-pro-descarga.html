@@ -938,6 +938,7 @@ body.has-banner { padding-top:38px; }
               <input type="text" class="search-input" placeholder="🔍 Buscar producto o código..." id="posSearch" oninput="renderPosProducts()">
               <button class="btn btn-outline btn-sm" id="btnQRPos" onclick="openQRScanner('pos')" title="Escanear código de barras">📷 QR</button>
               <button class="btn btn-outline btn-sm" onclick="abrirPesajeManual()" title="Agregar producto por peso/volumen">⚖️ Pesaje</button>
+              <button class="btn btn-outline btn-sm" onclick="_abrirVentaRapida()" title="Venta rápida — producto no registrado" style="color:#D4AF37;border-color:rgba(212,175,55,0.5)">⚡ Rápido</button>
               <button class="btn btn-outline btn-sm" onclick="openAddProduct()">+ Producto</button>
             </div>
             <div class="cat-filters" id="catFilters"></div>
@@ -2832,7 +2833,7 @@ function _abrirModalPesaje(prod) {
   var valActual = existing ? existing.qty : '';
   var m = document.createElement('div');
   m.id = '_modalPesaje';
-  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;pointer-events:none';
   m.innerHTML = '<div style="background:var(--card);border:2px solid var(--accent);border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">'
     + '<div style="font-size:36px;text-align:center;margin-bottom:6px">'+prod.emoji+'</div>'
     + '<div style="font-weight:800;font-size:16px;text-align:center;margin-bottom:4px">'+prod.nombre+'</div>'
@@ -2849,7 +2850,9 @@ function _abrirModalPesaje(prod) {
     + '<button onclick="_confirmarPesaje('+prod.id+')" style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:14px;cursor:pointer">⚖️ Agregar al Carrito</button>'
     + '</div></div>';
   document.body.appendChild(m);
-  setTimeout(function(){ var f=document.getElementById('_pesajeCant'); if(f){f.focus();f.select();} }, 80);
+  // Bloquear eventos 500ms para evitar que el click fantasma del móvil cierre el modal
+  setTimeout(function() { var mo=document.getElementById('_modalPesaje'); if(mo) mo.style.pointerEvents=''; }, 500);
+  setTimeout(function(){ var f=document.getElementById('_pesajeCant'); if(f){f.focus();f.select();} }, 520);
 }
 
 function _confirmarPesaje(prodId) {
@@ -2868,6 +2871,103 @@ function _confirmarPesaje(prodId) {
 }
 window._abrirModalPesaje = _abrirModalPesaje;
 window._confirmarPesaje  = _confirmarPesaje;
+
+// ── VENTA RÁPIDA (artículo no registrado en inventario) ──
+function _abrirVentaRapida() {
+  var viejo = document.getElementById('_modalVentaRapida'); if (viejo) viejo.remove();
+  var tasa = STATE.tasa || 1;
+  var simb = STATE.simboloLocal || 'Bs';
+  var m = document.createElement('div');
+  m.id = '_modalVentaRapida';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.innerHTML = '<div style="background:var(--card);border:2px solid rgba(212,175,55,0.6);border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    +'<div><div style="font-size:22px;display:inline;margin-right:8px">⚡</div><span style="font-weight:900;font-size:16px;color:#D4AF37">Venta Rápida</span></div>'
+    +'<button onclick="document.getElementById(\'_modalVentaRapida\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);line-height:1">✕</button>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--text2);margin-bottom:14px">Artículo que no está en inventario. Se agrega al carrito de inmediato.</div>'
+    +'<div style="margin-bottom:12px">'
+    +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nombre del artículo</label>'
+    +'<input id="_vrNombre" type="text" placeholder="Ej: Jabón La Llave 200g" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;outline:none">'
+    +'</div>'
+    +'<div style="margin-bottom:8px">'
+    +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Precio en dólares ($)</label>'
+    +'<input id="_vrPrecio" type="number" placeholder="0.00" min="0.01" step="0.01" oninput="_vrActualizarBs()" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:20px;font-weight:700;font-family:var(--display);outline:none">'
+    +'</div>'
+    +'<div id="_vrBsPreview" style="text-align:center;font-size:13px;color:var(--neon);font-weight:700;min-height:22px;margin-bottom:16px"></div>'
+    +'<div style="margin-bottom:14px">'
+    +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Cantidad</label>'
+    +'<input id="_vrCant" type="number" value="1" min="1" step="1" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:16px;font-weight:700;font-family:var(--display);outline:none">'
+    +'</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="document.getElementById(\'_modalVentaRapida\').remove()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">Cancelar</button>'
+    +'<button onclick="_confirmarVentaRapida()" style="flex:2;padding:12px;border-radius:10px;border:none;background:#D4AF37;color:#000;font-weight:900;cursor:pointer;font-size:14px">⚡ Agregar al Carrito</button>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var f=document.getElementById('_vrNombre'); if(f) f.focus(); }, 80);
+}
+function _vrActualizarBs() {
+  var precio = parseFloat((document.getElementById('_vrPrecio')||{}).value) || 0;
+  var cant   = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
+  var prev   = document.getElementById('_vrBsPreview');
+  if (!prev) return;
+  if (precio > 0) {
+    var simb = STATE.simboloLocal || 'Bs';
+    prev.textContent = '= ' + fmtLocal(precio * (STATE.tasa||1)) + ' por unidad';
+  } else {
+    prev.textContent = '';
+  }
+}
+function _confirmarVentaRapida() {
+  var nombre = ((document.getElementById('_vrNombre')||{}).value||'').trim();
+  var precio  = parseFloat((document.getElementById('_vrPrecio')||{}).value) || 0;
+  var cant    = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
+  if (!nombre) { showToast('Escribe el nombre del artículo','warn'); return; }
+  if (precio <= 0) { showToast('Ingresa un precio válido','warn'); return; }
+  var subtotal = parseFloat((precio * cant).toFixed(2));
+  STATE.cart.push({
+    productoId: Date.now(),
+    nombre: nombre + (cant > 1 ? ' x'+cant : ''),
+    emoji: '⚡',
+    precio: precio,
+    qty: cant,
+    subtotal: subtotal,
+    esLibre: true,
+  });
+  document.getElementById('_modalVentaRapida').remove();
+  renderCart();
+  showToast('⚡ '+nombre+' agregado — $'+subtotal.toFixed(2)+' ('+fmtLocal(subtotal*(STATE.tasa||1))+')', 'success');
+  // Preguntar si desea guardar en inventario
+  setTimeout(function() {
+    var bs = fmtLocal(precio * (STATE.tasa||1));
+    var confirmed = confirm('¿Deseas guardar "'+nombre+'" en el inventario permanente?\n\nPrecio: $'+precio.toFixed(2)+' = '+bs+'\n\nSi dices Sí, quedará registrado y disponible para futuras ventas.');
+    if (confirmed) { _guardarVentaRapidaEnInventario(nombre, precio); }
+  }, 300);
+}
+function _guardarVentaRapidaEnInventario(nombre, precio) {
+  var prods = DB.get('productos') || [];
+  var nuevo = {
+    id: Date.now(),
+    nombre: nombre,
+    emoji: '⚡',
+    categoria: 'Sin categoría',
+    costo: parseFloat((precio * 0.7).toFixed(3)),
+    precio: precio,
+    stock: 0,
+    stockMin: 5,
+    unidad: 'und',
+    codigo: '',
+    foto: null,
+  };
+  prods.push(nuevo);
+  DB.set('productos', prods);
+  showToast('✅ "'+nombre+'" guardado en inventario (stock: 0, ajusta cuando llegue mercancía)', 'success');
+  renderPosProducts();
+}
+window._abrirVentaRapida = _abrirVentaRapida;
+window._vrActualizarBs   = _vrActualizarBs;
+window._confirmarVentaRapida = _confirmarVentaRapida;
 
 function renderCart() {
   const items = STATE.cart;
@@ -3941,9 +4041,9 @@ function renderClientes() {
     return (b.deuda||0) - (a.deuda||0);
   });
   var _lista = _verTodos ? clientes : _deudores;
-  // Scroll habilitado para la tabla
+  // Sin límite de altura: el page-body (overflow-y:auto) maneja el scroll completo en móvil
   var _wrap = tbody.closest('.table-wrap');
-  if (_wrap) { _wrap.style.maxHeight = '55vh'; _wrap.style.overflowY = 'auto'; }
+  if (_wrap) { _wrap.style.maxHeight = ''; _wrap.style.overflowY = ''; }
   function _fila(c) {
     var deuda = c.deuda || 0;
     var bc = deuda > (c.limite||50) ? 'badge-red' : deuda > 0 ? 'badge-yellow' : 'badge-green';
