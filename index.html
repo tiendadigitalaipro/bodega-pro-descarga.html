@@ -674,6 +674,26 @@ body.has-banner { padding-top:38px; }
 @media(max-width:768px) {
   #page-avances .avances-layout { grid-template-columns:1fr; }
   .modalidad-grid { grid-template-columns:1fr 1fr 1fr; }
+  /* Métodos de pago config */
+  #payMethodsConfig label{gap:6px !important}
+  #payMethodsConfig .badge{flex-shrink:0}
+  #payMethodsConfig~.btn-outline{width:100% !important;justify-content:center !important}
+  /* PIN card */
+  #page-configuracion .card[style*="border:1px solid var(--neon)"]>div:first-child{flex-wrap:wrap !important;gap:8px !important}
+  /* Clave Modo Empleado */
+  #page-configuracion .card[style*="border:1px solid var(--accent)"]>div:first-child{flex-direction:column !important;align-items:flex-start !important;gap:8px !important}
+  #page-configuracion .card[style*="border:1px solid var(--accent)"] .btn-outline{width:100% !important;justify-content:center !important}
+  /* Zona de peligro */
+  #page-configuracion .card[style*="border:1px solid #ef4444"]>div:first-child{flex-direction:column !important;align-items:stretch !important;gap:10px !important}
+  #page-configuracion .card[style*="border:1px solid #ef4444"] [style*="display:flex;gap"]{flex-direction:column !important;width:100% !important}
+  #page-configuracion .card[style*="border:1px solid #ef4444"] .btn{width:100% !important;justify-content:center !important}
+  /* Backup/PIN compacto */
+  #page-configuracion .card[style*="border:2px solid var(--neon)"]>p{font-size:11px !important;margin-bottom:6px !important}
+  #page-configuracion .card[style*="border:2px solid var(--neon)"] [style*="flex-wrap:wrap;gap:10px"]{gap:6px !important;margin-bottom:6px !important}
+  /* POS cobrar siempre visible */
+  .payment-btns{max-height:48px !important;margin-bottom:3px !important}
+  /* PIN inputs compactos */
+  #pin-nuevo,#pin-confirmar{font-size:16px !important;letter-spacing:4px !important;padding:8px !important}
 }
 </style>
 </head>
@@ -2748,7 +2768,7 @@ function addToCart(prodId) {
   if (existing) {
     if (existing.qty >= prod.stock) return showToast('⚠️ Stock insuficiente','warn');
     existing.qty++;
-    existing.subtotal = existing.qty * existing.precio;
+    existing.subtotal = parseFloat((existing.qty * existing.precio).toFixed(2));
   } else {
     STATE.cart.push({ productoId: prodId, nombre: prod.nombre, emoji: prod.emoji, precio: prod.precio, qty: 1, subtotal: prod.precio });
   }
@@ -2935,6 +2955,10 @@ function confirmarVenta() {
   const total = STATE.cart.reduce((s,i) => s + (i.subtotal||0), 0);
   const clienteId = parseInt(document.getElementById('cobro-cliente').value) || null;
   const notas = document.getElementById('cobro-notas').value;
+  if (STATE.payMethod === 'Fiado' && !clienteId) {
+    showToast('⚠️ Selecciona un cliente para registrar el fiado','warn');
+    return;
+  }
 
   const venta = {
     id: Date.now(),
@@ -3629,7 +3653,11 @@ function renderClientes() {
 
   var tbody = document.getElementById('clienteTable');
   if (!tbody) return;
-  tbody.innerHTML = clientes.map(function(c) {
+  var _verTodos = window._clientesVerTodos === true;
+  var _deudores = clientes.filter(function(c){ return (c.deuda||0) > 0; });
+  var _alDia    = clientes.filter(function(c){ return (c.deuda||0) <= 0; });
+  var _lista    = _verTodos ? clientes : _deudores;
+  function _fila(c) {
     var deuda = c.deuda || 0;
     var bc = deuda > (c.limite||50) ? 'badge-red' : deuda > 0 ? 'badge-yellow' : 'badge-green';
     var bt = deuda > (c.limite||50) ? 'Límite excedido' : deuda > 0 ? 'Con fiado' : 'Al día';
@@ -3644,7 +3672,19 @@ function renderClientes() {
         '<button class="btn btn-sm btn-neon" onclick="verFiado(' + c.id + ')">💳 Fiado</button>' +
         '<button class="btn btn-sm btn-danger" onclick="deleteCliente(' + c.id + ')">🗑️</button>' +
       '</div></td></tr>';
-  }).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text2)">Sin clientes</td></tr>';
+  }
+  var _vacio = _verTodos ? 'Sin clientes registrados' : 'Sin fiados activos';
+  var _rows = _lista.map(_fila).join('') || ('<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text2)">' + _vacio + '</td></tr>');
+  if (!_verTodos && _alDia.length > 0) {
+    _rows += '<tr><td colspan="6" style="text-align:center;padding:8px;border-top:1px solid var(--border)">' +
+      '<button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="window._clientesVerTodos=true;renderClientes()">' +
+      '👥 Ver ' + _alDia.length + ' cliente' + (_alDia.length>1?'s':'') + ' al día (sin deuda)</button></td></tr>';
+  } else if (_verTodos) {
+    _rows += '<tr><td colspan="6" style="text-align:center;padding:8px;border-top:1px solid var(--border)">' +
+      '<button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="window._clientesVerTodos=false;renderClientes()">' +
+      '🔍 Mostrar solo fiados activos</button></td></tr>';
+  }
+  tbody.innerHTML = _rows;
 }
 
 function openAddCliente() {
@@ -3896,6 +3936,7 @@ function renderPayMethodsConfig() {
 }
 
 function updateRatesUI() {
+  if (typeof RATES === 'undefined') return;
   var rc = document.getElementById('r-compra');
   var rv = document.getElementById('r-venta');
   var ra = document.getElementById('r-arbitro');
@@ -5098,7 +5139,6 @@ function aplicarPais(paisCode) {
   if (!PAISES || !PAISES[paisCode]) return;
   var p = PAISES[paisCode];
   STATE.pais        = paisCode;
-  STATE.tasa        = p.tasaDefault || 649;
   STATE.simboloLocal = p.simboloLocal || 'Bs';
   STATE.simboloRef  = p.simboloRef || '$';
   // Actualizar config
@@ -5113,7 +5153,7 @@ function aplicarPais(paisCode) {
   if (bandEl) bandEl.textContent = (p.bandera||'') + ' ' + p.nombre;
   if (mondEl) mondEl.textContent = p.simboloLocal + ' (' + (p.monedaLocalNombre||p.simboloLocal) + ')';
   if (lblEl)  lblEl.textContent  = p.tasaLabel || ('Tasa ('+p.simboloLocal+' por $1)');
-  if (tasaEl) { tasaEl.value = p.tasaDefault; tasaEl.placeholder = p.tasaPlaceholder || ''; }
+  if (tasaEl) { tasaEl.value = STATE.tasa; tasaEl.placeholder = p.tasaPlaceholder || ''; }
   // Recargar métodos de pago
   if (p.metodosDisponibles) window.PAYMENT_METHODS = p.metodosDisponibles.slice();
   try { renderPaymentBtns(); } catch(e) {}
