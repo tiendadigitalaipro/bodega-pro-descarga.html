@@ -631,6 +631,17 @@ body.has-banner { padding-top:38px; }
 #jarvisIndicator.offline { background:rgba(239,68,68,0.1); border-color:var(--danger); color:var(--danger); }
 .jarvis-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
 
+/* IA Assistant */
+.ia-msg { max-width:90%; padding:12px 16px; border-radius:12px; font-size:13px; line-height:1.7; word-break:break-word; }
+.ia-msg.user { align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:3px; }
+.ia-msg.bot { align-self:flex-start; background:var(--bg3); border:1px solid var(--border); border-bottom-left-radius:3px; }
+.ia-msg.bot strong { color:var(--neon); }
+.ia-quick-btn { padding:7px 13px; background:var(--bg3); border:1px solid var(--border); border-radius:20px; font-size:12px; cursor:pointer; color:var(--text1); transition:all 0.18s; white-space:nowrap; }
+.ia-quick-btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+.ia-input { flex:1; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:13px; color:var(--text1); outline:none; font-family:inherit; }
+.ia-input:focus { border-color:var(--accent); }
+#update-banner { position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,var(--accent),var(--neon));color:#fff;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;box-shadow:0 2px 16px rgba(0,0,0,0.35); }
+
 /* Avances module */
 #page-avances .avances-layout { display:grid; grid-template-columns:360px 1fr; gap:16px; }
 .moneda-toggle { display:flex; border:1px solid var(--border2); border-radius:10px; overflow:hidden; }
@@ -817,6 +828,9 @@ body.has-banner { padding-top:38px; }
       </div>
       <div class="nav-item" onclick="showPage('reportes',this)" data-page="reportes">
         <span class="nav-icon">📈</span><span class="nav-label">Reportes</span>
+      </div>
+      <div class="nav-item" onclick="showPage('ia',this)" data-page="ia">
+        <span class="nav-icon">🤖</span><span class="nav-label">Asistente IA</span>
       </div>
       <div class="nav-item" onclick="showPage('proveedores',this)" data-page="proveedores">
         <span class="nav-icon">🏭</span><span class="nav-label">Proveedores</span>
@@ -1243,6 +1257,52 @@ body.has-banner { padding-top:38px; }
         </div>
         <div class="section-title" style="font-size:15px;margin-bottom:12px">📋 Historial de Pagos</div>
         <div id="provHistorial" style="background:var(--card);border-radius:12px;padding:16px"></div>
+      </div>
+
+      <!-- ═══ ASISTENTE IA ═══ -->
+      <div id="page-ia" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <div>
+            <div class="section-title">🤖 Asistente Bodega IA</div>
+            <div class="section-sub" style="margin-bottom:0">Análisis inteligente de tu negocio en tiempo real</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;padding:6px 14px;border-radius:20px;background:var(--bg3);border:1px solid var(--border)">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--accent)" id="ia-status-dot"></div>
+            <span id="ia-status-txt">IA Local</span>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
+          <!-- CONSULTAS RÁPIDAS -->
+          <div style="padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg3)">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.5px;margin-bottom:10px">⚡ CONSULTAS RÁPIDAS</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <button class="ia-quick-btn" onclick="iaConsulta('inventario')">📦 Inventario crítico</button>
+              <button class="ia-quick-btn" onclick="iaConsulta('ventas')">💰 Ventas de hoy</button>
+              <button class="ia-quick-btn" onclick="iaConsulta('deudores')">👥 Deudores activos</button>
+              <button class="ia-quick-btn" onclick="iaConsulta('top')">🏆 Top productos</button>
+              <button class="ia-quick-btn" onclick="iaConsulta('caja')">🏦 Estado de caja</button>
+              <button class="ia-quick-btn" onclick="iaConsulta('proveedores')">🏭 Deudas proveedores</button>
+              <button class="ia-quick-btn" onclick="iaConsulta('resumen')">📊 Resumen general</button>
+              <button class="ia-quick-btn" onclick="iaLimpiarChat()" style="color:var(--text3)">🗑️ Limpiar</button>
+            </div>
+          </div>
+
+          <!-- MENSAJES -->
+          <div id="ia-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:320px;max-height:480px">
+            <div class="ia-msg bot">
+              <strong>¡Hola! Soy tu Asistente Bodega IA 🤖</strong><br>
+              Analizo inventario, ventas, deudores, caja y más — todo en tiempo real con tus datos locales.<br><br>
+              Usa los botones de arriba o escribe tu pregunta abajo. Si activas <strong>Jarvis</strong> en Configuración, puedo responder con IA avanzada.
+            </div>
+          </div>
+
+          <!-- INPUT -->
+          <div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">
+            <input type="text" id="ia-input" class="ia-input" placeholder="Ej: ¿Qué productos se están acabando?" onkeydown="if(event.key==='Enter')iaEnviar()">
+            <button class="btn btn-primary" onclick="iaEnviar()" style="min-width:80px;flex-shrink:0">Enviar</button>
+          </div>
+        </div>
       </div>
 
       <!-- ═══ CONFIGURACIÓN ═══ -->
@@ -1843,6 +1903,8 @@ body.has-banner { padding-top:38px; }
 
 <script type="text/javascript">var _adminUnlocked = false;
 var _dc=function(a){return a.map(function(c){return String.fromCharCode(c);}).join('');};
+var APP_VERSION='v9.1';
+var APP_BUILD='20260524';
 
 
 function selPago(metodo) {
@@ -2479,6 +2541,8 @@ function startApp() {
   // Iniciar respaldo automático y acceso rápido PIN/Patrón
   if (typeof initAutoBackup   === 'function') initAutoBackup();
   if (typeof initAccesoRapido === 'function') initAccesoRapido();
+  // Verificar actualización de versión
+  setTimeout(checkVersionUpdate, 1500);
 }
 
 // ─── NAVEGACIÓN ───────────────────────────────────────────────
@@ -2498,7 +2562,8 @@ function showPage(page, el) {
     dashboard:'Dashboard', pos:'Punto de Venta', inventario:'Inventario',
     historial:'Historial de Ventas', devoluciones:'Devoluciones',
     caja:'Gestión de Caja', clientes:'Clientes y Fiados',
-    reportes:'Reportes', configuracion:'Configuración', proveedores:'Proveedores'
+    reportes:'Reportes', configuracion:'Configuración', proveedores:'Proveedores',
+    ia:'Asistente IA'
   };
   stext('topbarTitle', titles[page] || page);
   STATE.currentPage = page;
@@ -2512,6 +2577,7 @@ function showPage(page, el) {
   if (page === 'devoluciones') renderDevolucionesPage();
   if (page === 'caja') renderCajaPage();
   if (page === 'proveedores') renderProveedoresPage();
+  if (page === 'ia') iaActualizarEstado();
   if (page === 'configuracion') {
     const cfg = DB.get('config') || {};
     const _nn = cfg.negocio || STATE.user.negocio || '';
@@ -6845,6 +6911,314 @@ function probarConexionJarvis() {
       if (JARVIS_CONFIG.enabled) indEl.style.display = 'flex';
       showToast('Jarvis no disponible en ' + ip + ':' + port, 'warn');
     });
+}
+
+// ═══ VERSIÓN / UPDATE NOTIFICATION ═══
+function checkVersionUpdate() {
+  var stored = localStorage.getItem('bp_build');
+  if (!stored) { localStorage.setItem('bp_build', APP_BUILD); return; }
+  if (stored === APP_BUILD) return;
+  localStorage.setItem('bp_build', APP_BUILD);
+  var banner = document.createElement('div');
+  banner.id = 'update-banner';
+  var novedades = [
+    '⚖️ Botón Pesaje en el punto de venta',
+    '🤖 Módulo Asistente IA con análisis inteligente',
+    '⏸️ Pausar y recuperar ventas',
+    '🔒 Seguridad de licencias mejorada'
+  ].map(function(n){ return '<li>'+n+'</li>'; }).join('');
+  banner.innerHTML = '<span style="display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap;">'
+    + '<strong>🚀 Bodega Pro '+APP_VERSION+' instalado</strong>'
+    + '<span style="font-weight:400;font-size:12px;opacity:0.9">— haz clic en "Ver novedades" para conocer los cambios</span>'
+    + '</span>'
+    + '<div style="display:flex;gap:8px;flex-shrink:0">'
+    + '<button id="btnVerNovedades" onclick="iaVerNovedades()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:#fff;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">Ver novedades</button>'
+    + '<button onclick="document.getElementById(\'update-banner\').remove()" style="background:rgba(0,0,0,0.15);border:none;color:rgba(255,255,255,0.9);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;line-height:1;">✕</button>'
+    + '</div>';
+  document.body.appendChild(banner);
+}
+function iaVerNovedades() {
+  var b = document.getElementById('update-banner'); if(b) b.remove();
+  var modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = '<div style="background:var(--bg2);border-radius:14px;padding:24px;max-width:420px;width:100%;border:1px solid var(--border)">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    + '<h3 style="margin:0;font-size:17px;">🚀 Novedades — Bodega Pro '+APP_VERSION+'</h3>'
+    + '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)">✕</button>'
+    + '</div>'
+    + '<ul style="margin:0;padding-left:20px;line-height:2.2;font-size:13px;color:var(--text1)">'
+    + '<li>⚖️ <strong>Botón Pesaje</strong> en el Punto de Venta</li>'
+    + '<li>🤖 <strong>Asistente IA</strong> con análisis de inventario, ventas y deudores</li>'
+    + '<li>⏸️ <strong>Pausar / Recuperar ventas</strong> en el carrito</li>'
+    + '<li>🔒 <strong>Seguridad mejorada</strong> — secretos de licencias ofuscados</li>'
+    + '<li>🛒 Carrito más alto (5-6 artículos visibles)</li>'
+    + '<li>🔔 Notificación automática de actualizaciones</li>'
+    + '</ul>'
+    + '<button onclick="this.closest(\'[style*=fixed]\').remove()" class="btn btn-primary" style="width:100%;margin-top:18px;">¡Entendido!</button>'
+    + '</div>';
+  document.body.appendChild(modal);
+}
+
+// ═══ ASISTENTE IA ═══
+function iaActualizarEstado() {
+  var dot = document.getElementById('ia-status-dot');
+  var txt = document.getElementById('ia-status-txt');
+  if (!dot || !txt) return;
+  if (JARVIS_CONFIG && JARVIS_CONFIG.enabled) {
+    dot.style.background = 'var(--neon)';
+    txt.textContent = 'Jarvis IA conectado';
+  } else {
+    dot.style.background = 'var(--accent)';
+    txt.textContent = 'IA Local activa';
+  }
+}
+
+function iaLimpiarChat() {
+  var msgs = document.getElementById('ia-messages');
+  if (!msgs) return;
+  msgs.innerHTML = '<div class="ia-msg bot"><strong>Chat limpiado.</strong> ¿En qué puedo ayudarte?</div>';
+}
+
+function iaConsulta(tipo) {
+  var etiquetas = {
+    inventario:'Ver inventario crítico', ventas:'Mostrar ventas de hoy',
+    deudores:'Listar deudores activos', top:'Top productos más vendidos',
+    caja:'Estado actual de caja', proveedores:'Deudas con proveedores',
+    resumen:'Resumen general del negocio'
+  };
+  iaMostrarUsuario(etiquetas[tipo] || tipo);
+  setTimeout(function() { iaMostrarBot(iaGenerarRespuesta(tipo, '')); }, 300);
+}
+
+function iaEnviar() {
+  var inp = document.getElementById('ia-input');
+  var txt = (inp ? inp.value.trim() : '');
+  if (!txt) return;
+  if (inp) inp.value = '';
+  iaMostrarUsuario(txt);
+  var tipo = iaDetectarTipo(txt);
+  if (JARVIS_CONFIG && JARVIS_CONFIG.enabled) {
+    iaConsultarJarvis(txt, tipo);
+  } else {
+    setTimeout(function() { iaMostrarBot(iaGenerarRespuesta(tipo, txt)); }, 400);
+  }
+}
+
+function iaDetectarTipo(txt) {
+  var t = txt.toLowerCase();
+  if (/stock|inventar|produc|acab|agot|falt|queda/i.test(t)) return 'inventario';
+  if (/venta|hoy|ingres|cobr|vend|cuanto.*vend/i.test(t)) return 'ventas';
+  if (/deudor|fiado|debe|client|pend|cobrar/i.test(t)) return 'deudores';
+  if (/top|mas vend|mejor|popular|\brank/i.test(t)) return 'top';
+  if (/caja|efectiv|saldo|dinero|cier|balance/i.test(t)) return 'caja';
+  if (/proveedor|provee|deuda.*prov/i.test(t)) return 'proveedores';
+  if (/resumen|general|negocio|todo|estado|como.*va/i.test(t)) return 'resumen';
+  return 'libre';
+}
+
+function iaGenerarRespuesta(tipo, consulta) {
+  var tasa = STATE.tasa || 1;
+  var hoy = new Date().toISOString().split('T')[0];
+
+  if (tipo === 'inventario') {
+    var prods = DB.get('productos') || [];
+    var sinStock = prods.filter(function(p){ return (p.stock||0) <= 0; });
+    var criticos = prods.filter(function(p){ return (p.stock||0) > 0 && (p.stock||0) <= 5; });
+    var html = '<strong>📦 Análisis de Inventario</strong><br><br>';
+    html += '• Total productos: <strong>'+prods.length+'</strong><br>';
+    html += '• Sin stock: <strong style="color:var(--danger)">'+sinStock.length+'</strong><br>';
+    html += '• Stock crítico (≤5 unidades): <strong style="color:var(--warn)">'+criticos.length+'</strong><br><br>';
+    if (sinStock.length) {
+      html += '<strong style="color:var(--danger)">❌ Agotados:</strong><br>';
+      sinStock.slice(0,8).forEach(function(p){ html += '&nbsp;&nbsp;'+(p.emoji||'📦')+' '+p.nombre+'<br>'; });
+      if (sinStock.length>8) html += '&nbsp;&nbsp;<em>...y '+(sinStock.length-8)+' más</em><br>';
+      html += '<br>';
+    }
+    if (criticos.length) {
+      html += '<strong style="color:var(--warn)">⚠️ Stock crítico:</strong><br>';
+      criticos.slice(0,8).forEach(function(p){ html += '&nbsp;&nbsp;'+(p.emoji||'📦')+' '+p.nombre+' — <strong>'+p.stock+'</strong> '+(p.unidad||'und')+'<br>'; });
+      if (criticos.length>8) html += '&nbsp;&nbsp;<em>...y '+(criticos.length-8)+' más</em><br>';
+    }
+    if (!sinStock.length && !criticos.length) html += '<strong style="color:var(--neon)">✅ Inventario en buen estado — todos los productos tienen stock suficiente.</strong>';
+    return html;
+  }
+
+  if (tipo === 'ventas') {
+    var ventas = DB.get('ventas') || [];
+    var hoyV = ventas.filter(function(v){ return (v.fecha||'').startsWith(hoy); });
+    var totalHoy = hoyV.reduce(function(s,v){ return s+(v.total||0); }, 0);
+    var metodos = {};
+    hoyV.forEach(function(v){ var m=v.metodoPago||'Efectivo'; metodos[m]=(metodos[m]||0)+(v.total||0); });
+    var mPrincipal = Object.keys(metodos).sort(function(a,b){ return metodos[b]-metodos[a]; })[0] || '—';
+    var html = '<strong>💰 Ventas de Hoy — '+hoy+'</strong><br><br>';
+    html += '• Transacciones: <strong>'+hoyV.length+'</strong><br>';
+    html += '• Ingreso total: <strong style="color:var(--neon)">$'+totalHoy.toFixed(2)+'</strong><br>';
+    html += '• En Bs: <strong>'+(totalHoy*tasa).toFixed(0)+' Bs</strong><br>';
+    if (mPrincipal !== '—') html += '• Método principal: <strong>'+mPrincipal+'</strong><br>';
+    if (Object.keys(metodos).length > 1) {
+      html += '<br><strong>Desglose por método:</strong><br>';
+      Object.keys(metodos).forEach(function(m){ html += '&nbsp;&nbsp;• '+m+': $'+metodos[m].toFixed(2)+'<br>'; });
+    }
+    if (!hoyV.length) html += '<br><em style="color:var(--text3)">Aún no hay ventas registradas hoy.</em>';
+    return html;
+  }
+
+  if (tipo === 'deudores') {
+    var clientes = DB.get('clientes') || [];
+    var deudores = clientes.filter(function(c){ return (c.saldo||0)>0; });
+    deudores.sort(function(a,b){ return (b.saldo||0)-(a.saldo||0); });
+    var totalD = deudores.reduce(function(s,c){ return s+(c.saldo||0); }, 0);
+    var html = '<strong>👥 Deudores Activos</strong><br><br>';
+    html += '• Total deudores: <strong style="color:var(--warn)">'+deudores.length+'</strong><br>';
+    html += '• Deuda total: <strong style="color:var(--danger)">$'+totalD.toFixed(2)+'</strong><br><br>';
+    if (deudores.length) {
+      html += '<strong>Mayores deudas:</strong><br>';
+      deudores.slice(0,10).forEach(function(c,i){ html += (i+1)+'. '+c.nombre+' — <strong style="color:var(--danger)">$'+(c.saldo||0).toFixed(2)+'</strong><br>'; });
+      if (deudores.length>10) html += '<em>...y '+(deudores.length-10)+' más</em>';
+    } else {
+      html += '<strong style="color:var(--neon)">✅ ¡Sin deudores! Todos los clientes están al día.</strong>';
+    }
+    return html;
+  }
+
+  if (tipo === 'top') {
+    var ventas2 = DB.get('ventas') || [];
+    var conteo = {};
+    ventas2.forEach(function(v){
+      (v.items||[]).forEach(function(it){
+        var k = it.nombre||it.productoId||'?';
+        if (!conteo[k]) conteo[k]={nombre:k,total:0,qty:0};
+        conteo[k].total += (it.subtotal||0);
+        conteo[k].qty += (it.qty||1);
+      });
+    });
+    var ranking = Object.values(conteo).sort(function(a,b){ return b.total-a.total; });
+    var html = '<strong>🏆 Top Productos Más Vendidos (histórico)</strong><br><br>';
+    if (ranking.length) {
+      ranking.slice(0,10).forEach(function(p,i){
+        var m = i===0?'🥇':i===1?'🥈':i===2?'🥉':((i+1)+'.');
+        html += m+' '+p.nombre+' — <strong style="color:var(--neon)">$'+p.total.toFixed(2)+'</strong> ('+p.qty+' und)<br>';
+      });
+    } else {
+      html += '<em style="color:var(--text3)">Aún no hay historial de ventas para analizar.</em>';
+    }
+    return html;
+  }
+
+  if (tipo === 'caja') {
+    var ventas3 = DB.get('ventas') || [];
+    var hoyV2 = ventas3.filter(function(v){ return (v.fecha||'').startsWith(hoy); });
+    var efectivo = hoyV2.filter(function(v){ return (v.metodoPago||'').toLowerCase().includes('efectivo'); }).reduce(function(s,v){ return s+(v.total||0); }, 0);
+    var digital = hoyV2.filter(function(v){ return !(v.metodoPago||'').toLowerCase().includes('efectivo'); }).reduce(function(s,v){ return s+(v.total||0); }, 0);
+    var total = efectivo+digital;
+    var html = '<strong>🏦 Estado de Caja — Hoy</strong><br><br>';
+    html += '• Efectivo recibido: <strong style="color:var(--neon)">$'+efectivo.toFixed(2)+'</strong><br>';
+    html += '• Cobros digitales: <strong style="color:var(--accent)">$'+digital.toFixed(2)+'</strong><br>';
+    html += '• <strong>Total recaudado: <span style="color:var(--neon)">$'+total.toFixed(2)+'</span></strong><br>';
+    html += '• En Bs: <strong>'+(total*tasa).toFixed(0)+' Bs</strong><br>';
+    if (!hoyV2.length) html += '<br><em style="color:var(--text3)">Sin movimientos de caja hoy.</em>';
+    return html;
+  }
+
+  if (tipo === 'proveedores') {
+    var provs = DB.get('proveedores') || [];
+    var conDeuda = provs.filter(function(p){ return (p.deuda||0)>0; });
+    conDeuda.sort(function(a,b){ return (b.deuda||0)-(a.deuda||0); });
+    var totalDP = conDeuda.reduce(function(s,p){ return s+(p.deuda||0); }, 0);
+    var html = '<strong>🏭 Deudas con Proveedores</strong><br><br>';
+    html += '• Proveedores registrados: <strong>'+provs.length+'</strong><br>';
+    html += '• Con deuda pendiente: <strong style="color:var(--warn)">'+conDeuda.length+'</strong><br>';
+    html += '• Total adeudado: <strong style="color:var(--danger)">$'+totalDP.toFixed(2)+'</strong><br><br>';
+    if (conDeuda.length) {
+      conDeuda.slice(0,8).forEach(function(p){ html += '&nbsp;&nbsp;• '+p.nombre+' — <strong style="color:var(--danger)">$'+(p.deuda||0).toFixed(2)+'</strong><br>'; });
+      if (conDeuda.length>8) html += '<em>...y '+(conDeuda.length-8)+' más</em>';
+    } else {
+      html += '<strong style="color:var(--neon)">✅ Sin deudas con proveedores.</strong>';
+    }
+    return html;
+  }
+
+  if (tipo === 'resumen') {
+    var prods2 = DB.get('productos') || [];
+    var ventas4 = DB.get('ventas') || [];
+    var clientes2 = DB.get('clientes') || [];
+    var provs2 = DB.get('proveedores') || [];
+    var sinStock2 = prods2.filter(function(p){ return (p.stock||0)<=0; }).length;
+    var criticos2 = prods2.filter(function(p){ return (p.stock||0)>0&&(p.stock||0)<=5; }).length;
+    var hoyV3 = ventas4.filter(function(v){ return (v.fecha||'').startsWith(hoy); });
+    var ingHoy = hoyV3.reduce(function(s,v){ return s+(v.total||0); }, 0);
+    var deudores2 = clientes2.filter(function(c){ return (c.saldo||0)>0; }).length;
+    var totalDC = clientes2.reduce(function(s,c){ return s+(c.saldo||0); }, 0);
+    var totalDP2 = provs2.reduce(function(s,p){ return s+(p.deuda||0); }, 0);
+    var html = '<strong>📊 Resumen General del Negocio</strong><br><br>';
+    html += '<strong>📦 Inventario:</strong><br>&nbsp;&nbsp;'+prods2.length+' productos | Sin stock: <span style="color:var(--danger)">'+sinStock2+'</span> | Crítico: <span style="color:var(--warn)">'+criticos2+'</span><br><br>';
+    html += '<strong>💰 Ventas Hoy:</strong><br>&nbsp;&nbsp;'+hoyV3.length+' ventas — <strong style="color:var(--neon)">$'+ingHoy.toFixed(2)+'</strong> ('+((ingHoy*tasa).toFixed(0))+' Bs)<br><br>';
+    html += '<strong>👥 Clientes con fiado:</strong><br>&nbsp;&nbsp;<span style="color:var(--warn)">'+deudores2+'</span> deudores — Total: <span style="color:var(--danger)">$'+totalDC.toFixed(2)+'</span><br><br>';
+    html += '<strong>🏭 Proveedores:</strong><br>&nbsp;&nbsp;Deuda total: <span style="color:var(--danger)">$'+totalDP2.toFixed(2)+'</span><br>';
+    return html;
+  }
+
+  // Libre
+  return '<strong>🤖 No estoy seguro de esa consulta.</strong><br><br>Prueba con uno de estos ejemplos:<br>• "¿Qué productos se están agotando?"<br>• "¿Cuánto vendí hoy?"<br>• "¿Quiénes me deben dinero?"<br>• "Dame el resumen de hoy"<br><br>'
+    + (JARVIS_CONFIG&&JARVIS_CONFIG.enabled
+      ? '<em style="color:var(--text3)">Tengo Jarvis activo — prueba con preguntas más específicas.</em>'
+      : '<em style="color:var(--text3)">Activa Jarvis en Configuración para respuestas con IA avanzada.</em>');
+}
+
+function iaConsultarJarvis(texto, tipo) {
+  var ip = (JARVIS_CONFIG&&JARVIS_CONFIG.ip) || '192.168.10.3';
+  var port = (JARVIS_CONFIG&&JARVIS_CONFIG.port) || 5000;
+  var prods = DB.get('productos') || [];
+  var ventas = DB.get('ventas') || [];
+  var clientes = DB.get('clientes') || [];
+  var hoy = new Date().toISOString().split('T')[0];
+  var ctx = {
+    productos_total: prods.length,
+    sin_stock: prods.filter(function(p){ return (p.stock||0)<=0; }).length,
+    stock_critico: prods.filter(function(p){ return (p.stock||0)>0&&(p.stock||0)<=5; }).length,
+    ventas_hoy: ventas.filter(function(v){ return (v.fecha||'').startsWith(hoy); }).length,
+    ingreso_hoy: ventas.filter(function(v){ return (v.fecha||'').startsWith(hoy); }).reduce(function(s,v){ return s+(v.total||0); }, 0).toFixed(2),
+    deudores: clientes.filter(function(c){ return (c.saldo||0)>0; }).length,
+    tasa: STATE.tasa||1
+  };
+  var pendEl = document.createElement('div');
+  pendEl.className = 'ia-msg bot';
+  pendEl.innerHTML = '<em style="color:var(--text3)">⏳ Consultando Jarvis IA...</em>';
+  var msgs = document.getElementById('ia-messages');
+  if (msgs) { msgs.appendChild(pendEl); msgs.scrollTop = msgs.scrollHeight; }
+  var ctrl = new AbortController();
+  var tmout = setTimeout(function(){ ctrl.abort(); }, 8000);
+  fetch('http://'+ip+':'+port+'/chat', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({message:texto, context:ctx}), signal:ctrl.signal
+  })
+  .then(function(r){ clearTimeout(tmout); return r.json(); })
+  .then(function(d){
+    var resp = d.response||d.reply||d.message||JSON.stringify(d);
+    pendEl.innerHTML = '<strong style="color:var(--accent)">🤖 Jarvis:</strong><br><br>'+resp.replace(/\n/g,'<br>');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  })
+  .catch(function(){
+    clearTimeout(tmout);
+    pendEl.innerHTML = '<em style="color:var(--text3);font-size:11px">Jarvis sin respuesta — usando IA local:</em><br><br>'+iaGenerarRespuesta(tipo, texto);
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  });
+}
+
+function iaMostrarUsuario(txt) {
+  var el = document.createElement('div');
+  el.className = 'ia-msg user';
+  el.textContent = txt;
+  var msgs = document.getElementById('ia-messages');
+  if (msgs) { msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight; }
+}
+
+function iaMostrarBot(html) {
+  var el = document.createElement('div');
+  el.className = 'ia-msg bot';
+  el.innerHTML = html;
+  var msgs = document.getElementById('ia-messages');
+  if (msgs) { msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight; }
 }
 
 // -- AVANCES DE EFECTIVO --
