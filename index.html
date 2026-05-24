@@ -703,7 +703,7 @@ body.has-banner { padding-top:38px; }
   #page-configuracion .card[style*="border:2px solid var(--neon)"]>p{font-size:11px !important;margin-bottom:6px !important}
   #page-configuracion .card[style*="border:2px solid var(--neon)"] [style*="flex-wrap:wrap;gap:10px"]{gap:6px !important;margin-bottom:6px !important}
   /* POS cobrar siempre visible */
-  .payment-btns{max-height:48px !important;margin-bottom:3px !important}
+  .payment-btns{max-height:120px !important;overflow-y:auto;margin-bottom:4px !important}
   /* PIN inputs compactos */
   #pin-nuevo,#pin-confirmar{font-size:16px !important;letter-spacing:4px !important;padding:8px !important}
 }
@@ -969,7 +969,10 @@ body.has-banner { padding-top:38px; }
               <div id="noPayMethodMsg" style="text-align:center;color:var(--text2);font-size:12px;padding:6px 0 2px 0">
                 👆 Selecciona un método de pago
               </div>
-              <button id="btnCobrar" class="btn btn-neon btn-full btn-lg" onclick="procesarVenta()" style="margin-top:6px;display:block;font-size:17px;font-weight:900;padding:16px;">✅ COBRAR</button>
+              <div style="display:flex;gap:6px;margin-top:6px">
+                <button id="btnCobrar" class="btn btn-neon btn-full btn-lg" onclick="procesarVenta()" style="flex:1;font-size:17px;font-weight:900;padding:16px;">✅ COBRAR</button>
+                <button id="btnCobroRapido" class="btn btn-lg" onclick="pagoRapido()" title="Cobro Rápido — cobra directamente sin seleccionar método" style="flex-shrink:0;padding:16px 14px;font-size:20px;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.4);color:#D4AF37;border-radius:10px;cursor:pointer;display:none">⚡</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2969,15 +2972,23 @@ function actualizarBtnCobrar() {
   var tieneCarrito = STATE.cart && STATE.cart.length > 0;
   var msg = document.getElementById('noPayMethodMsg');
   var btn = document.getElementById('btnCobrar');
+  var btnR = document.getElementById('btnCobroRapido');
   if (msg) msg.style.display = (tieneCarrito && !STATE.payMethod) ? 'block' : 'none';
   if (btn) {
     if (STATE.payMethod && tieneCarrito) {
-      btn.style.cssText = 'display:block!important;width:100%;margin-top:4px';
+      btn.style.cssText = 'display:block!important;flex:1;font-size:17px;font-weight:900;padding:16px';
       btn.textContent = '✅ COBRAR — ' + STATE.payMethod;
     } else {
       btn.style.display = 'none';
     }
   }
+  if (btnR) btnR.style.display = tieneCarrito ? 'block' : 'none';
+}
+
+function pagoRapido() {
+  if (!STATE.cart || !STATE.cart.length) { showToast('Agrega productos al carrito primero', 'warn'); return; }
+  if (!STATE.payMethod) STATE.payMethod = 'Efectivo $';
+  abrirCobro();
 }
 
 function selectPayMethodByIndex(i) {
@@ -6250,6 +6261,7 @@ window.abrirGavetaDinero = abrirGavetaDinero;
 window.abrirNuevoProveedor = abrirNuevoProveedor;
 window.activarConCodigoPro = activarConCodigoPro;
 window.actualizarBtnCobrar = actualizarBtnCobrar;
+window.pagoRapido = pagoRapido;
 window.actualizarHwBadge = actualizarHwBadge;
 window.actualizarHwLabel = actualizarHwLabel;
 window.actualizarVenceEl = actualizarVenceEl;
