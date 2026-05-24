@@ -5337,6 +5337,7 @@ function closeModal(id) {
 function abrirCobro() {
   if (!STATE.cart.length) { showToast('Agrega productos al carrito', 'warn'); return; }
   if (!STATE.payMethod)   { showToast('Selecciona un método de pago', 'warn'); return; }
+  if (STATE.payMethod === 'Pago Mixto') { _abrirPagoMixto(); return; }
   // Llenar resumen de cobro
   var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
   var resumen = document.getElementById('cobroResumen');
@@ -5370,6 +5371,140 @@ function abrirCobro() {
 
 // alias para compatibilidad
 function procesarVenta() { abrirCobro(); }
+
+// ── PAGO MIXTO ──
+var _mixtoLines = [];
+function _getMixtoOpts() {
+  var pais = (DB.get('config') || {}).pais || 'VE';
+  var P = PAISES[pais] || PAISES['VE'];
+  return (P.metodosDisponibles || []).filter(function(m){ return m.id !== 'mixto' && m.id !== 'fiado'; });
+}
+function _abrirPagoMixto() {
+  var viejo = document.getElementById('_modalPagoMixto'); if (viejo) viejo.remove();
+  var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
+  _mixtoLines = [{ metodo: '', monto: 0 }];
+  var mets = _getMixtoOpts();
+  var optsHtml = mets.map(function(m){ return '<option value="'+m.label+'">'+m.icon+' '+m.label+'</option>'; }).join('');
+  var clientes = DB.get('clientes') || [];
+  var cliOpts = '<option value="">— Sin cliente —</option>' + clientes.map(function(cl){ return '<option value="'+cl.id+'">'+cl.nombre+(cl.deuda>0?' (debe $'+cl.deuda.toFixed(2)+')':'')+'</option>'; }).join('');
+  var modal = document.createElement('div');
+  modal.id = '_modalPagoMixto';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10002;display:flex;align-items:center;justify-content:center;padding:16px';
+  modal.innerHTML = '<div style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:22px;width:100%;max-width:440px;max-height:92vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.6)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+    +'<span style="font-weight:900;font-size:17px;color:var(--accent)">🔀 Pago Mixto</span>'
+    +'<button onclick="document.getElementById(\'_modalPagoMixto\').remove()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:22px;line-height:1;z-index:20000;position:relative">✕</button>'
+    +'</div>'
+    +'<div style="background:var(--bg2);border-radius:10px;padding:12px;margin-bottom:14px;text-align:center">'
+    +'<div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Total a cobrar</div>'
+    +'<div style="font-size:26px;font-weight:900;color:var(--neon)">$'+total.toFixed(2)+'</div>'
+    +'<div style="font-size:12px;color:var(--text2)">'+fmtLocal(total*STATE.tasa)+'</div>'
+    +'</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">Métodos de pago:</div>'
+    +'<div id="_mixtoLineas"></div>'
+    +'<button onclick="_agregarLineaMixto()" style="width:100%;margin-top:6px;padding:10px;border-radius:10px;border:1.5px dashed var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">+ Agregar método</button>'
+    +'<div id="_mixtoResumen" style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg2);font-size:13px;min-height:40px"></div>'
+    +'<div style="margin-top:10px;font-size:12px;color:var(--text2)">'
+    +'Cliente: <select id="_mixtoCliente" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 8px;font-size:12px;margin-left:4px">'+cliOpts+'</select>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:14px">'
+    +'<button onclick="document.getElementById(\'_modalPagoMixto\').remove()" style="flex:1;padding:13px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">Cancelar</button>'
+    +'<button id="_mixtoConfirmarBtn" onclick="_confirmarPagoMixto()" style="flex:2;padding:13px;border-radius:10px;border:none;background:var(--neon);color:#000;font-weight:900;cursor:pointer;font-size:14px;opacity:0.35;pointer-events:none">✅ Confirmar Cobro</button>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(modal);
+  _renderMixtoLineas();
+}
+function _renderMixtoLineas() {
+  var container = document.getElementById('_mixtoLineas'); if (!container) return;
+  var mets = _getMixtoOpts();
+  var optsHtml = mets.map(function(m){ return '<option value="'+m.label+'">'+m.icon+' '+m.label+'</option>'; }).join('');
+  container.innerHTML = _mixtoLines.map(function(line, i){
+    return '<div style="display:flex;gap:7px;margin-bottom:8px;align-items:center">'
+      +'<select onchange="_mixtoSetMetodo('+i+',this.value)" style="flex:2;padding:9px 7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px">'
+      +'<option value="">— Método —</option>'+optsHtml
+      +'</select>'
+      +'<input type="number" placeholder="$0.00" value="'+(line.monto>0?line.monto:'')+'" min="0" step="0.01" oninput="_mixtoSetMonto('+i+',this.value)" style="flex:1;padding:9px 7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px">'
+      +(i>0?'<button onclick="_mixtoRemLine('+i+')" style="padding:7px 10px;border-radius:8px;border:none;background:rgba(255,59,48,0.15);color:var(--danger);cursor:pointer;font-size:15px;flex-shrink:0">✕</button>':'<div style="width:36px"></div>')
+      +'</div>';
+  }).join('');
+  _mixtoLines.forEach(function(line, i){
+    var sel = container.querySelectorAll('select')[i];
+    if (sel && line.metodo) sel.value = line.metodo;
+  });
+  _actualizarResumenMixto();
+}
+function _mixtoSetMetodo(i, val) { if (_mixtoLines[i]) _mixtoLines[i].metodo = val; _actualizarResumenMixto(); }
+function _mixtoSetMonto(i, val)  { if (_mixtoLines[i]) _mixtoLines[i].monto = parseFloat(val)||0; _actualizarResumenMixto(); }
+function _mixtoRemLine(i)        { _mixtoLines.splice(i,1); _renderMixtoLineas(); }
+function _agregarLineaMixto()    { _mixtoLines.push({metodo:'',monto:0}); _renderMixtoLineas(); }
+function _actualizarResumenMixto() {
+  var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
+  var validas = _mixtoLines.filter(function(l){ return l.metodo && l.monto>0; });
+  var sumado = _mixtoLines.reduce(function(s,l){ return s+(l.monto||0); }, 0);
+  var pendiente = total - sumado;
+  var resumen = document.getElementById('_mixtoResumen');
+  var btnOk = document.getElementById('_mixtoConfirmarBtn');
+  if (resumen) {
+    var lineasStr = validas.map(function(l){ return '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+l.metodo+'</span><span style="color:var(--text)">$'+l.monto.toFixed(2)+'</span></div>'; }).join('');
+    var color = Math.abs(pendiente)<0.01 ? 'var(--neon)' : (pendiente<0 ? 'var(--danger)' : 'var(--warn)');
+    var pendLbl = Math.abs(pendiente)<0.01 ? '✅ Completo' : (pendiente<0 ? 'Exceso: $'+Math.abs(pendiente).toFixed(2) : 'Pendiente: $'+pendiente.toFixed(2));
+    resumen.innerHTML = (lineasStr||'<div style="color:var(--text3);font-size:12px">Agrega al menos un método arriba</div>')
+      +'<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:700">'
+      +'<span>Ingresado:</span><span style="color:var(--neon)">$'+sumado.toFixed(2)+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;font-weight:700">'
+      +'<span>'+pendLbl+':</span><span style="color:'+color+'">$'+Math.abs(pendiente).toFixed(2)+'</span></div>';
+  }
+  var ok = validas.length>0 && sumado>=total-0.005;
+  if (btnOk) { btnOk.style.opacity=ok?'1':'0.35'; btnOk.style.pointerEvents=ok?'auto':'none'; }
+}
+function _confirmarPagoMixto() {
+  var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
+  var validas = _mixtoLines.filter(function(l){ return l.metodo && l.monto>0; });
+  if (!validas.length) { showToast('Agrega al menos un método de pago','warn'); return; }
+  var sumado = validas.reduce(function(s,l){ return s+(l.monto||0); }, 0);
+  if (sumado < total-0.01) { showToast('El monto $'+sumado.toFixed(2)+' es menor al total $'+total.toFixed(2),'warn'); return; }
+  var clienteId = parseInt((document.getElementById('_mixtoCliente')||{}).value) || null;
+  var detalle = validas.map(function(l){ return l.metodo+': $'+l.monto.toFixed(2); }).join(' | ');
+  var venta = {
+    id: Date.now(),
+    fecha: new Date().toISOString(),
+    items: STATE.cart.map(function(i){ return Object.assign({},i); }),
+    totalUSD: total,
+    totalBs: total*STATE.tasa,
+    metodo: 'Pago Mixto',
+    metodoDetalle: detalle,
+    mixtoLineas: validas,
+    cliente: clienteId,
+    notas: detalle,
+    tasa: STATE.tasa,
+  };
+  var ventas = DB.get('ventas') || []; ventas.push(venta); DB.set('ventas', ventas);
+  var prods = DB.get('productos') || [];
+  STATE.cart.forEach(function(item){
+    var p = prods.find(function(pr){ return pr.id===item.productoId; });
+    if (p) p.stock = Math.max(0, p.stock-item.qty);
+  });
+  DB.set('productos', prods);
+  if (DB.get('caja_estado') && DB.get('caja_estado').abierta) {
+    var movs = DB.get('caja_movimientos') || [];
+    validas.forEach(function(l){
+      var esUSD = l.metodo==='Efectivo $'; var esBs = l.metodo==='Efectivo Bs';
+      movs.push({ id: Date.now()+Math.random(), fecha: new Date().toISOString(), tipo:'entrada', monto:l.monto,
+        descripcion:'Venta Mixta #'+venta.id.toString().slice(-5)+' ('+l.metodo+')',
+        metodo: esUSD?'Efectivo $': esBs?'Efectivo Bs':'Electrónico', esEfectivo:esUSD||esBs, moneda:esBs?'BS':'USD' });
+    });
+    DB.set('caja_movimientos', movs);
+  }
+  var modal = document.getElementById('_modalPagoMixto'); if (modal) modal.remove();
+  STATE.ultimaVentaId = venta.id;
+  STATE.cart = [];
+  STATE.payMethod = null;
+  try { abrirGavetaDinero(); } catch(e) {}
+  showRecibo(venta);
+  renderCart();
+  renderPosProducts();
+}
 
 // ── DATOS DE MUESTRA ──
 function loadSampleData() {
@@ -6461,6 +6596,12 @@ window._siguienteNumControl = _siguienteNumControl;
 window._verificarPasswordAdmin = _verificarPasswordAdmin;
 window.abrirCaja = abrirCaja;
 window.abrirCobro = abrirCobro;
+window._abrirPagoMixto = _abrirPagoMixto;
+window._mixtoSetMetodo = _mixtoSetMetodo;
+window._mixtoSetMonto = _mixtoSetMonto;
+window._mixtoRemLine = _mixtoRemLine;
+window._agregarLineaMixto = _agregarLineaMixto;
+window._confirmarPagoMixto = _confirmarPagoMixto;
 window.abrirDevolucion = abrirDevolucion;
 window.abrirGavetaDinero = abrirGavetaDinero;
 window.abrirNuevoProveedor = abrirNuevoProveedor;
