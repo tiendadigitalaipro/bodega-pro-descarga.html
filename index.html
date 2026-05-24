@@ -766,7 +766,7 @@ body.has-banner { padding-top:38px; }
         </div>
         <button class="btn btn-primary btn-full btn-lg mt-3" onclick="doLogin()">🚀 Activar y Entrar</button>
         <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px;">
-          ¿Primera vez? Código de demo: <strong style="color:var(--accent)">BPRO-DEMO-2024</strong>
+          ¿Primera vez? Solicita tu código de activación a <strong style="color:var(--accent)">A2K Digital Studio</strong>
         </p>
         <div style="text-align:center;margin-top:10px">
           <button onclick="(function(e){e.preventDefault();e.stopPropagation();var m=document.getElementById('modalAdminPw');if(m){var i=document.getElementById('adminPwInput');var er=document.getElementById('adminPwError');if(i)i.value='';if(er)er.style.display='none';m.style.cssText='display:flex!important;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999999;align-items:center;justify-content:center';setTimeout(function(){if(i)i.focus();},100);}})(event)"
@@ -923,6 +923,7 @@ body.has-banner { padding-top:38px; }
             <div class="search-bar">
               <input type="text" class="search-input" placeholder="🔍 Buscar producto o código..." id="posSearch" oninput="renderPosProducts()">
               <button class="btn btn-outline btn-sm" id="btnQRPos" onclick="openQRScanner('pos')" title="Escanear código de barras">📷 QR</button>
+              <button class="btn btn-outline btn-sm" onclick="abrirPesajeManual()" title="Agregar producto por peso/volumen">⚖️ Pesaje</button>
               <button class="btn btn-outline btn-sm" onclick="openAddProduct()">+ Producto</button>
             </div>
             <div class="cat-filters" id="catFilters"></div>
@@ -1841,6 +1842,8 @@ body.has-banner { padding-top:38px; }
 </div>
 
 <script type="text/javascript">var _adminUnlocked = false;
+var _dc=function(a){return a.map(function(c){return String.fromCharCode(c);}).join('');};
+
 
 function selPago(metodo) {
   STATE.payMethod = metodo;
@@ -1901,7 +1904,7 @@ function getDeviceId() {
 }
 
 const DEVICE_ID = getDeviceId();
-const VALID_CODES = ['BPRO-DEMO-2024', 'BPRO-ABIG-2024', 'BPRO-ZYNC-2024']; // códigos demo
+const VALID_CODES = [_dc([66,80,82,79,45,68,69,77,79,45,50,48,50,52]),_dc([66,80,82,79,45,65,66,73,71,45,50,48,50,52]),_dc([66,80,82,79,45,90,89,78,67,45,50,48,50,52])];
 
 // ─── DB (localStorage con fallback a memoria para Edge/restricciones) ───
 var _memDB = {};
@@ -2231,8 +2234,7 @@ function doLogin() {
   if (!negocio || !user || !pass) return showLoginAlert('Completa todos los campos', 'error');
   if (!code) return showLoginAlert('Ingresa tu código de activación', 'error');
 
-  // Códigos master siempre válidos
-  const MASTER = ['BPRO-DEMO-2024', 'BPRO-ABIG-2024', 'BPRO-ZYNC-2024'];
+  const MASTER = [_dc([66,80,82,79,45,68,69,77,79,45,50,48,50,52]),_dc([66,80,82,79,45,65,66,73,71,45,50,48,50,52]),_dc([66,80,82,79,45,90,89,78,67,45,50,48,50,52])];
 
   // Device ya registrado con licencia
   const savedLicense = DB.get('license');
@@ -2246,7 +2248,7 @@ function doLogin() {
       return;
     }
     // Código diferente — verificar si el nuevo código también es válido
-    const MASTER_OK = ['BPRO-ABIG-2024','BPRO-ZYNC-2024'];
+    const MASTER_OK = [_dc([66,80,82,79,45,65,66,73,71,45,50,48,50,52]),_dc([66,80,82,79,45,90,89,78,67,45,50,48,50,52])];
     const nuevoEsMaster = MASTER_OK.includes(code);
     const nuevoTieneFirmaPro = verifyLicenseSignature(code);
     const nuevoTieneFirmaDemo = (typeof verifyDemoSignature==='function') && verifyDemoSignature(code);
@@ -2411,7 +2413,7 @@ function startApp() {
     // Si no hay config guardada, usar el negocio del login (que es el nombre real)
     const nombreNegocio = cfg.negocio || STATE.user.negocio || '';
     // Asegurarse de que no se muestre el código de activación como nombre
-    const MASTER = ['BPRO-DEMO-2024','BPRO-ABIG-2024','BPRO-ZYNC-2024'];
+    const MASTER = [_dc([66,80,82,79,45,68,69,77,79,45,50,48,50,52]),_dc([66,80,82,79,45,65,66,73,71,45,50,48,50,52]),_dc([66,80,82,79,45,90,89,78,67,45,50,48,50,52])];
     const savedLic = DB.get('license');
     const codigoActual = savedLic ? savedLic.code : '';
     document.getElementById('cfg-negocio').value = 
@@ -2437,7 +2439,7 @@ function startApp() {
     stext('licenseDeviceId', 'Device ID: ' + DEVICE_ID);
     // Mostrar panel admin SOLO para licencias ZYNC master
     var _lic = DB.get('license');
-    var _masterCodes = ['BPRO-ZYNC-2024','BPRO-ABIG-2024'];
+    var _masterCodes = [_dc([66,80,82,79,45,90,89,78,67,45,50,48,50,52]),_dc([66,80,82,79,45,65,66,73,71,45,50,48,50,52])];
     var _adminBtn = document.getElementById('adminBtnWrap');
     if (_adminBtn) _adminBtn.style.display = 'block'; // siempre visible — contraseña es la protección
     // DEBUG — mostrar estado
@@ -2674,6 +2676,33 @@ function addToCart(prodId) {
     STATE.cart.push({ productoId: prodId, nombre: prod.nombre, emoji: prod.emoji, precio: prod.precio, qty: 1, subtotal: prod.precio });
   }
   renderCart();
+}
+
+function abrirPesajeManual() {
+  var prods = (DB.get('productos') || []).filter(function(p){ return ['kg','g','lt','ml'].includes(p.unidad) && p.stock > 0; });
+  var old = document.getElementById('_modalSelPeso'); if (old) old.remove();
+  var m = document.createElement('div');
+  m.id = '_modalSelPeso';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  var listHtml = prods.length ? prods.map(function(p){
+    return '<button onclick="abrirPesajeManualProd(\''+p.id+'\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text1);cursor:pointer;text-align:left;">'
+      + '<span style="font-size:24px">'+(p.emoji||'⚖️')+'</span>'
+      + '<span style="flex:1"><strong>'+p.nombre+'</strong><br><small style="color:var(--text3)">'+p.precio.toFixed(2)+' / '+p.unidad+' · stock: '+p.stock+' '+p.unidad+'</small></span>'
+      + '</button>';
+  }).join('') : '<p style="color:var(--text3);text-align:center;padding:20px;">No hay productos por peso/volumen con stock disponible.</p>';
+  m.innerHTML = '<div style="background:var(--bg2);border-radius:12px;padding:20px;width:100%;max-width:420px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'
+    + '<h3 style="margin:0;font-size:16px;">⚖️ Seleccionar producto por peso</h3>'
+    + '<button onclick="document.getElementById(\'_modalSelPeso\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)">✕</button>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:8px;">' + listHtml + '</div>'
+    + '</div>';
+  document.body.appendChild(m);
+}
+function abrirPesajeManualProd(prodId) {
+  var old = document.getElementById('_modalSelPeso'); if (old) old.remove();
+  var prod = (DB.get('productos')||[]).find(function(p){ return p.id === prodId; });
+  if (prod) _abrirModalPesaje(prod);
 }
 
 function _abrirModalPesaje(prod) {
@@ -4803,8 +4832,8 @@ function qaRun() {
 
 // ── LICENCIAS ──
 var CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-var SECRET_PRO='BPRO2026A2K';
-var SECRET_DEMO='BPD3MO2026';
+var SECRET_PRO=_dc([66,80,82,79,50,48,50,54,65,50,75]);
+var SECRET_DEMO=_dc([66,80,68,51,77,79,50,48,50,54]);
 function djb2(s){var h=5381;for(var i=0;i<s.length;i++){h=((h<<5)+h)^s.charCodeAt(i);h=h>>>0;}return h;}
 function toB(n,len){var r='',b=CHARS.length;for(var i=0;i<len;i++){r=CHARS[n%b]+r;n=Math.floor(n/b);}return r;}
 
@@ -4860,7 +4889,7 @@ function activarConCodigoPro() {
   var el = document.getElementById('codigoProInput');
   var codigo = el?el.value.trim().toUpperCase():'';
   if(!codigo){ showToast('Ingresa el codigo PRO','warn'); return; }
-  var MASTER=['BPRO-ZYNC-2024','BPRO-ABIG-2024'];
+  var MASTER=[_dc([66,80,82,79,45,90,89,78,67,45,50,48,50,52]),_dc([66,80,82,79,45,65,66,73,71,45,50,48,50,52])];
   if(!MASTER.includes(codigo)&&!verifyLicenseSignature(codigo)){
     if(el){ el.style.border='2px solid var(--danger)'; el.value=''; el.placeholder='Codigo invalido...'; }
     showToast('Codigo PRO invalido.','error'); return;
