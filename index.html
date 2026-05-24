@@ -1635,6 +1635,21 @@ body.has-banner { padding-top:38px; }
           </div>
         </div>
       </div>
+      <!-- FOTO DEL PRODUCTO -->
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label">📷 Foto del Producto <span style="font-size:11px;color:var(--text2)">(opcional · máx 500KB)</span></label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div id="prod-foto-preview-wrap" style="width:72px;height:72px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="document.getElementById('prod-foto-input').click()">
+            <img id="prod-foto-preview" src="" style="width:100%;height:100%;object-fit:cover;display:none" alt="foto producto">
+            <span id="prod-foto-icon" style="font-size:28px">📷</span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+            <button type="button" onclick="document.getElementById('prod-foto-input').click()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text2);cursor:pointer;font-size:12px;text-align:left;width:100%">📁 Galería / Cámara</button>
+            <button type="button" id="prod-foto-clear" onclick="limpiarFoto()" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:6px 12px;color:var(--danger);cursor:pointer;font-size:12px;width:100%">🗑️ Quitar foto</button>
+          </div>
+          <input type="file" id="prod-foto-input" accept="image/*" capture="environment" style="display:none" onchange="cargarFotoProducto(this)">
+        </div>
+      </div>
       <div class="grid-2">
         <div class="form-group">
           <label class="form-label">Categoría</label>
@@ -1672,7 +1687,11 @@ body.has-banner { padding-top:38px; }
       </div>
       <!-- ══ CALCULADORA DE PRECIO POR BULTO ══ -->
       <div style="background:var(--bg2);border:1px solid var(--accent);border-radius:12px;padding:14px;margin-bottom:12px">
-        <div style="color:var(--accent);font-weight:700;font-size:13px;margin-bottom:10px">📦 Calculadora de Precio por Bulto</div>
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button type="button" id="tab-bulto" onclick="switchCalcTab('bulto')" style="flex:1;background:var(--accent);color:#000;border:1px solid var(--accent);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:12px;font-weight:700;transition:all 0.2s">📦 Por Bulto</button>
+          <button type="button" id="tab-manual" onclick="switchCalcTab('manual')" style="flex:1;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:12px;font-weight:700;transition:all 0.2s">✏️ % Manual</button>
+        </div>
+        <div id="calc-tab-bulto">
         <div class="grid-2">
           <div class="form-group" style="margin-bottom:8px">
             <label class="form-label">Costo del Bulto ($)</label>
@@ -1750,6 +1769,29 @@ body.has-banner { padding-top:38px; }
             ✅ Aplicar este precio al producto
           </button>
         </div>
+        </div><!-- /calc-tab-bulto -->
+        <!-- TAB: % MANUAL -->
+        <div id="calc-tab-manual" style="display:none">
+          <div class="grid-2" style="margin-bottom:10px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Costo Unitario ($)</label>
+              <input type="number" id="prod-costo-manual" class="form-input" step="0.001" placeholder="Ej: 1.200" oninput="calcDesdeManual()">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">% Margen sobre PVP</label>
+              <div style="display:flex;gap:5px;flex-wrap:wrap">
+                <input type="number" id="prod-margen-manual" class="form-input" placeholder="Ej: 30" min="1" max="99" oninput="calcDesdeManual()" style="flex:1;min-width:70px">
+                <button type="button" onclick="setPctManual(15)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px">15%</button>
+                <button type="button" onclick="setPctManual(20)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px">20%</button>
+                <button type="button" onclick="setPctManual(30)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px">30%</button>
+                <button type="button" onclick="setPctManual(50)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px">50%</button>
+                <button type="button" onclick="setPctManual(70)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px">70%</button>
+              </div>
+            </div>
+          </div>
+          <div id="manual-resultado" style="display:none;background:var(--bg3);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px"></div>
+          <button type="button" onclick="aplicarDesdeManual()" style="margin-top:10px;width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;cursor:pointer;font-size:14px">✅ Aplicar precio calculado</button>
+        </div>
       </div>
 
       <!-- CAMPOS PRECIO MEJORADOS -->
@@ -1811,6 +1853,21 @@ body.has-banner { padding-top:38px; }
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalProducto')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveProduct()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: FIADO -->
+<div class="modal-overlay" id="modalFiado">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalFiadoTitle">Detalle de Fiado</span>
+      <button class="btn-close" onclick="closeModal('modalFiado')">✕</button>
+    </div>
+    <div class="modal-body" id="modalFiadoBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalFiado')">Cancelar</button>
+      <button class="btn btn-neon" onclick="registrarPago()">✅ Registrar Pago</button>
     </div>
   </div>
 </div>
@@ -3337,6 +3394,10 @@ function openAddProduct(id) {
     document.getElementById('prod-stock').value = p.stock;
     document.getElementById('prod-stockMin').value = p.stockMin;
     document.getElementById('prod-unidad').value = p.unidad;
+    window._prodFotoBase64 = p.foto || null;
+    var _imgP = document.getElementById('prod-foto-preview'), _iconP = document.getElementById('prod-foto-icon'), _clearP = document.getElementById('prod-foto-clear');
+    if (p.foto) { if (_imgP) { _imgP.src = p.foto; _imgP.style.display = 'block'; } if (_iconP) _iconP.style.display = 'none'; if (_clearP) _clearP.style.display = 'block'; }
+    else { if (_imgP) { _imgP.src = ''; _imgP.style.display = 'none'; } if (_iconP) _iconP.style.display = 'block'; if (_clearP) _clearP.style.display = 'none'; }
   } else {
     ['prod-id','prod-nombre','prod-emoji','prod-codigo','prod-costo','prod-precio','prod-stock','prod-stockMin','prod-costo-bulto','prod-unidades-bulto','prod-cant-bultos','prod-ganancia-pct','calc-total-unidades'].forEach(function(fid){
       var el = document.getElementById(fid); if(el) el.value = '';
@@ -3346,6 +3407,9 @@ function openAddProduct(id) {
     document.getElementById('prod-unidad').value = 'und';
     var res = document.getElementById('calc-resultado'); if(res) res.style.display='none';
     var iva = document.getElementById('prod-iva'); if(iva) iva.checked = false;
+    window._prodFotoBase64 = null;
+    var _imgN = document.getElementById('prod-foto-preview'), _iconN = document.getElementById('prod-foto-icon'), _clearN = document.getElementById('prod-foto-clear');
+    if (_imgN) { _imgN.src = ''; _imgN.style.display = 'none'; } if (_iconN) _iconN.style.display = 'block'; if (_clearN) _clearN.style.display = 'none';
     // Auto-emoji para Bebidas al abrir
     var emojiEl = document.getElementById('prod-emoji');
     if (emojiEl && !emojiEl.value.trim()) emojiEl.value = CAT_ICONS['Bebidas'] || '🥤';
@@ -3404,16 +3468,59 @@ function calcDesdeManual() {
   var costo  = elCM  ? (parseFloat(elCM.value)  || 0) : 0;
   var margen = elMM  ? (parseFloat(elMM.value)  || 0) : 0;
   if (costo <= 0 || margen <= 0 || margen >= 100) return;
-  // Formula correcta: PVP = costo / (1 - margen/100)
   var pvp = costo / (1 - (margen / 100));
   var gananciaUnit = pvp - costo;
-  // Rellenar campos principales
+  var elRes = document.getElementById('manual-resultado');
+  if (elRes) {
+    elRes.style.display = 'block';
+    elRes.innerHTML = 'Costo: <strong style="color:var(--text2)">$' + costo.toFixed(3) + '</strong>' +
+      ' → PVP: <strong style="color:var(--neon)">$' + pvp.toFixed(2) + '</strong>' +
+      ' | Ganancia: <strong style="color:var(--warn)">$' + gananciaUnit.toFixed(3) + '</strong> por unidad';
+  }
   var elCosto  = document.getElementById('prod-costo');
   var elPrecio = document.getElementById('prod-precio');
   if (elCosto)  elCosto.value  = costo.toFixed(3);
   if (elPrecio) elPrecio.value = pvp.toFixed(2);
   calcMargenDesdePrecio();
 }
+
+function aplicarDesdeManual() {
+  calcDesdeManual();
+  var pvpEl = document.getElementById('prod-precio');
+  if (pvpEl && pvpEl.value) showToast('✅ Precio $' + parseFloat(pvpEl.value).toFixed(2) + ' aplicado al producto', 'success');
+}
+window.aplicarDesdeManual = aplicarDesdeManual;
+
+function cargarFotoProducto(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 500000) { showToast('Foto muy grande. Máx 500KB.', 'warn'); input.value = ''; return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    window._prodFotoBase64 = e.target.result;
+    var img = document.getElementById('prod-foto-preview');
+    var icon = document.getElementById('prod-foto-icon');
+    var clr = document.getElementById('prod-foto-clear');
+    if (img) { img.src = e.target.result; img.style.display = 'block'; }
+    if (icon) icon.style.display = 'none';
+    if (clr) clr.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+window.cargarFotoProducto = cargarFotoProducto;
+
+function limpiarFoto() {
+  window._prodFotoBase64 = null;
+  var img = document.getElementById('prod-foto-preview');
+  var icon = document.getElementById('prod-foto-icon');
+  var clr = document.getElementById('prod-foto-clear');
+  if (img) { img.src = ''; img.style.display = 'none'; }
+  if (icon) icon.style.display = 'block';
+  if (clr) clr.style.display = 'none';
+  var inp = document.getElementById('prod-foto-input');
+  if (inp) inp.value = '';
+}
+window.limpiarFoto = limpiarFoto;
 
 // ── CALCULO INVERSO: usuario escribe precio → calcular margen real ──
 function calcMargenDesdePrecio() {
@@ -3590,6 +3697,7 @@ function saveProduct() {
     stock: parseInt(document.getElementById('prod-stock').value) || 0,
     stockMin: parseInt(document.getElementById('prod-stockMin').value) || 5,
     unidad: document.getElementById('prod-unidad').value,
+    foto: window._prodFotoBase64 || null,
   };
 
   if (existingId) {
