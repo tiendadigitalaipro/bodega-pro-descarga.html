@@ -2823,7 +2823,7 @@ function abrirPesajeManual() {
 function abrirPesajeManualProd(prodId) {
   var old = document.getElementById('_modalSelPeso'); if (old) old.remove();
   var prod = (DB.get('productos')||[]).find(function(p){ return p.id === prodId; });
-  if (prod) _abrirModalPesaje(prod);
+  if (prod) setTimeout(function(){ _abrirModalPesaje(prod); }, 200);
 }
 
 function _abrirModalPesaje(prod) {
@@ -3030,10 +3030,77 @@ function actualizarBtnCobrar() {
 }
 
 function pagoRapido() {
-  if (!STATE.cart || !STATE.cart.length) { showToast('Agrega productos al carrito primero', 'warn'); return; }
-  if (!STATE.payMethod) STATE.payMethod = 'Efectivo $';
-  abrirCobro();
+  if (window._adminUnlocked) { _abrirPrecioLibre(); return; }
+  var viejo = document.getElementById('_modalAuthLibre'); if (viejo) viejo.remove();
+  var m = document.createElement('div');
+  m.id = '_modalAuthLibre';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.innerHTML = '<div style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:28px;width:100%;max-width:320px;text-align:center">'
+    + '<div style="font-size:32px;margin-bottom:10px">🔐</div>'
+    + '<div style="font-weight:800;font-size:15px;margin-bottom:4px">Precio Libre</div>'
+    + '<div style="font-size:12px;color:var(--text2);margin-bottom:16px">Para agregar productos sin inventario</div>'
+    + '<input id="_authLibreInput" type="password" placeholder="Contraseña admin" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:15px;text-align:center;letter-spacing:3px;margin-bottom:8px;outline:none" onkeydown="if(event.key===\'Enter\') _verificarAuthLibre()">'
+    + '<div id="_authLibreErr" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:10px"></div>'
+    + '<div style="display:flex;gap:8px">'
+    + '<button onclick="document.getElementById(\'_modalAuthLibre\').remove()" style="flex:1;padding:11px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">Cancelar</button>'
+    + '<button onclick="_verificarAuthLibre()" style="flex:2;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer">Entrar →</button>'
+    + '</div></div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var f=document.getElementById('_authLibreInput'); if(f) f.focus(); }, 80);
 }
+
+function _verificarAuthLibre() {
+  var inp = document.getElementById('_authLibreInput');
+  var err = document.getElementById('_authLibreErr');
+  var pw = inp ? inp.value.trim() : '';
+  if (['ZYNC2024admin','admin','zync','a2k2026'].indexOf(pw) < 0) {
+    if (err) err.textContent = '❌ Contraseña incorrecta';
+    if (inp) { inp.value=''; inp.focus(); }
+    return;
+  }
+  document.getElementById('_modalAuthLibre').remove();
+  window._adminUnlocked = true;
+  _abrirPrecioLibre();
+}
+window._verificarAuthLibre = _verificarAuthLibre;
+
+function _abrirPrecioLibre() {
+  var viejo = document.getElementById('_modalPrecioLibre'); if (viejo) viejo.remove();
+  var m = document.createElement('div');
+  m.id = '_modalPrecioLibre';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.innerHTML = '<div style="background:var(--card);border:2px solid var(--warn);border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">'
+    + '<div style="font-size:28px;text-align:center;margin-bottom:4px">⚡</div>'
+    + '<div style="font-weight:800;font-size:15px;text-align:center;margin-bottom:2px;color:var(--warn)">Precio Libre</div>'
+    + '<div style="font-size:11px;color:var(--text2);text-align:center;margin-bottom:16px">Producto no registrado en inventario</div>'
+    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nombre del producto</label>'
+    + '<input id="_plNombre" type="text" placeholder="Ej: Jabón La Llave 200g" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;outline:none"></div>'
+    + '<div style="margin-bottom:6px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Precio en $ (USD)</label>'
+    + '<input id="_plPrecio" type="number" step="0.01" min="0.01" placeholder="0.00"'
+    + ' oninput="(function(){var v=parseFloat(document.getElementById(\'_plPrecio\').value)||0;var el=document.getElementById(\'_plBs\');if(el)el.textContent=v>0?(\'Bs \'+(v*(STATE.tasa||1)).toFixed(2)):\'\';})();"'
+    + ' style="width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:2px solid var(--warn);background:var(--bg2);color:var(--text);font-size:22px;font-weight:700;text-align:center;font-family:var(--display);outline:none"></div>'
+    + '<div id="_plBs" style="text-align:center;font-size:14px;font-weight:700;color:var(--warn);min-height:22px;margin-bottom:16px"></div>'
+    + '<div style="display:flex;gap:10px">'
+    + '<button onclick="document.getElementById(\'_modalPrecioLibre\').remove()" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--bg3);color:var(--text2);font-weight:700;font-size:14px;cursor:pointer">Cancelar</button>'
+    + '<button onclick="_confirmarPrecioLibre()" style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--warn);color:#000;font-weight:800;font-size:14px;cursor:pointer">⚡ Agregar al Carrito</button>'
+    + '</div></div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var f=document.getElementById('_plNombre'); if(f) f.focus(); }, 80);
+}
+window._abrirPrecioLibre = _abrirPrecioLibre;
+
+function _confirmarPrecioLibre() {
+  var nombre = (document.getElementById('_plNombre')||{}).value || '';
+  var precio = parseFloat((document.getElementById('_plPrecio')||{}).value) || 0;
+  if (!nombre.trim()) { showToast('Ingresa el nombre del producto','warn'); return; }
+  if (precio <= 0) { showToast('Ingresa un precio válido','warn'); return; }
+  var id = Date.now();
+  STATE.cart.push({ productoId: id, nombre: nombre.trim(), emoji: '⚡', precio: precio, qty: 1, subtotal: precio, esLibre: true });
+  renderCart();
+  document.getElementById('_modalPrecioLibre').remove();
+  showToast('⚡ ' + nombre.trim() + ' → $' + precio.toFixed(2) + ' | Bs ' + (precio*(STATE.tasa||1)).toFixed(2), 'success');
+}
+window._confirmarPrecioLibre = _confirmarPrecioLibre;
 
 function selectPayMethodByIndex(i) {
   var methods = window._PAY_METHODS_ACTIVE;
@@ -3866,7 +3933,17 @@ function renderClientes() {
   var _verTodos = window._clientesVerTodos === true;
   var _deudores = clientes.filter(function(c){ return (c.deuda||0) > 0; });
   var _alDia    = clientes.filter(function(c){ return (c.deuda||0) <= 0; });
-  var _lista    = _verTodos ? clientes : _deudores;
+  // Ordenar deudores: más reciente primero, luego por deuda mayor
+  _deudores.sort(function(a, b) {
+    var fa = a.ultimaVenta ? new Date(a.ultimaVenta).getTime() : 0;
+    var fb = b.ultimaVenta ? new Date(b.ultimaVenta).getTime() : 0;
+    if (fb !== fa) return fb - fa;
+    return (b.deuda||0) - (a.deuda||0);
+  });
+  var _lista = _verTodos ? clientes : _deudores;
+  // Scroll habilitado para la tabla
+  var _wrap = tbody.closest('.table-wrap');
+  if (_wrap) { _wrap.style.maxHeight = '55vh'; _wrap.style.overflowY = 'auto'; }
   function _fila(c) {
     var deuda = c.deuda || 0;
     var bc = deuda > (c.limite||50) ? 'badge-red' : deuda > 0 ? 'badge-yellow' : 'badge-green';
