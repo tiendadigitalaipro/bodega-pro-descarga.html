@@ -1980,13 +1980,8 @@ function selPago(metodo) {
   // Actualizar texto del botón cobrar y resaltarlo
   var btn = document.getElementById('btnCobrar');
   var msg = document.getElementById('noPayMethodMsg');
-  if (btn) {
-    btn.textContent = '✅ COBRAR — ' + metodo;
-    btn.style.background = 'var(--neon)';
-    btn.style.color = '#000';
-    btn.style.fontWeight = '900';
-  }
   if (msg) msg.style.display = 'none';
+  actualizarBtnCobrar();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2884,6 +2879,7 @@ function renderCart() {
     stext('cartTotal', '$0.00');
     stext('cartTotalBs', fmtLocal(0));
     sstyle('vueltoInfo','display','none');
+    actualizarBtnCobrar();
     return;
   }
 
@@ -2909,16 +2905,7 @@ function renderCart() {
   stext('cartTotalBs', fmtLocal(total * STATE.tasa) + ' · Tasa ' + STATE.tasa);
   renderPaymentBtns();
   calcVuelto();
-  // Mostrar/ocultar botón cobrar según si hay método seleccionado
-  var btnCobrar = document.getElementById('btnCobrar');
-  if (btnCobrar) {
-    if (STATE.payMethod) {
-      btnCobrar.style.display = 'block';
-      btnCobrar.textContent = '✅ Cobrar — ' + STATE.payMethod;
-    } else {
-      btnCobrar.style.display = 'none';
-    }
-  }
+  actualizarBtnCobrar();
 }
 
 function changeQty(prodId, delta) {
