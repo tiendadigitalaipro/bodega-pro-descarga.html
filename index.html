@@ -350,7 +350,8 @@ tbody tr:hover td{background:rgba(124,58,237,0.04)}
 .product-card .stock-out{color:var(--danger);font-weight:700}
 .cart-header{padding:16px 16px 12px;border-bottom:1px solid var(--border)}
 .cart-header h3{font-family:var(--display);font-weight:800;font-size:16px}
-.cart-items{flex:1;overflow-y:auto;padding:12px}
+.cart-items{flex:1;overflow-y:auto;padding:12px;min-height:260px}
+.payment-btns{max-height:96px;overflow-y:auto}
 .cart-item{
   display:flex;align-items:center;gap:10px;padding:10px;
   background:var(--bg2);border-radius:10px;margin-bottom:8px;
@@ -932,7 +933,11 @@ body.has-banner { padding-top:38px; }
             <div class="cart-header">
               <div class="flex justify-between items-center">
                 <h3>🛒 Carrito</h3>
-                <button class="btn btn-sm btn-ghost" onclick="clearCart()">Limpiar</button>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <button class="btn btn-sm btn-ghost" id="btnRecuperar" onclick="recuperarVentaPausada()" style="display:none;background:rgba(245,158,11,0.15);color:var(--warn);border-color:var(--warn)">📥 <span id="recuperarLabel">Recuperar</span></button>
+                  <button class="btn btn-sm btn-ghost" onclick="pausarVenta()" title="Pausar venta y limpiar carrito">⏸️ Pausar</button>
+                  <button class="btn btn-sm btn-ghost" onclick="clearCart()">Limpiar</button>
+                </div>
               </div>
               <div style="font-size:11px;color:var(--text2);margin-top:4px" id="cartCount">0 productos</div>
             </div>
@@ -1410,117 +1415,6 @@ body.has-banner { padding-top:38px; }
                 <span style="font-size:11px" id="licenseDeviceId">Device ID: cargando...</span><br>
                 <span style="font-size:11px">Licencia ligada a este dispositivo. Máx. 2 terminales por código.</span>
               </div>
-              <div id="adminBtnWrap" style="display:block">
-                <button id="btnToggleAdmin" onclick="toggleAdminPanel(event)" style="width:100%;padding:13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:10px">&#x1F511; Panel Admin ZYNC &#x2014; Generar Codigos</button>
-              </div>
-              <div id="adminLicPanel" style="display:none;margin-top:12px">
-                <div style="background:var(--bg2);border:1px solid var(--accent);border-radius:16px;padding:20px">
-                  <div class="card-title mb-4" style="color:var(--accent);font-size:16px">🛠️ Panel Admin A2K — Sistema de Licencias</div>
-
-                  <!-- TABS -->
-                  <div style="display:flex;gap:8px;margin-bottom:16px">
-                    <button onclick="switchLicTab('pro')" id="tabPro" class="btn btn-primary" style="flex:1;font-weight:700">
-                      ⚡ Licencia PRO
-                    </button>
-                    <button onclick="switchLicTab('demo')" id="tabDemo" class="btn btn-ghost" style="flex:1;font-weight:700">
-                      🎯 Licencia DEMO
-                    </button>
-                  </div>
-
-                  <!-- TAB PRO -->
-                  <div id="panelLicPro">
-                    <div class="form-group">
-                      <label class="form-label">Nombre del Negocio Cliente *</label>
-                      <input type="text" id="lic-negocio" class="form-input" placeholder="Bodega La Esquina, Farmacia Central...">
-                    </div>
-                    <div class="grid-2">
-                      <div class="form-group">
-                        <label class="form-label">⏳ Duración PRO</label>
-                        <select id="lic-meses" class="form-select" onchange="actualizarVencePRO()">
-                          <option value="1">1 mes</option>
-                          <option value="3">3 meses</option>
-                          <option value="6">6 meses</option>
-                          <option value="12" selected>12 meses (1 año)</option>
-                          <option value="24">24 meses (2 años)</option>
-                          <option value="0">Permanente (sin venc.)</option>
-                        </select>
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label">📅 Vence el</label>
-                        <input type="text" id="lic-fecha-vence" class="form-input" readonly style="color:var(--neon);font-weight:700;font-family:var(--mono);background:var(--bg3)" placeholder="Auto">
-                      </div>
-                    </div>
-                    <div class="grid-2">
-                      <div class="form-group">
-                        <label class="form-label">Máx. Terminales</label>
-                        <select id="lic-terminales" class="form-select">
-                          <option value="1">1 terminal</option>
-                          <option value="2" selected>2 terminales</option>
-                          <option value="3">3 terminales</option>
-                        </select>
-                      </div>
-                      <div class="form-group" style="display:flex;align-items:flex-end">
-                        <button class="btn btn-primary btn-full" onclick="generarLicencia()" style="height:42px;background:linear-gradient(135deg,#7c3aed,#06d6a0)">
-                          ⚡ Generar Código PRO
-                        </button>
-                      </div>
-                    </div>
-                    <div id="lic-resultado" style="display:none;margin-top:12px;background:var(--bg3);border:2px solid var(--neon);border-radius:12px;padding:16px">
-                      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">✅ Código PRO generado:</div>
-                      <div id="lic-code-display" style="font-family:monospace;font-size:20px;font-weight:900;color:var(--neon);letter-spacing:3px"></div>
-                      <div style="font-size:11px;color:var(--text2);margin-top:4px" id="lic-info-display"></div>
-                      <div style="display:flex;gap:8px;margin-top:12px">
-                        <button class="btn btn-primary" onclick="compartirUltimaLicencia()" style="flex:1">📤 WhatsApp</button>
-                        <button class="btn btn-ghost btn-sm" onclick="copiarCodigo()" style="flex:1">📋 Copiar</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- TAB DEMO -->
-                  <div id="panelLicDemo" style="display:none">
-                    <div class="form-group">
-                      <label class="form-label">Nombre del Negocio Cliente *</label>
-                      <input type="text" id="demo-negocio" class="form-input" placeholder="Bodega La Esquina...">
-                    </div>
-                    <div class="grid-2">
-                      <div class="form-group">
-                        <label class="form-label">⏱️ Duración Demo</label>
-                        <select id="demo-dias" class="form-select" onchange="actualizarVenceEl()">
-                          <option value="1">1 día</option>
-                          <option value="2">2 días</option>
-                          <option value="3" selected>3 días</option>
-                          <option value="5">5 días</option>
-                          <option value="7">7 días</option>
-                        </select>
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label">📅 Vence el</label>
-                        <input type="text" id="demo-fecha-vence" class="form-input" readonly style="background:var(--bg3);color:var(--warn);font-weight:700;text-align:center" placeholder="Auto">
-                      </div>
-                    </div>
-                    <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--text2)">
-                      ℹ️ El cliente prueba la app por <strong id="demo-dias-label" style="color:var(--warn)">3 días</strong>. Al vencer, se bloquea pero <strong style="color:var(--neon)">sus datos se conservan</strong>. Solo necesita el código PRO para continuar.
-                    </div>
-                    <button class="btn btn-full" onclick="generarLicenciaDemo()" style="background:linear-gradient(135deg,#f59e0b,#ef4444);font-weight:700;height:42px">
-                      🎯 Generar Código DEMO
-                    </button>
-                    <div id="demo-resultado" style="display:none;margin-top:12px;background:var(--bg3);border:2px solid var(--warn);border-radius:12px;padding:16px">
-                      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">🎯 Código DEMO generado:</div>
-                      <div id="demo-code-display" style="font-family:monospace;font-size:20px;font-weight:900;color:var(--warn);letter-spacing:3px"></div>
-                      <div style="font-size:11px;color:var(--text2);margin-top:4px" id="demo-info-display"></div>
-                      <div style="display:flex;gap:8px;margin-top:12px">
-                        <button class="btn btn-full" onclick="compartirUltimaDemo()" style="background:#25D366;color:#fff;font-weight:700">📤 Enviar por WhatsApp</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- LISTA DE LICENCIAS -->
-                  <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
-                    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">📋 HISTORIAL DE LICENCIAS</div>
-                    <div id="licTable"></div>
-                  </div>
-                </div>
-              </div></div>
 
             <div class="card">
               <div class="card-title mb-3">💳 Métodos de Pago Activos</div>
@@ -2608,7 +2502,7 @@ function showPage(page, el) {
   STATE.currentPage = page;
 
   if (page === 'dashboard') renderDashboard();
-  if (page === 'pos') { renderPosProducts(); renderCart(); }
+  if (page === 'pos') { renderPosProducts(); renderCart(); if(typeof _actualizarBtnRecuperar==='function') _actualizarBtnRecuperar(); }
   if (page === 'inventario') { renderInventario(); populateInvFilters(); }
   if (page === 'historial') { renderHistorial(); renderHistStats(); }
   if (page === 'clientes') renderClientes();
@@ -2745,12 +2639,15 @@ function renderPosProducts() {
     (!activeCat || p.categoria === activeCat)
   );
 
+  const PESO_UNITS = ['kg','g','lt','ml'];
   document.getElementById('posProductsGrid').innerHTML = filtered.map(p => {
     const stockClass = (p.stock||0) === 0 ? 'stock-out' : (p.stock||0) <= p.stockMin ? 'stock-low' : '';
+    const esPeso = PESO_UNITS.includes(p.unidad);
+    const precioLabel = esPeso ? `$${(p.precio||0).toFixed(2)}/${p.unidad}` : `$${(p.precio||0).toFixed(2)}`;
     return `<div class="product-card ${(p.stock||0) === 0 ? 'opacity-50' : ''}" onclick="addToCart(${p.id})" style="${(p.stock||0)===0?'opacity:0.5;pointer-events:none':''}">
-      <span class="p-emoji">${p.emoji}</span>
+      <span class="p-emoji">${p.emoji}${esPeso?'<span style="font-size:10px;vertical-align:super"> ⚖️</span>':''}</span>
       <div class="p-name">${p.nombre}</div>
-      <div class="p-price">$${(p.precio||0).toFixed(2)}</div>
+      <div class="p-price">${precioLabel}</div>
       <div class="p-stock ${stockClass}">${(p.stock||0)===0?'Sin stock':(p.stock||0)+' '+p.unidad}</div>
     </div>`;
   }).join('') || '<div class="section-empty" style="grid-column:1/-1"><div class="e-icon">🔍</div><p>No se encontraron productos</p></div>';
@@ -2765,6 +2662,9 @@ function addToCart(prodId) {
   const prods = DB.get('productos') || [];
   const prod = prods.find(p => p.id === prodId);
   if (!prod || prod.stock === 0) return;
+  if (['kg','g','lt','ml'].includes(prod.unidad)) {
+    _abrirModalPesaje(prod); return;
+  }
   const existing = STATE.cart.find(i => i.productoId === prodId);
   if (existing) {
     if (existing.qty >= prod.stock) return showToast('⚠️ Stock insuficiente','warn');
@@ -2775,6 +2675,49 @@ function addToCart(prodId) {
   }
   renderCart();
 }
+
+function _abrirModalPesaje(prod) {
+  var old = document.getElementById('_modalPesaje'); if (old) old.remove();
+  var existing = STATE.cart.find(function(i){ return i.productoId === prod.id; });
+  var valActual = existing ? existing.qty : '';
+  var m = document.createElement('div');
+  m.id = '_modalPesaje';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.innerHTML = '<div style="background:var(--card);border:2px solid var(--accent);border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">'
+    + '<div style="font-size:36px;text-align:center;margin-bottom:6px">'+prod.emoji+'</div>'
+    + '<div style="font-weight:800;font-size:16px;text-align:center;margin-bottom:4px">'+prod.nombre+'</div>'
+    + '<div style="text-align:center;font-size:13px;color:var(--text2);margin-bottom:16px">$'+prod.precio.toFixed(2)+' por '+prod.unidad+'</div>'
+    + '<div style="margin-bottom:14px">'
+    + '<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Cantidad ('+prod.unidad+')</label>'
+    + '<input id="_pesajeCant" type="number" step="0.001" min="0.001" max="'+prod.stock+'" value="'+valActual+'" placeholder="0.000"'
+    +   ' style="width:100%;padding:14px;border-radius:12px;border:2px solid var(--accent);background:var(--bg2);color:var(--text);font-size:20px;font-weight:700;text-align:center;font-family:var(--display);outline:none;box-sizing:border-box"'
+    +   ' oninput="var t=parseFloat(this.value)||0;var p=document.getElementById(\'_pesajePrev\');if(p)p.textContent=t>0?\'= $\'+(t*'+prod.precio+').toFixed(2):\'\'">'
+    + '</div>'
+    + '<div id="_pesajePrev" style="text-align:center;font-size:18px;font-weight:800;color:var(--neon);min-height:26px;margin-bottom:16px">'+(valActual?'= $'+(valActual*prod.precio).toFixed(2):'')+'</div>'
+    + '<div style="display:flex;gap:10px">'
+    + '<button onclick="document.getElementById(\'_modalPesaje\').remove()" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--bg3);color:var(--text2);font-weight:700;font-size:14px;cursor:pointer">Cancelar</button>'
+    + '<button onclick="_confirmarPesaje('+prod.id+')" style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:14px;cursor:pointer">⚖️ Agregar al Carrito</button>'
+    + '</div></div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var f=document.getElementById('_pesajeCant'); if(f){f.focus();f.select();} }, 80);
+}
+
+function _confirmarPesaje(prodId) {
+  var cant = parseFloat((document.getElementById('_pesajeCant')||{}).value) || 0;
+  if (cant <= 0) { showToast('Ingresa una cantidad válida','warn'); return; }
+  var prod = (DB.get('productos')||[]).find(function(p){ return p.id === prodId; });
+  if (!prod) return;
+  if (cant > prod.stock) { showToast('⚠️ Stock insuficiente ('+prod.stock+' '+prod.unidad+')','warn'); return; }
+  var subtotal = parseFloat((prod.precio * cant).toFixed(2));
+  STATE.cart = STATE.cart.filter(function(c){ return c.productoId !== prodId; });
+  STATE.cart.push({ productoId: prod.id, nombre: prod.nombre+' ('+cant+' '+prod.unidad+')',
+    precio: prod.precio, qty: cant, subtotal: subtotal, emoji: prod.emoji, esPorPeso: true });
+  renderCart();
+  document.getElementById('_modalPesaje').remove();
+  showToast(prod.nombre+': '+cant+' '+prod.unidad+' = $'+subtotal.toFixed(2), 'success');
+}
+window._abrirModalPesaje = _abrirModalPesaje;
+window._confirmarPesaje  = _confirmarPesaje;
 
 function renderCart() {
   const items = STATE.cart;
@@ -2842,6 +2785,71 @@ function clearCart() {
   STATE.cart = [];
   renderCart();
 }
+
+function pausarVenta() {
+  if (!STATE.cart.length) { showToast('El carrito está vacío','warn'); return; }
+  var pausadas = JSON.parse(localStorage.getItem('bp_pausadas') || '[]');
+  pausadas.unshift({ items: STATE.cart.slice(), pausadaEn: new Date().toISOString() });
+  if (pausadas.length > 5) pausadas = pausadas.slice(0, 5);
+  localStorage.setItem('bp_pausadas', JSON.stringify(pausadas));
+  STATE.cart = [];
+  renderCart();
+  _actualizarBtnRecuperar();
+  showToast('Venta pausada — usa "📥 Recuperar" para continuar', 'success');
+}
+
+function recuperarVentaPausada() {
+  var pausadas = JSON.parse(localStorage.getItem('bp_pausadas') || '[]');
+  if (!pausadas.length) { showToast('No hay ventas pausadas','info'); return; }
+  if (pausadas.length === 1) {
+    _cargarVentaPausada(0); return;
+  }
+  // Mostrar selector si hay varias
+  var overlay = document.createElement('div');
+  overlay.id = '_overlayPausadas';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  var rows = pausadas.map(function(p, i) {
+    var hora = new Date(p.pausadaEn).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'});
+    var total = p.items.reduce(function(s,it){ return s + (it.subtotal||0); }, 0);
+    return '<button onclick="window._cargarVentaPausada('+i+');document.getElementById(\'_overlayPausadas\').remove()" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--bg2);color:var(--text);text-align:left;cursor:pointer;margin-bottom:8px;font-family:var(--font)">'
+      + '<div style="font-weight:700">Pausa '+hora+' · '+p.items.length+' ítem(s)</div>'
+      + '<div style="font-size:12px;color:var(--neon)">Total: $'+total.toFixed(2)+'</div>'
+      + '</button>';
+  }).join('');
+  overlay.innerHTML = '<div style="background:var(--card);border:2px solid var(--accent);border-radius:20px;padding:24px;width:100%;max-width:360px">'
+    + '<div style="font-weight:800;font-size:16px;margin-bottom:16px">📥 Ventas Pausadas</div>'
+    + rows
+    + '<button onclick="document.getElementById(\'_overlayPausadas\').remove()" style="width:100%;padding:10px;border-radius:10px;border:none;background:var(--bg3);color:var(--text2);cursor:pointer;font-family:var(--font)">Cancelar</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
+}
+
+function _cargarVentaPausada(idx) {
+  var pausadas = JSON.parse(localStorage.getItem('bp_pausadas') || '[]');
+  if (!pausadas[idx]) return;
+  STATE.cart = pausadas[idx].items;
+  pausadas.splice(idx, 1);
+  localStorage.setItem('bp_pausadas', JSON.stringify(pausadas));
+  renderCart();
+  _actualizarBtnRecuperar();
+  showToast('Venta recuperada', 'success');
+}
+
+function _actualizarBtnRecuperar() {
+  var pausadas = JSON.parse(localStorage.getItem('bp_pausadas') || '[]');
+  var btn = document.getElementById('btnRecuperar');
+  var lbl = document.getElementById('recuperarLabel');
+  if (!btn) return;
+  if (pausadas.length > 0) {
+    btn.style.display = 'block';
+    if (lbl) lbl.textContent = 'Recuperar ('+pausadas.length+')';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+window._cargarVentaPausada = _cargarVentaPausada;
+window.pausarVenta = pausarVenta;
+window.recuperarVentaPausada = recuperarVentaPausada;
 
 function renderPaymentBtns() {
   var container = document.getElementById('paymentBtns');
