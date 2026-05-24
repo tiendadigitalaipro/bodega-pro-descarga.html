@@ -3970,26 +3970,55 @@ function verFiado(id) {
   var c = (DB.get('clientes') || []).find(function(x){ return x.id === id; });
   if (!c) return;
   var ventas = (DB.get('ventas') || []).filter(function(v){ return v.cliente === id; });
+  var pagos = c.pagos || [];
+  var deuda = c.deuda || 0;
+  var totalComprado = ventas.reduce(function(s,v){ return s + v.totalUSD; }, 0);
+  var totalPagado = pagos.reduce(function(s,p){ return s + p.monto; }, 0);
   stext('modalFiadoTitle', 'Fiado — ' + c.nombre);
+
+  var htmlAbonos = pagos.length
+    ? pagos.slice(-10).reverse().map(function(p) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">' +
+          '<div><div style="font-size:12px;color:var(--text1)">' + new Date(p.fecha).toLocaleDateString('es-VE') + '</div>' +
+          '<div style="font-size:11px;color:var(--text2)">' + (p.metodo || 'Efectivo $') + '</div></div>' +
+          '<div style="text-align:right"><div style="color:var(--neon);font-weight:700;font-size:14px">-$' + p.monto.toFixed(2) + '</div>' +
+          '<div style="font-size:11px;color:var(--text2)">Saldo: $' + (p.saldo || 0).toFixed(2) + '</div></div>' +
+        '</div>';
+      }).join('')
+    : '<p style="font-size:12px;color:var(--text2);padding:8px 0;text-align:center">Sin abonos registrados aún</p>';
+
+  var htmlVentas = ventas.length
+    ? ventas.slice(-5).reverse().map(function(v){
+        return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">' +
+          '<span style="font-size:12px">' + new Date(v.fecha).toLocaleDateString('es-VE') + '</span>' +
+          '<span style="color:var(--warn);font-weight:700">+$' + v.totalUSD.toFixed(2) + '</span></div>';
+      }).join('')
+    : '<p style="font-size:12px;color:var(--text2);padding:8px 0;text-align:center">Sin compras fiadas</p>';
+
   document.getElementById('modalFiadoBody').innerHTML =
-    '<div class="alert ' + ((c.deuda||0) > 0 ? 'alert-warn' : 'alert-success') + '">' +
-      '<strong>Deuda actual: $' + (c.deuda||0).toFixed(2) + '</strong> · Límite: $' + c.limite +
+    '<div class="alert ' + (deuda > 0 ? 'alert-warn' : 'alert-success') + '" style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">' +
+        '<span style="font-size:13px">Deuda actual</span>' +
+        '<strong style="font-size:20px;color:' + (deuda > 0 ? 'var(--danger)' : 'var(--neon)') + '">$' + deuda.toFixed(2) + '</strong>' +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--text2);margin-top:4px;display:flex;gap:12px">' +
+        '<span>Límite: <strong>$' + (c.limite || 50) + '</strong></span>' +
+        (totalPagado > 0 ? '<span>Pagado: <strong style="color:var(--neon)">$' + totalPagado.toFixed(2) + '</strong></span>' : '') +
+        (totalComprado > 0 ? '<span>Comprado: <strong>$' + totalComprado.toFixed(2) + '</strong></span>' : '') +
+      '</div>' +
     '</div>' +
-    '<div class="form-group"><label class="form-label">Registrar Pago ($)</label>' +
+    '<div class="form-group"><label class="form-label">💵 Registrar Abono ($)</label>' +
       '<input type="number" id="pago-monto" class="form-input" step="0.01" placeholder="0.00"></div>' +
     '<div class="form-group"><label class="form-label">Método de Pago</label>' +
       '<select id="pago-metodo" class="form-select">' +
         '<option>Efectivo $</option><option>Efectivo Bs</option>' +
-        '<option>Punto Crédito</option><option>Zelle</option><option>Pago Móvil</option>' +
+        '<option>Punto Crédito</option><option>Punto Débito</option><option>Zelle</option><option>Pago Móvil</option><option>Transferencia Bs</option>' +
       '</select></div>' +
-    '<div class="card-title mb-2 mt-3">Historial de compras fiadas</div>' +
-    (ventas.length
-      ? ventas.slice(-5).reverse().map(function(v){
-          return '<div class="flex justify-between" style="padding:6px 0;border-bottom:1px solid var(--border)">' +
-            '<span style="font-size:12px">' + new Date(v.fecha).toLocaleDateString('es-VE') + '</span>' +
-            '<span class="text-accent font-bold">$' + v.totalUSD.toFixed(2) + '</span></div>';
-        }).join('')
-      : '<p class="text-muted text-sm">Sin ventas fiadas</p>');
+    '<div style="font-weight:700;font-size:11px;color:var(--text2);letter-spacing:1px;margin:14px 0 6px">📋 HISTORIAL DE ABONOS</div>' +
+    htmlAbonos +
+    '<div style="font-weight:700;font-size:11px;color:var(--text2);letter-spacing:1px;margin:14px 0 6px">🛒 COMPRAS FIADAS</div>' +
+    htmlVentas;
+
   document.getElementById('modalFiado').dataset.clienteId = id;
   openModal('modalFiado');
 }
@@ -3997,15 +4026,19 @@ function verFiado(id) {
 function registrarPago() {
   var id = parseInt(document.getElementById('modalFiado').dataset.clienteId);
   var monto = parseFloat(document.getElementById('pago-monto').value) || 0;
-  if (!monto) return showToast('Ingresa el monto del pago','warn');
+  if (!monto || monto <= 0) return showToast('Ingresa el monto del abono','warn');
+  var metodoEl = document.getElementById('pago-metodo');
+  var metodo = metodoEl ? metodoEl.value : 'Efectivo $';
   var clientes = DB.get('clientes') || [];
   var c = clientes.find(function(x){ return x.id === id; });
   if (!c) return;
-  c.deuda = Math.max(0, (c.deuda||0) - monto);
+  c.deuda = Math.max(0, (c.deuda || 0) - monto);
+  if (!c.pagos) c.pagos = [];
+  c.pagos.push({ fecha: Date.now(), monto: monto, metodo: metodo, saldo: c.deuda });
   DB.set('clientes', clientes);
   closeModal('modalFiado');
   renderClientes();
-  showToast('✅ Pago de $' + monto.toFixed(2) + ' registrado','success');
+  showToast('✅ Abono de $' + monto.toFixed(2) + ' registrado · Saldo: $' + c.deuda.toFixed(2), 'success');
 }
 
 function renderReportes() {
