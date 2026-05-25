@@ -2823,9 +2823,9 @@ function abrirPesajeManual() {
   m.id = '_modalSelPeso';
   m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;';
   var listHtml = prods.length ? prods.map(function(p){
-    return '<button onclick="abrirPesajeManualProd(\''+p.id+'\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text1);cursor:pointer;text-align:left;">'
+    return '<button onclick="abrirPesajeManualProd('+p.id+')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text1);cursor:pointer;text-align:left;">'
       + '<span style="font-size:24px">'+(p.emoji||'⚖️')+'</span>'
-      + '<span style="flex:1"><strong>'+p.nombre+'</strong><br><small style="color:var(--text3)">'+p.precio.toFixed(2)+' / '+p.unidad+' · stock: '+p.stock+' '+p.unidad+'</small></span>'
+      + '<span style="flex:1"><strong>'+p.nombre+'</strong><br><small style="color:var(--text3)">$'+p.precio.toFixed(2)+' / '+p.unidad+' · stock: '+p.stock+' '+p.unidad+'</small></span>'
       + '</button>';
   }).join('') : '<p style="color:var(--text3);text-align:center;padding:20px;">No hay productos por peso/volumen con stock disponible.</p>';
   m.innerHTML = '<div style="background:var(--bg2);border-radius:12px;padding:20px;width:100%;max-width:420px;max-height:80vh;overflow-y:auto;">'
@@ -2849,15 +2849,15 @@ function _abrirModalPesaje(prod) {
   var valActual = existing ? existing.qty : '';
   var m = document.createElement('div');
   m.id = '_modalPesaje';
-  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;pointer-events:none';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
   m.innerHTML = '<div style="background:var(--card);border:2px solid var(--accent);border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">'
     + '<div style="font-size:36px;text-align:center;margin-bottom:6px">'+prod.emoji+'</div>'
     + '<div style="font-weight:800;font-size:16px;text-align:center;margin-bottom:4px">'+prod.nombre+'</div>'
     + '<div style="text-align:center;font-size:13px;color:var(--text2);margin-bottom:16px">$'+prod.precio.toFixed(2)+' por '+prod.unidad+'</div>'
     + '<div style="margin-bottom:14px">'
-    + '<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Cantidad ('+prod.unidad+')</label>'
-    + '<input id="_pesajeCant" type="number" step="0.001" min="0.001" max="'+prod.stock+'" value="'+valActual+'" placeholder="0.000"'
-    +   ' style="width:100%;padding:14px;border-radius:12px;border:2px solid var(--accent);background:var(--bg2);color:var(--text);font-size:20px;font-weight:700;text-align:center;font-family:var(--display);outline:none;box-sizing:border-box"'
+    + '<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Cantidad en '+prod.unidad+(prod.unidad==='kg'?' &nbsp;<span style="color:var(--text3);font-weight:400">(ej: 200g → 0.200)</span>':prod.unidad==='lt'?' &nbsp;<span style="color:var(--text3);font-weight:400">(ej: 500ml → 0.500)</span>':'')+'</label>'
+    + '<input id="_pesajeCant" type="number" inputmode="decimal" step="0.001" min="0.001" max="'+prod.stock+'" value="'+valActual+'" placeholder="0.000"'
+    +   ' style="width:100%;padding:14px;border-radius:12px;border:2px solid var(--accent);background:var(--bg2);color:var(--text);font-size:24px;font-weight:700;text-align:center;font-family:var(--display);outline:none;box-sizing:border-box"'
     +   ' oninput="var t=parseFloat(this.value)||0;var p=document.getElementById(\'_pesajePrev\');if(p)p.textContent=t>0?\'= $\'+(t*'+prod.precio+').toFixed(2):\'\'">'
     + '</div>'
     + '<div id="_pesajePrev" style="text-align:center;font-size:18px;font-weight:800;color:var(--neon);min-height:26px;margin-bottom:16px">'+(valActual?'= $'+(valActual*prod.precio).toFixed(2):'')+'</div>'
@@ -2866,9 +2866,7 @@ function _abrirModalPesaje(prod) {
     + '<button onclick="_confirmarPesaje('+prod.id+')" style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:14px;cursor:pointer">⚖️ Agregar al Carrito</button>'
     + '</div></div>';
   document.body.appendChild(m);
-  // Bloquear eventos 500ms para evitar que el click fantasma del móvil cierre el modal
-  setTimeout(function() { var mo=document.getElementById('_modalPesaje'); if(mo) mo.style.pointerEvents=''; }, 500);
-  setTimeout(function(){ var f=document.getElementById('_pesajeCant'); if(f){f.focus();f.select();} }, 520);
+  setTimeout(function(){ var f=document.getElementById('_pesajeCant'); if(f){f.focus();f.select();} }, 300);
 }
 
 function _confirmarPesaje(prodId) {
