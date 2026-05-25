@@ -1218,6 +1218,10 @@ body.has-banner { padding-top:38px; }
           <button class="btn btn-primary" onclick="openAddCliente()">+ Nuevo Cliente</button>
         </div>
         <div class="grid-3 mb-4" id="clienteStats"></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <button id="btnVerTodos" class="btn btn-primary btn-sm" onclick="window._clientesVerTodos=true;renderClientes()">📋 Todos los clientes</button>
+          <button id="btnVerFiados" class="btn btn-outline btn-sm" onclick="window._clientesVerTodos=false;renderClientes()">📝 Solo con fiado activo</button>
+        </div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Cliente</th><th>Teléfono</th><th>Deuda Total</th><th>Última Venta</th><th>Estado</th><th>Acciones</th></tr></thead>
@@ -4060,17 +4064,22 @@ function renderClientes() {
 
   var tbody = document.getElementById('clienteTable');
   if (!tbody) return;
-  var _verTodos = window._clientesVerTodos === true;
+  // Default: mostrar TODOS los clientes
+  if (window._clientesVerTodos === undefined) window._clientesVerTodos = true;
+  var _verTodos = window._clientesVerTodos;
   var _deudores = clientes.filter(function(c){ return (c.deuda||0) > 0; });
   var _alDia    = clientes.filter(function(c){ return (c.deuda||0) <= 0; });
-  // Ordenar deudores: más reciente primero, luego por deuda mayor
-  _deudores.sort(function(a, b) {
-    var fa = a.ultimaVenta ? new Date(a.ultimaVenta).getTime() : 0;
-    var fb = b.ultimaVenta ? new Date(b.ultimaVenta).getTime() : 0;
-    if (fb !== fa) return fb - fa;
-    return (b.deuda||0) - (a.deuda||0);
+  // Ordenar: primero deudores (mayor deuda), luego al día (más recientes)
+  _deudores.sort(function(a, b) { return (b.deuda||0) - (a.deuda||0); });
+  _alDia.sort(function(a, b) {
+    return (b.ultimaVenta ? new Date(b.ultimaVenta).getTime() : 0) - (a.ultimaVenta ? new Date(a.ultimaVenta).getTime() : 0);
   });
-  var _lista = _verTodos ? clientes : _deudores;
+  var _lista = _verTodos ? _deudores.concat(_alDia) : _deudores;
+  // Actualizar estilo de los botones de filtro
+  var btnT = document.getElementById('btnVerTodos');
+  var btnF = document.getElementById('btnVerFiados');
+  if (btnT) { btnT.className = _verTodos ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'; }
+  if (btnF) { btnF.className = _verTodos ? 'btn btn-outline btn-sm' : 'btn btn-primary btn-sm'; }
   // Sin límite de altura: el page-body (overflow-y:auto) maneja el scroll completo en móvil
   var _wrap = tbody.closest('.table-wrap');
   if (_wrap) { _wrap.style.maxHeight = ''; _wrap.style.overflowY = ''; }
@@ -4078,7 +4087,8 @@ function renderClientes() {
     var deuda = c.deuda || 0;
     var bc = deuda > (c.limite||50) ? 'badge-red' : deuda > 0 ? 'badge-yellow' : 'badge-green';
     var bt = deuda > (c.limite||50) ? 'Límite excedido' : deuda > 0 ? 'Con fiado' : 'Al día';
-    return '<tr>' +
+    var rowStyle = deuda > 0 ? '' : 'opacity:0.7';
+    return '<tr style="' + rowStyle + '">' +
       '<td><div style="font-weight:600">' + c.nombre + '</div><div style="font-size:11px;color:var(--text2)">' + (c.cedula||'') + '</div></td>' +
       '<td>' + (c.telefono||'—') + '</td>' +
       '<td><strong class="' + (deuda>0?'text-danger':'text-muted') + '">$' + deuda.toFixed(2) + '</strong></td>' +
@@ -4091,17 +4101,7 @@ function renderClientes() {
       '</div></td></tr>';
   }
   var _vacio = _verTodos ? 'Sin clientes registrados' : 'Sin fiados activos';
-  var _rows = _lista.map(_fila).join('') || ('<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text2)">' + _vacio + '</td></tr>');
-  if (!_verTodos && _alDia.length > 0) {
-    _rows += '<tr><td colspan="6" style="text-align:center;padding:8px;border-top:1px solid var(--border)">' +
-      '<button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="window._clientesVerTodos=true;renderClientes()">' +
-      '👥 Ver ' + _alDia.length + ' cliente' + (_alDia.length>1?'s':'') + ' al día (sin deuda)</button></td></tr>';
-  } else if (_verTodos) {
-    _rows += '<tr><td colspan="6" style="text-align:center;padding:8px;border-top:1px solid var(--border)">' +
-      '<button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="window._clientesVerTodos=false;renderClientes()">' +
-      '🔍 Mostrar solo fiados activos</button></td></tr>';
-  }
-  tbody.innerHTML = _rows;
+  tbody.innerHTML = _lista.map(_fila).join('') || ('<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text2)">' + _vacio + '</td></tr>');
 }
 
 function openAddCliente() {
