@@ -1731,7 +1731,7 @@ body.has-banner { padding-top:38px; }
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">% Ganancia deseada</label>
             <div style="display:flex;gap:6px">
-              <input type="number" id="prod-ganancia-pct" class="form-input" placeholder="Ej: 30" min="0" max="200" oninput="calcPrecioAutomatico()" style="flex:1">
+              <input type="number" id="prod-ganancia-pct" class="form-input" placeholder="% propio" min="0" max="200" oninput="setPctManualLibre(this.value)" onchange="setPctManualLibre(this.value)" onblur="setPctManualLibre(this.value)" style="flex:1;min-width:54px">
               <button type="button" data-pct-btn="15" onclick="setPct(15)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;transition:all 0.2s">15%</button>
               <button type="button" data-pct-btn="20" onclick="setPct(20)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;transition:all 0.2s">20%</button>
               <button type="button" data-pct-btn="30" onclick="setPct(30)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;transition:all 0.2s">30%</button>
@@ -3767,6 +3767,22 @@ function calcPrecioUnitario() {
   calcMargenDesdePrecio();
 }
 
+function setPctManualLibre(val) {
+  var pct = parseFloat(val) || 0;
+  if (pct <= 0) return;
+  // Deselect all preset buttons — none matches a custom value
+  document.querySelectorAll('[data-pct-btn]').forEach(function(b) {
+    var v = parseInt(b.getAttribute('data-pct-btn'));
+    var match = v === pct;
+    b.style.background = match ? 'var(--accent)' : '#444';
+    b.style.transform  = match ? 'scale(1.08)' : 'scale(1)';
+  });
+  calcPrecioAutomatico();
+  // Visual confirmation the value was registered
+  var el = document.getElementById('prod-ganancia-pct');
+  if (el) el.style.borderColor = pct > 0 ? 'var(--accent)' : '';
+}
+
 function setPct(pct) {
   if (pct >= 100) { showToast('El margen no puede ser 100% o mas','warn'); return; }
   var el = document.getElementById('prod-ganancia-pct');
@@ -3793,7 +3809,15 @@ function calcPrecioAutomatico() {
   var pct         = _pct ? (parseFloat(_pct.value)  || 0) : 0;
   var conIva      = _iva ? _iva.checked : false;
 
-  if (costoBulto <= 0 || unidades <= 0) { resultado.style.display='none'; return; }
+  if (costoBulto <= 0 || unidades <= 0) {
+    if (pct > 0) {
+      resultado.style.display = 'block';
+      resultado.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text2);font-size:13px">👆 Ingresa el <strong>Costo del Bulto</strong> y <strong>Unidades por Bulto</strong> para calcular el precio.</div>';
+    } else {
+      resultado.style.display = 'none';
+    }
+    return;
+  }
   if (pct >= 100) { showToast('El margen no puede ser 100% o mas','warn'); return; }
 
   var totalUnidades = unidades * cantBultos;
