@@ -1658,7 +1658,7 @@ body.has-banner { padding-top:38px; }
             <button type="button" onclick="document.getElementById('prod-foto-input').click()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text2);cursor:pointer;font-size:12px;text-align:left;width:100%">📁 Galería / Cámara</button>
             <button type="button" id="prod-foto-clear" onclick="limpiarFoto()" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:6px 12px;color:var(--danger);cursor:pointer;font-size:12px;width:100%">🗑️ Quitar foto</button>
           </div>
-          <input type="file" id="prod-foto-input" accept="image/*" capture="environment" style="display:none" onchange="cargarFotoProducto(this)">
+          <input type="file" id="prod-foto-input" accept="image/*" style="display:none" onchange="cargarFotoProducto(this)">
         </div>
       </div>
       <div class="grid-2">
@@ -3685,16 +3685,29 @@ window.aplicarDesdeManual = aplicarDesdeManual;
 function cargarFotoProducto(input) {
   var file = input.files[0];
   if (!file) return;
-  if (file.size > 500000) { showToast('Foto muy grande. Máx 500KB.', 'warn'); input.value = ''; return; }
   var reader = new FileReader();
   reader.onload = function(e) {
-    window._prodFotoBase64 = e.target.result;
-    var img = document.getElementById('prod-foto-preview');
-    var icon = document.getElementById('prod-foto-icon');
-    var clr = document.getElementById('prod-foto-clear');
-    if (img) { img.src = e.target.result; img.style.display = 'block'; }
-    if (icon) icon.style.display = 'none';
-    if (clr) clr.style.display = 'block';
+    var tmpImg = new Image();
+    tmpImg.onload = function() {
+      var MAX = 800;
+      var w = tmpImg.width, h = tmpImg.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else       { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      var cvs = document.createElement('canvas');
+      cvs.width = w; cvs.height = h;
+      cvs.getContext('2d').drawImage(tmpImg, 0, 0, w, h);
+      var compressed = cvs.toDataURL('image/jpeg', 0.75);
+      window._prodFotoBase64 = compressed;
+      var prev = document.getElementById('prod-foto-preview');
+      var icon = document.getElementById('prod-foto-icon');
+      var clr  = document.getElementById('prod-foto-clear');
+      if (prev) { prev.src = compressed; prev.style.display = 'block'; }
+      if (icon) icon.style.display = 'none';
+      if (clr)  clr.style.display  = 'block';
+    };
+    tmpImg.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
