@@ -2423,7 +2423,8 @@ function doLogin() {
 
   // Verificar firma matemática (cliente en otra PC)
   const hasFirma = verifyLicenseSignature(code);
-  if (!isMaster && !issuedLic && !hasFirma) {
+  const hasDemoFirma = (typeof verifyDemoSignature === 'function') && verifyDemoSignature(code);
+  if (!isMaster && !issuedLic && !hasFirma && !hasDemoFirma) {
     return showLoginAlert('❌ Código de activación inválido. Verifica e intenta de nuevo.', 'error');
   }
   // Verificar estado: bloqueada, pausada o vencida PRO
@@ -2459,8 +2460,10 @@ function doLogin() {
     if (demoLic && demoLic.venceEn) {
       venceEn = demoLic.venceEn;
     } else {
-      // No está en la lista — dar 3 días desde hoy (demo desconocida)
-      var vd=new Date(); vd.setDate(vd.getDate()+3); venceEn=vd.toISOString();
+      // Decodificar vencimiento desde sv (p[3]) del codigo admin
+      var _dp=code.split('-');
+      if(_dp.length>=4){var _sv=_dp[3],_b=CHARS.length,_ed=0;for(var _i=0;_i<_sv.length;_i++){var _cx=CHARS.indexOf(_sv[_i]);if(_cx>=0)_ed=_ed*_b+_cx;}if(_ed>0)venceEn=new Date(_ed*86400000).toISOString();}
+      if(!venceEn){var vd=new Date();vd.setDate(vd.getDate()+3);venceEn=vd.toISOString();}
     }
   }
 
@@ -5259,6 +5262,10 @@ function generateDemoCode(neg, dias) {
 function verifyDemoSignature(code) {
   var p = code.split('-');
   if (p[0] !== 'DEMO' || p.length < 3) return false;
+  // Formato admin: DEMO-s1-s2-sv (sv = expiry day en base32)
+  if (p.length >= 4) {
+    if (p[2] === toB(djb2(p[1] + SECRET_DEMO + p[3]), 4)) return true;
+  }
   // Verificar con dias 1-7 (nuevo formato con dias embebidos)
   for (var d = 1; d <= 7; d++) {
     if (p[2] === toB(djb2(p[1] + SECRET_DEMO + String(d)), 4)) return true;
