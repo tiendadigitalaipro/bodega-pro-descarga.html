@@ -248,7 +248,7 @@ tbody tr:hover td{background:rgba(124,58,237,0.04)}
 ═══════════════════════════════════════════════ */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);
-  z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;
+  z-index:9500;display:none;align-items:center;justify-content:center;padding:16px;
 }
 .modal-overlay.open{display:flex}
 .modal{
@@ -2845,7 +2845,8 @@ function abrirPesajeManual() {
 }
 function abrirPesajeManualProd(prodId) {
   var old = document.getElementById('_modalSelPeso'); if (old) old.remove();
-  var prod = (DB.get('productos')||[]).find(function(p){ return p.id === prodId; });
+  var pid = Number(prodId);
+  var prod = (DB.get('productos')||[]).find(function(p){ return Number(p.id) === pid; });
   if (prod) _abrirModalPesaje(prod);
 }
 
@@ -5347,7 +5348,11 @@ function closeModal(id) {
 // ── COBRO / PROCESARVENTA ──
 function abrirCobro() {
   if (!STATE.cart.length) { showToast('Agrega productos al carrito', 'warn'); return; }
-  if (!STATE.payMethod)   { showToast('Selecciona un método de pago', 'warn'); return; }
+  if (!STATE.payMethod)   { showToast('👆 Selecciona un método de pago primero', 'warn');
+    var pb = document.getElementById('paymentBtns');
+    if (pb) { pb.style.animation='none'; pb.style.border='2px solid var(--warn)'; pb.style.borderRadius='10px'; setTimeout(function(){ if(pb){ pb.style.border=''; pb.style.animation=''; } }, 1500); }
+    return;
+  }
   // Llenar resumen de cobro
   var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
   var resumen = document.getElementById('cobroResumen');
