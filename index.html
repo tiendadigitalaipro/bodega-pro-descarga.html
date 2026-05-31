@@ -457,23 +457,23 @@ canvas{max-width:100%!important}
     top:0;
     z-index:50;
     height:auto;
+    max-height:none;
+    overflow:visible !important;
     display:flex;
     flex-direction:column;
-    overflow:visible;
-    max-height:none;
   }
   .cart-items{
+    flex:0 0 auto !important;
+    min-height:0 !important;
+    max-height:130px;
     overflow-y:auto;
-    max-height:140px;
-    flex-shrink:1;
+    padding:8px 12px;
   }
   .cart-footer{
-    flex-shrink:0;
+    flex-shrink:0 !important;
     padding:10px 14px;
     background:var(--card);
     border-top:1px solid var(--border);
-    position:relative;
-    z-index:5;
   }
   .payment-btns{
     display:flex;
