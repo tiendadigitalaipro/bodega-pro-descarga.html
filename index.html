@@ -435,6 +435,11 @@ canvas{max-width:100%!important}
   .grid-4{grid-template-columns:repeat(2,1fr)}
   .grid-3{grid-template-columns:repeat(2,1fr)}
 
+  /* Search bar en móvil: wrap para que los botones no se corten */
+  .search-bar{ flex-wrap:wrap; gap:6px; }
+  .search-bar .search-input{ flex:1 1 100%; }
+  .search-bar .btn{ flex:1 1 auto; min-width:70px; font-size:12px; }
+
   /* POS en móvil: columna única, carrito arriba fijo, productos abajo */
   .pos-layout{
     grid-template-columns:1fr;
@@ -953,6 +958,7 @@ body.has-banner { padding-top:38px; }
               <input type="text" class="search-input" placeholder="🔍 Buscar producto o código..." id="posSearch" oninput="renderPosProducts()">
               <button class="btn btn-outline btn-sm" id="btnQRPos" onclick="openQRScanner('pos')" title="Escanear código de barras">📷 QR</button>
               <button class="btn btn-outline btn-sm" onclick="abrirPesajeManual()" title="Agregar producto por peso/volumen">⚖️ Pesaje</button>
+              <button class="btn btn-outline btn-sm" onclick="_abrirVentaRapida()" title="Venta rápida — producto no registrado" style="color:#D4AF37;border-color:rgba(212,175,55,0.5)">⚡ Rápido</button>
               <button class="btn btn-outline btn-sm" onclick="openAddProduct()">+ Producto</button>
             </div>
             <div class="cat-filters" id="catFilters"></div>
@@ -984,7 +990,10 @@ body.has-banner { padding-top:38px; }
               <div id="noPayMethodMsg" style="text-align:center;color:var(--text2);font-size:12px;padding:6px 0 2px 0">
                 👆 Selecciona un método de pago
               </div>
-              <button id="btnCobrar" class="btn btn-neon btn-full btn-lg" onclick="procesarVenta()" style="margin-top:6px;display:block;font-size:17px;font-weight:900;padding:16px;">✅ COBRAR</button>
+              <div style="display:flex;gap:6px;margin-top:6px">
+                <button id="btnCobrar" class="btn btn-neon btn-full btn-lg" onclick="procesarVenta()" style="flex:1;font-size:17px;font-weight:900;padding:16px;">✅ COBRAR</button>
+                <button id="btnCobroRapido" class="btn btn-lg" onclick="pagoRapido()" title="Cobro Rápido — cobra sin seleccionar método" style="flex-shrink:0;padding:16px 14px;font-size:20px;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.4);color:#D4AF37;border-radius:10px;cursor:pointer;display:none">⚡</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2878,6 +2887,148 @@ function _confirmarPesaje(prodId) {
 window._abrirModalPesaje = _abrirModalPesaje;
 window._confirmarPesaje  = _confirmarPesaje;
 
+// ── VENTA RÁPIDA (producto no registrado en inventario) ──────
+function _abrirVentaRapida() {
+  var viejo = document.getElementById('_modalVentaRapida'); if (viejo) viejo.remove();
+  var tasa = STATE.tasa || 1;
+  var simb = STATE.simboloLocal || 'Bs';
+  var m = document.createElement('div');
+  m.id = '_modalVentaRapida';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML = '<div style="background:var(--card);border:2px solid rgba(212,175,55,0.6);border-radius:20px;padding:20px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+    +'<div><span style="font-size:22px;margin-right:8px">⚡</span><span style="font-weight:900;font-size:16px;color:#D4AF37">Venta Rápida</span></div>'
+    +'<button onclick="document.getElementById(\'_modalVentaRapida\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);line-height:1">✕</button>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--text2);margin-bottom:14px">Artículo que no está en inventario. Se agrega al carrito de inmediato.</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nombre del artículo</label>'
+    +'<input id="_vrNombre" type="text" placeholder="Ej: Jabón La Llave 200g" autocomplete="off" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;outline:none"></div>'
+    +'<div style="margin-bottom:6px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Precio en '+simb+'</label>'
+    +'<input id="_vrPrecio" type="number" placeholder="0.00" min="0.01" step="0.5" oninput="_vrActualizarBs()" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid rgba(212,175,55,0.5);background:var(--bg2);color:#D4AF37;font-size:22px;font-weight:700;font-family:var(--display);outline:none"></div>'
+    +'<div id="_vrBsPreview" style="text-align:center;font-size:13px;color:var(--neon);font-weight:700;min-height:22px;margin-bottom:12px"></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Cantidad</label>'
+    +'<input id="_vrCant" type="number" value="1" min="1" step="1" oninput="_vrActualizarBs()" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:16px;font-weight:700;font-family:var(--display);outline:none"></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nota (opcional)</label>'
+    +'<input id="_vrNota" type="text" placeholder="Ej: sin cambio, cliente regular..." style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;outline:none"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="document.getElementById(\'_modalVentaRapida\').remove()" style="flex:1;padding:13px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">Cancelar</button>'
+    +'<button onclick="_confirmarVentaRapida()" style="flex:2;padding:13px;border-radius:10px;border:none;background:#D4AF37;color:#000;font-weight:900;cursor:pointer;font-size:14px">⚡ Agregar al Carrito</button>'
+    +'</div></div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var f=document.getElementById('_vrNombre'); if(f) f.focus(); }, 80);
+}
+function _vrActualizarBs() {
+  var precioBs = parseFloat((document.getElementById('_vrPrecio')||{}).value) || 0;
+  var cant     = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
+  var tasa     = STATE.tasa || 1;
+  var prev     = document.getElementById('_vrBsPreview');
+  if (!prev) return;
+  if (precioBs > 0) {
+    var usd = precioBs / tasa;
+    var totalBs = precioBs * cant;
+    var totalUsd = usd * cant;
+    prev.innerHTML = '= <strong>$' + usd.toFixed(2) + '</strong> USD'
+      + (cant > 1 ? ' &nbsp;|&nbsp; Total: $' + totalUsd.toFixed(2) + ' / ' + (typeof fmtLocal==='function'?fmtLocal(totalBs):totalBs.toFixed(2)) : '');
+  } else { prev.textContent = ''; }
+}
+function _confirmarVentaRapida() {
+  var nombre   = ((document.getElementById('_vrNombre')||{}).value||'').trim();
+  var precioBs = parseFloat((document.getElementById('_vrPrecio')||{}).value) || 0;
+  var cant     = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
+  var nota     = ((document.getElementById('_vrNota')||{}).value||'').trim();
+  var tasa     = STATE.tasa || 1;
+  if (!nombre) { showToast('Escribe el nombre del artículo','warn'); return; }
+  if (precioBs <= 0) { showToast('Ingresa el precio','warn'); return; }
+  var precioUsd = parseFloat((precioBs / tasa).toFixed(4));
+  var subtotal  = parseFloat((precioUsd * cant).toFixed(2));
+  STATE.cart.push({ productoId: Date.now(), nombre: nombre+(cant>1?' x'+cant:'')+(nota?' · '+nota:''), emoji:'⚡', precio:precioUsd, qty:cant, subtotal:subtotal, esLibre:true });
+  document.getElementById('_modalVentaRapida').remove();
+  renderCart();
+  showToast('⚡ '+nombre+' — '+(typeof fmtLocal==='function'?fmtLocal(precioBs*cant):(precioBs*cant).toFixed(2))+' ($'+subtotal.toFixed(2)+')', 'success');
+  setTimeout(function() {
+    if (confirm('¿Guardar "'+nombre+'" en el inventario permanente?')) _guardarVentaRapidaEnInventario(nombre, precioUsd);
+  }, 300);
+}
+function _guardarVentaRapidaEnInventario(nombre, precio) {
+  var prods = DB.get('productos') || [];
+  prods.push({ id:Date.now(), nombre:nombre, emoji:'⚡', categoria:'Sin categoría', costo:parseFloat((precio*0.7).toFixed(3)), precio:precio, stock:0, stockMin:5, unidad:'und', codigo:'', foto:null });
+  DB.set('productos', prods);
+  showToast('✅ "'+nombre+'" guardado en inventario','success');
+  renderPosProducts();
+}
+
+// ── COBRO RÁPIDO (precio libre sin método de pago seleccionado) ──
+function pagoRapido() {
+  if (window._adminUnlocked) { _abrirPrecioLibre(); return; }
+  var viejo = document.getElementById('_modalAuthLibre'); if (viejo) viejo.remove();
+  var m = document.createElement('div');
+  m.id = '_modalAuthLibre';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.innerHTML = '<div style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:28px;width:100%;max-width:320px;text-align:center">'
+    +'<div style="font-size:32px;margin-bottom:10px">🔐</div>'
+    +'<div style="font-weight:800;font-size:15px;margin-bottom:4px">Precio Libre</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-bottom:16px">Para cobrar productos sin inventario</div>'
+    +'<input id="_authLibreInput" type="password" placeholder="Contraseña admin" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:15px;text-align:center;letter-spacing:3px;margin-bottom:8px;outline:none" onkeydown="if(event.key===\'Enter\') _verificarAuthLibre()">'
+    +'<div id="_authLibreErr" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:10px"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="document.getElementById(\'_modalAuthLibre\').remove()" style="flex:1;padding:11px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">Cancelar</button>'
+    +'<button onclick="_verificarAuthLibre()" style="flex:2;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer">Entrar →</button>'
+    +'</div></div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var f=document.getElementById('_authLibreInput'); if(f) f.focus(); }, 80);
+}
+function _verificarAuthLibre() {
+  var inp = document.getElementById('_authLibreInput');
+  var err = document.getElementById('_authLibreErr');
+  var pw  = inp ? inp.value.trim() : '';
+  if (['ZYNC2024admin','admin','zync','a2k2026'].indexOf(pw) < 0) {
+    if (err) err.textContent = '❌ Contraseña incorrecta';
+    if (inp) { inp.value=''; inp.focus(); }
+    return;
+  }
+  document.getElementById('_modalAuthLibre').remove();
+  window._adminUnlocked = true;
+  _abrirPrecioLibre();
+}
+function _abrirPrecioLibre() {
+  var viejo = document.getElementById('_modalPrecioLibre'); if (viejo) viejo.remove();
+  var m = document.createElement('div');
+  m.id = '_modalPrecioLibre';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.innerHTML = '<div style="background:var(--card);border:2px solid var(--warn);border-radius:20px;padding:24px;width:100%;max-width:360px">'
+    +'<div style="font-size:28px;text-align:center;margin-bottom:4px">⚡</div>'
+    +'<div style="font-weight:800;font-size:15px;text-align:center;margin-bottom:2px;color:var(--warn)">Precio Libre</div>'
+    +'<div style="font-size:11px;color:var(--text2);text-align:center;margin-bottom:16px">Producto no registrado en inventario</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nombre del producto</label>'
+    +'<input id="_plNombre" type="text" placeholder="Ej: Jabón La Llave 200g" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;outline:none"></div>'
+    +'<div style="margin-bottom:6px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Precio en $ (USD)</label>'
+    +'<input id="_plPrecio" type="number" step="0.01" min="0.01" placeholder="0.00" oninput="(function(){var v=parseFloat(document.getElementById(\'_plPrecio\').value)||0;var el=document.getElementById(\'_plBs\');if(el)el.textContent=v>0?(\'Bs \'+(v*(STATE.tasa||1)).toFixed(2)):\'\';})();" style="width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:2px solid var(--warn);background:var(--bg2);color:var(--text);font-size:22px;font-weight:700;text-align:center;font-family:var(--display);outline:none"></div>'
+    +'<div id="_plBs" style="text-align:center;font-size:14px;font-weight:700;color:var(--warn);min-height:22px;margin-bottom:16px"></div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="document.getElementById(\'_modalPrecioLibre\').remove()" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--bg3);color:var(--text2);font-weight:700;font-size:14px;cursor:pointer">Cancelar</button>'
+    +'<button onclick="_confirmarPrecioLibre()" style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--warn);color:#000;font-weight:800;font-size:14px;cursor:pointer">⚡ Agregar al Carrito</button>'
+    +'</div></div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var f=document.getElementById('_plNombre'); if(f) f.focus(); }, 80);
+}
+function _confirmarPrecioLibre() {
+  var nombre = (document.getElementById('_plNombre')||{}).value || '';
+  var precio = parseFloat((document.getElementById('_plPrecio')||{}).value) || 0;
+  if (!nombre.trim()) { showToast('Ingresa el nombre del producto','warn'); return; }
+  if (precio <= 0)     { showToast('Ingresa un precio válido','warn'); return; }
+  STATE.cart.push({ productoId:Date.now(), nombre:nombre.trim(), emoji:'⚡', precio:precio, qty:1, subtotal:precio, esLibre:true });
+  renderCart();
+  document.getElementById('_modalPrecioLibre').remove();
+  showToast('⚡ '+nombre.trim()+' → $'+precio.toFixed(2)+' | Bs '+(precio*(STATE.tasa||1)).toFixed(2), 'success');
+}
+window._abrirVentaRapida       = _abrirVentaRapida;
+window._vrActualizarBs         = _vrActualizarBs;
+window._confirmarVentaRapida   = _confirmarVentaRapida;
+window.pagoRapido              = pagoRapido;
+window._verificarAuthLibre     = _verificarAuthLibre;
+window._abrirPrecioLibre       = _abrirPrecioLibre;
+window._confirmarPrecioLibre   = _confirmarPrecioLibre;
+
 function renderCart() {
   const items = STATE.cart;
   const el = document.getElementById('cartItems');
@@ -3031,17 +3182,19 @@ function renderPaymentBtns() {
 
 function actualizarBtnCobrar() {
   var tieneCarrito = STATE.cart && STATE.cart.length > 0;
-  var msg = document.getElementById('noPayMethodMsg');
-  var btn = document.getElementById('btnCobrar');
+  var msg  = document.getElementById('noPayMethodMsg');
+  var btn  = document.getElementById('btnCobrar');
+  var btnR = document.getElementById('btnCobroRapido');
   if (msg) msg.style.display = (tieneCarrito && !STATE.payMethod) ? 'block' : 'none';
   if (btn) {
     if (STATE.payMethod && tieneCarrito) {
-      btn.style.cssText = 'display:block!important;width:100%;margin-top:4px';
+      btn.style.cssText = 'flex:1;display:block!important;font-size:17px;font-weight:900;padding:16px';
       btn.textContent = '✅ COBRAR — ' + STATE.payMethod;
     } else {
       btn.style.display = 'none';
     }
   }
+  if (btnR) btnR.style.display = tieneCarrito ? 'block' : 'none';
 }
 
 function selectPayMethodByIndex(i) {
