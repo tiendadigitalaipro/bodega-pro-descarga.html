@@ -457,19 +457,23 @@ canvas{max-width:100%!important}
     top:0;
     z-index:50;
     height:auto;
-    max-height:55vh;
     display:flex;
     flex-direction:column;
+    overflow:visible;
+    max-height:none;
   }
   .cart-items{
-    flex:1;
     overflow-y:auto;
-    max-height:160px;
+    max-height:140px;
+    flex-shrink:1;
   }
   .cart-footer{
     flex-shrink:0;
     padding:10px 14px;
     background:var(--card);
+    border-top:1px solid var(--border);
+    position:relative;
+    z-index:5;
   }
   .payment-btns{
     display:flex;
@@ -487,14 +491,15 @@ canvas{max-width:100%!important}
   }
   #btnCobrar{
     display:block !important;
-    width:100% !important;
+    flex:1 !important;
     font-size:16px !important;
     padding:14px !important;
-    margin-top:8px !important;
     border-radius:12px !important;
     font-weight:900 !important;
     position:relative !important;
     z-index:10 !important;
+    visibility:visible !important;
+    opacity:1 !important;
   }
   .products-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
   .cart-header{padding:10px 14px}
@@ -3181,6 +3186,7 @@ function renderPaymentBtns() {
 }
 
 function actualizarBtnCobrar() {
+  var isMobile     = window.innerWidth <= 768;
   var tieneCarrito = STATE.cart && STATE.cart.length > 0;
   var msg  = document.getElementById('noPayMethodMsg');
   var btn  = document.getElementById('btnCobrar');
@@ -3188,8 +3194,12 @@ function actualizarBtnCobrar() {
   if (msg) msg.style.display = (tieneCarrito && !STATE.payMethod) ? 'block' : 'none';
   if (btn) {
     if (STATE.payMethod && tieneCarrito) {
-      btn.style.cssText = 'flex:1;display:block!important;font-size:17px;font-weight:900;padding:16px';
+      btn.style.cssText = 'flex:1;font-size:17px;font-weight:900;padding:16px';
       btn.textContent = '✅ COBRAR — ' + STATE.payMethod;
+    } else if (isMobile) {
+      // En móvil: siempre visible, ajusta el texto según el estado
+      btn.style.cssText = 'flex:1;font-size:16px;font-weight:900;padding:14px';
+      btn.textContent = tieneCarrito ? '👆 Selecciona método de pago' : '✅ COBRAR';
     } else {
       btn.style.display = 'none';
     }
