@@ -85,7 +85,7 @@ input,select,textarea{font-family:var(--font)}
   display:flex;align-items:center;justify-content:space-between;padding:0 20px;
   flex-shrink:0;
 }
-.page-body{flex:1;min-height:0;overflow-y:auto;padding:20px;background:var(--bg)}
+.page-body{flex:1;overflow-y:auto;padding:20px;background:var(--bg)}
 
 /* ═══════════════════════════════════════════════
    SIDEBAR
@@ -248,7 +248,7 @@ tbody tr:hover td{background:rgba(124,58,237,0.04)}
 ═══════════════════════════════════════════════ */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);
-  z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;
+  z-index:9500;display:none;align-items:center;justify-content:center;padding:16px;
 }
 .modal-overlay.open{display:flex}
 .modal{
@@ -435,43 +435,45 @@ canvas{max-width:100%!important}
   .grid-4{grid-template-columns:repeat(2,1fr)}
   .grid-3{grid-template-columns:repeat(2,1fr)}
 
-  /* POS en móvil: carrito fijo abajo tipo bottom sheet, productos scrollean libremente */
+  /* Search bar en móvil: wrap para que los botones no se corten */
+  .search-bar{ flex-wrap:wrap; gap:6px; }
+  .search-bar .search-input{ flex:1 1 100%; }
+  .search-bar .btn{ flex:1 1 auto; min-width:70px; font-size:12px; }
+
+  /* POS en móvil: columna única, carrito arriba fijo, productos abajo */
   .pos-layout{
     grid-template-columns:1fr;
     height:auto;
     display:flex;
-    flex-direction:column;
-    gap:0;
+    flex-direction:column-reverse;
+    gap:12px;
   }
   .pos-products{
-    min-height:400px;
-    padding-bottom:58vh;
+    min-height:300px;
+    padding-bottom:16px;
   }
   .pos-cart{
-    position:fixed;
-    bottom:0;
-    left:0;
-    right:0;
-    z-index:100;
-    max-height:55vh;
+    position:sticky;
+    top:0;
+    z-index:50;
+    height:auto;
+    max-height:none;
+    overflow:visible !important;
     display:flex;
     flex-direction:column;
-    overflow:hidden;
-    background:var(--card);
-    border-top:2px solid var(--border);
-    border-radius:16px 16px 0 0;
-    box-shadow:0 -4px 24px rgba(0,0,0,0.4);
   }
   .cart-items{
-    flex:1;
-    min-height:0;
+    flex:0 0 auto !important;
+    min-height:0 !important;
+    max-height:130px;
     overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
+    padding:8px 12px;
   }
   .cart-footer{
-    flex-shrink:0;
+    flex-shrink:0 !important;
     padding:10px 14px;
     background:var(--card);
+    border-top:1px solid var(--border);
   }
   .payment-btns{
     display:flex;
@@ -489,14 +491,15 @@ canvas{max-width:100%!important}
   }
   #btnCobrar{
     display:block !important;
-    width:100% !important;
+    flex:1 !important;
     font-size:16px !important;
     padding:14px !important;
-    margin-top:8px !important;
     border-radius:12px !important;
     font-weight:900 !important;
     position:relative !important;
     z-index:10 !important;
+    visibility:visible !important;
+    opacity:1 !important;
   }
   .products-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
   .cart-header{padding:10px 14px}
@@ -505,6 +508,7 @@ canvas{max-width:100%!important}
 /* Extra pequeño (teléfonos chicos) */
 @media(max-width:400px){
   .pay-btn{ flex: 1 1 calc(50% - 5px); font-size:10px !important; }
+  .pos-cart{ max-height:60vh; }
 }
 
 /* ═══════════════════════════════════════════════
@@ -709,7 +713,7 @@ body.has-banner { padding-top:38px; }
   #page-configuracion .card[style*="border:2px solid var(--neon)"]>p{font-size:11px !important;margin-bottom:6px !important}
   #page-configuracion .card[style*="border:2px solid var(--neon)"] [style*="flex-wrap:wrap;gap:10px"]{gap:6px !important;margin-bottom:6px !important}
   /* POS cobrar siempre visible */
-  .payment-btns{max-height:120px !important;overflow-y:auto;margin-bottom:4px !important}
+  .payment-btns{max-height:48px !important;margin-bottom:3px !important}
   /* PIN inputs compactos */
   #pin-nuevo,#pin-confirmar{font-size:16px !important;letter-spacing:4px !important;padding:8px !important}
 }
@@ -784,6 +788,21 @@ body.has-banner { padding-top:38px; }
         <button class="btn btn-primary btn-full btn-lg mt-3" onclick="doLogin()">🚀 Activar y Entrar</button>
         <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px;">
           ¿Primera vez? Solicita tu código de activación a <strong style="color:var(--accent)">A2K Digital Studio</strong>
+        </p>
+        <!-- ══ ACCESO EMPLEADO ══ -->
+        <div id="empleadoLoginWrap" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div style="text-align:center;font-size:12px;color:var(--text2);margin-bottom:12px;font-weight:600">👷 Acceso para Empleados</div>
+          <div class="form-group">
+            <label class="form-label">Usuario Empleado</label>
+            <input type="text" id="emp-user" class="form-input" placeholder="cajero01" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contraseña</label>
+            <input type="password" id="emp-pass" class="form-input" placeholder="••••" onkeydown="if(event.key==='Enter') doLoginEmpleado()">
+          </div>
+          <button class="btn btn-outline btn-full" onclick="doLoginEmpleado()" style="border-color:var(--warn);color:var(--warn)">👷 Entrar como Empleado</button>
+        </div>
+        <p style="display:none" id="_emp_placeholder">
         </p>
         <div style="text-align:center;margin-top:10px">
           <button onclick="(function(e){e.preventDefault();e.stopPropagation();var m=document.getElementById('modalAdminPw');if(m){var i=document.getElementById('adminPwInput');var er=document.getElementById('adminPwError');if(i)i.value='';if(er)er.style.display='none';m.style.cssText='display:flex!important;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999999;align-items:center;justify-content:center';setTimeout(function(){if(i)i.focus();},100);}})(event)"
@@ -978,7 +997,7 @@ body.has-banner { padding-top:38px; }
               </div>
               <div style="display:flex;gap:6px;margin-top:6px">
                 <button id="btnCobrar" class="btn btn-neon btn-full btn-lg" onclick="procesarVenta()" style="flex:1;font-size:17px;font-weight:900;padding:16px;">✅ COBRAR</button>
-                <button id="btnCobroRapido" class="btn btn-lg" onclick="pagoRapido()" title="Cobro Rápido — cobra directamente sin seleccionar método" style="flex-shrink:0;padding:16px 14px;font-size:20px;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.4);color:#D4AF37;border-radius:10px;cursor:pointer;display:none">⚡</button>
+                <button id="btnCobroRapido" class="btn btn-lg" onclick="pagoRapido()" title="Cobro Rápido — cobra sin seleccionar método" style="flex-shrink:0;padding:16px 14px;font-size:20px;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.4);color:#D4AF37;border-radius:10px;cursor:pointer;display:none">⚡</button>
               </div>
             </div>
           </div>
@@ -1218,10 +1237,6 @@ body.has-banner { padding-top:38px; }
           <button class="btn btn-primary" onclick="openAddCliente()">+ Nuevo Cliente</button>
         </div>
         <div class="grid-3 mb-4" id="clienteStats"></div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-          <button id="btnVerTodos" class="btn btn-primary btn-sm" onclick="window._clientesVerTodos=true;renderClientes()">📋 Todos los clientes</button>
-          <button id="btnVerFiados" class="btn btn-outline btn-sm" onclick="window._clientesVerTodos=false;renderClientes()">📝 Solo con fiado activo</button>
-        </div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Cliente</th><th>Teléfono</th><th>Deuda Total</th><th>Última Venta</th><th>Estado</th><th>Acciones</th></tr></thead>
@@ -1569,6 +1584,55 @@ body.has-banner { padding-top:38px; }
         </div>
       </div>
 
+      <!-- ══ CLAVE DE DESBLOQUEO DEL DUEÑO ══ -->
+      <div class="card" style="margin-top:16px;border:1px solid var(--accent)">
+        <div class="card-title mb-2" style="color:var(--accent)">🔑 Clave de Desbloqueo del Dueño</div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+          Cuando un empleado usa el sistema y necesita hacer algo bloqueado, el sistema pedirá esta clave. Solo tú la conoces.
+        </p>
+        <div id="pin-dueno-status" style="font-size:12px;font-weight:700;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.04);margin-bottom:14px">
+          ⭕ Sin clave configurada
+        </div>
+        <div class="form-group">
+          <label class="form-label">Clave del Dueño (mín. 4 caracteres)</label>
+          <input type="password" id="pin-dueno-input-cfg" class="form-input" placeholder="••••••" maxlength="20" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirmar Clave</label>
+          <input type="password" id="pin-dueno-confirm-cfg" class="form-input" placeholder="••••••" maxlength="20" autocomplete="new-password">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="guardarPinDueno()">✅ Activar Clave</button>
+          <button class="btn btn-danger btn-sm" id="btn-borrar-pin-dueno" onclick="borrarPinDueno()" style="display:none">🗑️ Quitar Clave</button>
+        </div>
+      </div>
+
+      <!-- ══ GESTIÓN DE EMPLEADOS ══ -->
+      <div class="card" style="margin-top:16px;border:1px solid var(--border2)" id="card-empleados">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div class="card-title" style="margin:0">👥 Usuarios y Empleados</div>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalEmpleado(null)">+ Nuevo Empleado</button>
+        </div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+          Crea cuentas para tus empleados de caja. Ellos ingresan con su usuario y contraseña — sin necesidad del código de licencia.
+        </p>
+        <div id="empleados-lista" style="min-height:40px">
+          <div style="font-size:12px;color:var(--text2);text-align:center;padding:16px 0">Sin empleados registrados aún</div>
+        </div>
+      </div>
+
+      <!-- ══ BLOQUEO ANTI-EMPLEADO ══ -->
+      <div class="card" style="margin-top:16px;border:1px solid var(--warn)">
+        <div class="card-title mb-2" style="color:var(--warn)">🔒 Restricciones de Acceso Empleado</div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+          Cuando un empleado inicia sesión, el sistema bloquea automáticamente todo lo que puede afectar al dueño. Solo puede cobrar y ver.
+        </p>
+        <div style="background:var(--bg3);border-radius:10px;padding:12px;font-size:12px;line-height:1.9">
+          <div style="margin-bottom:6px">✅ <strong style="color:var(--success)">Permitido:</strong> Punto de Venta · Cobrar · Ver Inventario · Ver Historial · Devoluciones · Dashboard</div>
+          <div>🚫 <strong style="color:var(--danger)">Bloqueado:</strong> Editar/Agregar/Borrar productos · Abrir/Cerrar Caja · Reportes · Proveedores · Avances de Efectivo · Configuración · Agregar/Eliminar Clientes</div>
+        </div>
+      </div>
+
       <!-- ══ ZONA DE PELIGRO ══ -->
       <div class="card" style="border:2px solid #ef4444;margin-top:16px">
         <div class="card-title mb-2" style="color:#ef4444">⚠️ Zona de Peligro</div>
@@ -1646,21 +1710,6 @@ body.has-banner { padding-top:38px; }
           </div>
         </div>
       </div>
-      <!-- FOTO DEL PRODUCTO -->
-      <div class="form-group" style="margin-bottom:10px">
-        <label class="form-label">📷 Foto del Producto <span style="font-size:11px;color:var(--text2)">(opcional · máx 500KB)</span></label>
-        <div style="display:flex;gap:10px;align-items:center">
-          <div id="prod-foto-preview-wrap" style="width:72px;height:72px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="document.getElementById('prod-foto-input').click()">
-            <img id="prod-foto-preview" src="" style="width:100%;height:100%;object-fit:cover;display:none" alt="foto producto">
-            <span id="prod-foto-icon" style="font-size:28px">📷</span>
-          </div>
-          <div style="flex:1;display:flex;flex-direction:column;gap:6px">
-            <button type="button" onclick="document.getElementById('prod-foto-input').click()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text2);cursor:pointer;font-size:12px;text-align:left;width:100%">📁 Galería / Cámara</button>
-            <button type="button" id="prod-foto-clear" onclick="limpiarFoto()" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:6px 12px;color:var(--danger);cursor:pointer;font-size:12px;width:100%">🗑️ Quitar foto</button>
-          </div>
-          <input type="file" id="prod-foto-input" accept="image/*" capture="environment" style="display:none" onchange="cargarFotoProducto(this)">
-        </div>
-      </div>
       <div class="grid-2">
         <div class="form-group">
           <label class="form-label">Categoría</label>
@@ -1698,11 +1747,7 @@ body.has-banner { padding-top:38px; }
       </div>
       <!-- ══ CALCULADORA DE PRECIO POR BULTO ══ -->
       <div style="background:var(--bg2);border:1px solid var(--accent);border-radius:12px;padding:14px;margin-bottom:12px">
-        <div style="display:flex;gap:6px;margin-bottom:12px">
-          <button type="button" id="tab-bulto" onclick="switchCalcTab('bulto')" style="flex:1;background:var(--accent);color:#000;border:1px solid var(--accent);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:12px;font-weight:700;transition:all 0.2s">📦 Por Bulto</button>
-          <button type="button" id="tab-manual" onclick="switchCalcTab('manual')" style="flex:1;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:12px;font-weight:700;transition:all 0.2s">✏️ % Manual</button>
-        </div>
-        <div id="calc-tab-bulto">
+        <div style="color:var(--accent);font-weight:700;font-size:13px;margin-bottom:10px">📦 Calculadora de Precio por Bulto</div>
         <div class="grid-2">
           <div class="form-group" style="margin-bottom:8px">
             <label class="form-label">Costo del Bulto ($)</label>
@@ -1780,29 +1825,6 @@ body.has-banner { padding-top:38px; }
             ✅ Aplicar este precio al producto
           </button>
         </div>
-        </div><!-- /calc-tab-bulto -->
-        <!-- TAB: % MANUAL -->
-        <div id="calc-tab-manual" style="display:none">
-          <div class="grid-2" style="margin-bottom:10px">
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Costo Unitario ($)</label>
-              <input type="number" id="prod-costo-manual" class="form-input" step="0.001" placeholder="Ej: 1.200" oninput="calcDesdeManual()">
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">% Margen sobre PVP</label>
-              <div style="display:flex;gap:5px;flex-wrap:wrap">
-                <input type="number" id="prod-margen-manual" class="form-input" placeholder="Ej: 30" min="1" max="99" oninput="calcDesdeManual()" style="flex:1;min-width:70px">
-                <button type="button" onclick="setPctManual(15)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px">15%</button>
-                <button type="button" onclick="setPctManual(20)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px">20%</button>
-                <button type="button" onclick="setPctManual(30)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px">30%</button>
-                <button type="button" onclick="setPctManual(50)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px">50%</button>
-                <button type="button" onclick="setPctManual(70)" style="background:#444;color:#fff;border:none;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px">70%</button>
-              </div>
-            </div>
-          </div>
-          <div id="manual-resultado" style="display:none;background:var(--bg3);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px"></div>
-          <button type="button" onclick="aplicarDesdeManual()" style="margin-top:10px;width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;cursor:pointer;font-size:14px">✅ Aplicar precio calculado</button>
-        </div>
       </div>
 
       <!-- CAMPOS PRECIO MEJORADOS -->
@@ -1868,21 +1890,6 @@ body.has-banner { padding-top:38px; }
   </div>
 </div>
 
-<!-- MODAL: FIADO -->
-<div class="modal-overlay" id="modalFiado">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="modalFiadoTitle">Detalle de Fiado</span>
-      <button class="btn-close" onclick="closeModal('modalFiado')">✕</button>
-    </div>
-    <div class="modal-body" id="modalFiadoBody"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modalFiado')">Cancelar</button>
-      <button class="btn btn-neon" onclick="registrarPago()">✅ Registrar Pago</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL: CLIENTE -->
 <div class="modal-overlay" id="modalCliente">
   <div class="modal">
@@ -1944,13 +1951,13 @@ body.has-banner { padding-top:38px; }
       </div>
       <div class="form-group">
         <label class="form-label">Monto Recibido ($) <span style="color:var(--text3);font-size:11px">opcional — para calcular vuelto</span></label>
-        <input type="number" id="montoRecibido" class="form-input" step="0.01" placeholder="0.00">
-        <div id="vueltoInfo" style="display:none;margin-top:6px;padding:8px 12px;background:var(--bg2);border-radius:8px;font-size:13px;color:var(--neon)"></div>
+        <input type="number" id="montoRecibido" class="form-input" step="0.01" placeholder="0.00" oninput="calcVuelto()">
+        <div id="vueltoInfo" style="display:none;margin-top:8px;padding:10px;border-radius:8px;background:rgba(6,214,160,0.1);font-size:13px;font-weight:700"></div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalCobro')">Cancelar</button>
-      <button class="btn btn-neon" onclick="confirmarVenta()">✅ Confirmar Cobro</button>
+      <button class="btn btn-primary" onclick="confirmarVenta()">✅ Confirmar Cobro</button>
     </div>
   </div>
 </div>
@@ -2001,8 +2008,13 @@ function selPago(metodo) {
   // Actualizar texto del botón cobrar y resaltarlo
   var btn = document.getElementById('btnCobrar');
   var msg = document.getElementById('noPayMethodMsg');
+  if (btn) {
+    btn.textContent = '✅ COBRAR — ' + metodo;
+    btn.style.background = 'var(--neon)';
+    btn.style.color = '#000';
+    btn.style.fontWeight = '900';
+  }
   if (msg) msg.style.display = 'none';
-  actualizarBtnCobrar();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2422,9 +2434,8 @@ function doLogin() {
   const issuedLic = issuedLicenses.find(function(l){ return l.code === code && l.activo; });
 
   // Verificar firma matemática (cliente en otra PC)
-  const hasFirma     = verifyLicenseSignature(code);
-  const hasFirmaDemo = (typeof verifyDemoSignature==='function') && verifyDemoSignature(code);
-  if (!isMaster && !issuedLic && !hasFirma && !hasFirmaDemo) {
+  const hasFirma = verifyLicenseSignature(code);
+  if (!isMaster && !issuedLic && !hasFirma) {
     return showLoginAlert('❌ Código de activación inválido. Verifica e intenta de nuevo.', 'error');
   }
   // Verificar estado: bloqueada, pausada o vencida PRO
@@ -2828,9 +2839,9 @@ function abrirPesajeManual() {
   m.id = '_modalSelPeso';
   m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;';
   var listHtml = prods.length ? prods.map(function(p){
-    return '<button onclick="abrirPesajeManualProd('+p.id+')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text1);cursor:pointer;text-align:left;">'
+    return '<button onclick="abrirPesajeManualProd(\''+p.id+'\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text1);cursor:pointer;text-align:left;">'
       + '<span style="font-size:24px">'+(p.emoji||'⚖️')+'</span>'
-      + '<span style="flex:1"><strong>'+p.nombre+'</strong><br><small style="color:var(--text3)">$'+p.precio.toFixed(2)+' / '+p.unidad+' · stock: '+p.stock+' '+p.unidad+'</small></span>'
+      + '<span style="flex:1"><strong>'+p.nombre+'</strong><br><small style="color:var(--text3)">'+p.precio.toFixed(2)+' / '+p.unidad+' · stock: '+p.stock+' '+p.unidad+'</small></span>'
       + '</button>';
   }).join('') : '<p style="color:var(--text3);text-align:center;padding:20px;">No hay productos por peso/volumen con stock disponible.</p>';
   m.innerHTML = '<div style="background:var(--bg2);border-radius:12px;padding:20px;width:100%;max-width:420px;max-height:80vh;overflow-y:auto;">'
@@ -2844,8 +2855,9 @@ function abrirPesajeManual() {
 }
 function abrirPesajeManualProd(prodId) {
   var old = document.getElementById('_modalSelPeso'); if (old) old.remove();
-  var prod = (DB.get('productos')||[]).find(function(p){ return p.id === prodId; });
-  if (prod) setTimeout(function(){ _abrirModalPesaje(prod); }, 200);
+  var pid = Number(prodId);
+  var prod = (DB.get('productos')||[]).find(function(p){ return Number(p.id) === pid; });
+  if (prod) _abrirModalPesaje(prod);
 }
 
 function _abrirModalPesaje(prod) {
@@ -2860,9 +2872,9 @@ function _abrirModalPesaje(prod) {
     + '<div style="font-weight:800;font-size:16px;text-align:center;margin-bottom:4px">'+prod.nombre+'</div>'
     + '<div style="text-align:center;font-size:13px;color:var(--text2);margin-bottom:16px">$'+prod.precio.toFixed(2)+' por '+prod.unidad+'</div>'
     + '<div style="margin-bottom:14px">'
-    + '<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Cantidad en '+prod.unidad+(prod.unidad==='kg'?' &nbsp;<span style="color:var(--text3);font-weight:400">(ej: 200g → 0.200)</span>':prod.unidad==='lt'?' &nbsp;<span style="color:var(--text3);font-weight:400">(ej: 500ml → 0.500)</span>':'')+'</label>'
-    + '<input id="_pesajeCant" type="number" inputmode="decimal" step="0.001" min="0.001" max="'+prod.stock+'" value="'+valActual+'" placeholder="0.000"'
-    +   ' style="width:100%;padding:14px;border-radius:12px;border:2px solid var(--accent);background:var(--bg2);color:var(--text);font-size:24px;font-weight:700;text-align:center;font-family:var(--display);outline:none;box-sizing:border-box"'
+    + '<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Cantidad ('+prod.unidad+')</label>'
+    + '<input id="_pesajeCant" type="number" step="0.001" min="0.001" max="'+prod.stock+'" value="'+valActual+'" placeholder="0.000"'
+    +   ' style="width:100%;padding:14px;border-radius:12px;border:2px solid var(--accent);background:var(--bg2);color:var(--text);font-size:20px;font-weight:700;text-align:center;font-family:var(--display);outline:none;box-sizing:border-box"'
     +   ' oninput="var t=parseFloat(this.value)||0;var p=document.getElementById(\'_pesajePrev\');if(p)p.textContent=t>0?\'= $\'+(t*'+prod.precio+').toFixed(2):\'\'">'
     + '</div>'
     + '<div id="_pesajePrev" style="text-align:center;font-size:18px;font-weight:800;color:var(--neon);min-height:26px;margin-bottom:16px">'+(valActual?'= $'+(valActual*prod.precio).toFixed(2):'')+'</div>'
@@ -2871,7 +2883,7 @@ function _abrirModalPesaje(prod) {
     + '<button onclick="_confirmarPesaje('+prod.id+')" style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:14px;cursor:pointer">⚖️ Agregar al Carrito</button>'
     + '</div></div>';
   document.body.appendChild(m);
-  setTimeout(function(){ var f=document.getElementById('_pesajeCant'); if(f){f.focus();f.select();} }, 300);
+  setTimeout(function(){ var f=document.getElementById('_pesajeCant'); if(f){f.focus();f.select();} }, 80);
 }
 
 function _confirmarPesaje(prodId) {
@@ -2891,7 +2903,7 @@ function _confirmarPesaje(prodId) {
 window._abrirModalPesaje = _abrirModalPesaje;
 window._confirmarPesaje  = _confirmarPesaje;
 
-// ── VENTA RÁPIDA (artículo no registrado en inventario) ──
+// ── VENTA RÁPIDA (producto no registrado en inventario) ──────
 function _abrirVentaRapida() {
   var viejo = document.getElementById('_modalVentaRapida'); if (viejo) viejo.remove();
   var tasa = STATE.tasa || 1;
@@ -2905,118 +2917,133 @@ function _abrirVentaRapida() {
     +'<button onclick="document.getElementById(\'_modalVentaRapida\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);line-height:1">✕</button>'
     +'</div>'
     +'<div style="font-size:11px;color:var(--text2);margin-bottom:14px">Artículo que no está en inventario. Se agrega al carrito de inmediato.</div>'
-    /* NOMBRE */
-    +'<div style="margin-bottom:12px">'
-    +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nombre del artículo</label>'
-    +'<input id="_vrNombre" type="text" placeholder="Ej: Jabón La Llave 200g" autocomplete="off" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;outline:none">'
-    +'</div>'
-    /* PRECIO DUAL USD + Bs */
-    +'<div style="margin-bottom:6px">'
-    +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Precio <span style="color:var(--danger)">*</span> — ingresa en la moneda que sabes:</label>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-    +'<div>'
-    +'<label style="font-size:11px;color:#4ade80;font-weight:700;display:block;margin-bottom:4px">💵 USD</label>'
-    +'<input id="_vrPrecioUSD" type="number" min="0.01" step="0.01" placeholder="0.00"'
-    +' oninput="(function(){var v=parseFloat(document.getElementById(\'_vrPrecioUSD\').value);var t=STATE.tasa||1;var bs=document.getElementById(\'_vrPrecioBS\');if(!isNaN(v)&&v>0){bs.value=(v*t).toFixed(2);}else{bs.value=\'\';}  _vrActualizarBs();})();"'
-    +' style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:2px solid #4ade80;background:var(--bg2);color:var(--text);font-size:16px;font-weight:700;font-family:var(--display);outline:none">'
-    +'</div>'
-    +'<div>'
-    +'<label style="font-size:11px;color:#D4AF37;font-weight:700;display:block;margin-bottom:4px">🇻🇪 Bs</label>'
-    +'<input id="_vrPrecioBS" type="number" min="0.01" step="0.5" placeholder="0.00"'
-    +' oninput="(function(){var v=parseFloat(document.getElementById(\'_vrPrecioBS\').value);var t=STATE.tasa||1;var usd=document.getElementById(\'_vrPrecioUSD\');if(!isNaN(v)&&v>0){usd.value=(v/t).toFixed(4);}else{usd.value=\'\';}  _vrActualizarBs();})();"'
-    +' style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:2px solid #D4AF37;background:var(--bg2);color:#D4AF37;font-size:16px;font-weight:700;font-family:var(--display);outline:none">'
-    +'</div>'
-    +'</div>'
-    +'</div>'
-    /* PREVIEW TOTAL */
-    +'<div id="_vrBsPreview" style="text-align:center;font-size:12px;color:var(--neon);font-weight:700;min-height:20px;margin-bottom:4px"></div>'
-    /* CANTIDAD */
-    +'<div style="margin-bottom:12px">'
-    +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Cantidad</label>'
-    +'<input id="_vrCant" type="number" value="1" min="1" step="1" oninput="_vrActualizarBs()" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:16px;font-weight:700;font-family:var(--display);outline:none">'
-    +'</div>'
-    /* NOTA */
-    +'<div style="margin-bottom:16px">'
-    +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nota (opcional)</label>'
-    +'<input id="_vrNota" type="text" placeholder="Ej: sin cambio, cliente regular..." style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;outline:none">'
-    +'</div>'
-    /* BOTONES */
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nombre del artículo</label>'
+    +'<input id="_vrNombre" type="text" placeholder="Ej: Jabón La Llave 200g" autocomplete="off" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;outline:none"></div>'
+    +'<div style="margin-bottom:6px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Precio en '+simb+'</label>'
+    +'<input id="_vrPrecio" type="number" placeholder="0.00" min="0.01" step="0.5" oninput="_vrActualizarBs()" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid rgba(212,175,55,0.5);background:var(--bg2);color:#D4AF37;font-size:22px;font-weight:700;font-family:var(--display);outline:none"></div>'
+    +'<div id="_vrBsPreview" style="text-align:center;font-size:13px;color:var(--neon);font-weight:700;min-height:22px;margin-bottom:12px"></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Cantidad</label>'
+    +'<input id="_vrCant" type="number" value="1" min="1" step="1" oninput="_vrActualizarBs()" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:16px;font-weight:700;font-family:var(--display);outline:none"></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nota (opcional)</label>'
+    +'<input id="_vrNota" type="text" placeholder="Ej: sin cambio, cliente regular..." style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;outline:none"></div>'
     +'<div style="display:flex;gap:8px">'
     +'<button onclick="document.getElementById(\'_modalVentaRapida\').remove()" style="flex:1;padding:13px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">Cancelar</button>'
     +'<button onclick="_confirmarVentaRapida()" style="flex:2;padding:13px;border-radius:10px;border:none;background:#D4AF37;color:#000;font-weight:900;cursor:pointer;font-size:14px">⚡ Agregar al Carrito</button>'
-    +'</div>'
-    +'</div>';
+    +'</div></div>';
   document.body.appendChild(m);
   setTimeout(function(){ var f=document.getElementById('_vrNombre'); if(f) f.focus(); }, 80);
 }
 function _vrActualizarBs() {
-  var usd  = parseFloat((document.getElementById('_vrPrecioUSD')||{}).value) || 0;
-  var bs   = parseFloat((document.getElementById('_vrPrecioBS')||{}).value) || 0;
-  var cant = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
-  var tasa = STATE.tasa || 1;
-  var prev = document.getElementById('_vrBsPreview');
+  var precioBs = parseFloat((document.getElementById('_vrPrecio')||{}).value) || 0;
+  var cant     = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
+  var tasa     = STATE.tasa || 1;
+  var prev     = document.getElementById('_vrBsPreview');
   if (!prev) return;
-  var precioUsd = usd > 0 ? usd : (bs > 0 ? bs / tasa : 0);
-  var precioBs  = bs  > 0 ? bs  : (usd > 0 ? usd * tasa : 0);
-  if (precioUsd > 0 && cant > 1) {
-    prev.innerHTML = 'Total: <strong>$' + (precioUsd * cant).toFixed(2) + '</strong> · Bs ' + fmtLocal(precioBs * cant);
-  } else {
-    prev.textContent = '';
-  }
+  if (precioBs > 0) {
+    var usd = precioBs / tasa;
+    var totalBs = precioBs * cant;
+    var totalUsd = usd * cant;
+    prev.innerHTML = '= <strong>$' + usd.toFixed(2) + '</strong> USD'
+      + (cant > 1 ? ' &nbsp;|&nbsp; Total: $' + totalUsd.toFixed(2) + ' / ' + (typeof fmtLocal==='function'?fmtLocal(totalBs):totalBs.toFixed(2)) : '');
+  } else { prev.textContent = ''; }
 }
 function _confirmarVentaRapida() {
   var nombre   = ((document.getElementById('_vrNombre')||{}).value||'').trim();
-  var usd      = parseFloat((document.getElementById('_vrPrecioUSD')||{}).value) || 0;
-  var bs       = parseFloat((document.getElementById('_vrPrecioBS')||{}).value) || 0;
+  var precioBs = parseFloat((document.getElementById('_vrPrecio')||{}).value) || 0;
   var cant     = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
   var nota     = ((document.getElementById('_vrNota')||{}).value||'').trim();
   var tasa     = STATE.tasa || 1;
   if (!nombre) { showToast('Escribe el nombre del artículo','warn'); return; }
-  if (usd <= 0 && bs <= 0) { showToast('Ingresa el precio en $ o en Bs','warn'); return; }
-  var precioUsd = usd > 0 ? parseFloat(usd.toFixed(4)) : parseFloat((bs / tasa).toFixed(4));
-  var precioBs  = bs  > 0 ? bs : parseFloat((usd * tasa).toFixed(2));
+  if (precioBs <= 0) { showToast('Ingresa el precio','warn'); return; }
+  var precioUsd = parseFloat((precioBs / tasa).toFixed(4));
   var subtotal  = parseFloat((precioUsd * cant).toFixed(2));
-  STATE.cart.push({
-    productoId: Date.now(),
-    nombre: nombre + (cant > 1 ? ' x'+cant : '') + (nota ? ' · '+nota : ''),
-    emoji: '⚡',
-    precio: precioUsd,
-    qty: cant,
-    subtotal: subtotal,
-    esLibre: true,
-    nota: nota
-  });
+  STATE.cart.push({ productoId: Date.now(), nombre: nombre+(cant>1?' x'+cant:'')+(nota?' · '+nota:''), emoji:'⚡', precio:precioUsd, qty:cant, subtotal:subtotal, esLibre:true });
   document.getElementById('_modalVentaRapida').remove();
   renderCart();
-  showToast('⚡ '+nombre+' — '+fmtLocal(precioBs*cant)+' ($'+subtotal.toFixed(2)+')', 'success');
+  showToast('⚡ '+nombre+' — '+(typeof fmtLocal==='function'?fmtLocal(precioBs*cant):(precioBs*cant).toFixed(2))+' ($'+subtotal.toFixed(2)+')', 'success');
   setTimeout(function() {
-    var confirmed = confirm('¿Guardar "'+nombre+'" en el inventario permanente?\n\nPrecio: '+fmtLocal(precioBs)+' = $'+precioUsd.toFixed(2)+'\n\nSí = queda registrado para futuras ventas.');
-    if (confirmed) { _guardarVentaRapidaEnInventario(nombre, precioUsd); }
+    if (confirm('¿Guardar "'+nombre+'" en el inventario permanente?')) _guardarVentaRapidaEnInventario(nombre, precioUsd);
   }, 300);
 }
 function _guardarVentaRapidaEnInventario(nombre, precio) {
   var prods = DB.get('productos') || [];
-  var nuevo = {
-    id: Date.now(),
-    nombre: nombre,
-    emoji: '⚡',
-    categoria: 'Sin categoría',
-    costo: parseFloat((precio * 0.7).toFixed(3)),
-    precio: precio,
-    stock: 0,
-    stockMin: 5,
-    unidad: 'und',
-    codigo: '',
-    foto: null,
-  };
-  prods.push(nuevo);
+  prods.push({ id:Date.now(), nombre:nombre, emoji:'⚡', categoria:'Sin categoría', costo:parseFloat((precio*0.7).toFixed(3)), precio:precio, stock:0, stockMin:5, unidad:'und', codigo:'', foto:null });
   DB.set('productos', prods);
-  showToast('✅ "'+nombre+'" guardado en inventario (stock: 0, ajusta cuando llegue mercancía)', 'success');
+  showToast('✅ "'+nombre+'" guardado en inventario','success');
   renderPosProducts();
 }
-window._abrirVentaRapida = _abrirVentaRapida;
-window._vrActualizarBs   = _vrActualizarBs;
-window._confirmarVentaRapida = _confirmarVentaRapida;
+
+// ── COBRO RÁPIDO (precio libre sin método de pago seleccionado) ──
+function pagoRapido() {
+  if (window._adminUnlocked) { _abrirPrecioLibre(); return; }
+  var viejo = document.getElementById('_modalAuthLibre'); if (viejo) viejo.remove();
+  var m = document.createElement('div');
+  m.id = '_modalAuthLibre';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.innerHTML = '<div style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:28px;width:100%;max-width:320px;text-align:center">'
+    +'<div style="font-size:32px;margin-bottom:10px">🔐</div>'
+    +'<div style="font-weight:800;font-size:15px;margin-bottom:4px">Precio Libre</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-bottom:16px">Para cobrar productos sin inventario</div>'
+    +'<input id="_authLibreInput" type="password" placeholder="Contraseña admin" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:15px;text-align:center;letter-spacing:3px;margin-bottom:8px;outline:none" onkeydown="if(event.key===\'Enter\') _verificarAuthLibre()">'
+    +'<div id="_authLibreErr" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:10px"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="document.getElementById(\'_modalAuthLibre\').remove()" style="flex:1;padding:11px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">Cancelar</button>'
+    +'<button onclick="_verificarAuthLibre()" style="flex:2;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer">Entrar →</button>'
+    +'</div></div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var f=document.getElementById('_authLibreInput'); if(f) f.focus(); }, 80);
+}
+function _verificarAuthLibre() {
+  var inp = document.getElementById('_authLibreInput');
+  var err = document.getElementById('_authLibreErr');
+  var pw  = inp ? inp.value.trim() : '';
+  if (['ZYNC2024admin','admin','zync','a2k2026'].indexOf(pw) < 0) {
+    if (err) err.textContent = '❌ Contraseña incorrecta';
+    if (inp) { inp.value=''; inp.focus(); }
+    return;
+  }
+  document.getElementById('_modalAuthLibre').remove();
+  window._adminUnlocked = true;
+  _abrirPrecioLibre();
+}
+function _abrirPrecioLibre() {
+  var viejo = document.getElementById('_modalPrecioLibre'); if (viejo) viejo.remove();
+  var m = document.createElement('div');
+  m.id = '_modalPrecioLibre';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.innerHTML = '<div style="background:var(--card);border:2px solid var(--warn);border-radius:20px;padding:24px;width:100%;max-width:360px">'
+    +'<div style="font-size:28px;text-align:center;margin-bottom:4px">⚡</div>'
+    +'<div style="font-weight:800;font-size:15px;text-align:center;margin-bottom:2px;color:var(--warn)">Precio Libre</div>'
+    +'<div style="font-size:11px;color:var(--text2);text-align:center;margin-bottom:16px">Producto no registrado en inventario</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nombre del producto</label>'
+    +'<input id="_plNombre" type="text" placeholder="Ej: Jabón La Llave 200g" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;outline:none"></div>'
+    +'<div style="margin-bottom:6px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Precio en $ (USD)</label>'
+    +'<input id="_plPrecio" type="number" step="0.01" min="0.01" placeholder="0.00" oninput="(function(){var v=parseFloat(document.getElementById(\'_plPrecio\').value)||0;var el=document.getElementById(\'_plBs\');if(el)el.textContent=v>0?(\'Bs \'+(v*(STATE.tasa||1)).toFixed(2)):\'\';})();" style="width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:2px solid var(--warn);background:var(--bg2);color:var(--text);font-size:22px;font-weight:700;text-align:center;font-family:var(--display);outline:none"></div>'
+    +'<div id="_plBs" style="text-align:center;font-size:14px;font-weight:700;color:var(--warn);min-height:22px;margin-bottom:16px"></div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="document.getElementById(\'_modalPrecioLibre\').remove()" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--bg3);color:var(--text2);font-weight:700;font-size:14px;cursor:pointer">Cancelar</button>'
+    +'<button onclick="_confirmarPrecioLibre()" style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--warn);color:#000;font-weight:800;font-size:14px;cursor:pointer">⚡ Agregar al Carrito</button>'
+    +'</div></div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var f=document.getElementById('_plNombre'); if(f) f.focus(); }, 80);
+}
+function _confirmarPrecioLibre() {
+  var nombre = (document.getElementById('_plNombre')||{}).value || '';
+  var precio = parseFloat((document.getElementById('_plPrecio')||{}).value) || 0;
+  if (!nombre.trim()) { showToast('Ingresa el nombre del producto','warn'); return; }
+  if (precio <= 0)     { showToast('Ingresa un precio válido','warn'); return; }
+  STATE.cart.push({ productoId:Date.now(), nombre:nombre.trim(), emoji:'⚡', precio:precio, qty:1, subtotal:precio, esLibre:true });
+  renderCart();
+  document.getElementById('_modalPrecioLibre').remove();
+  showToast('⚡ '+nombre.trim()+' → $'+precio.toFixed(2)+' | Bs '+(precio*(STATE.tasa||1)).toFixed(2), 'success');
+}
+window._abrirVentaRapida       = _abrirVentaRapida;
+window._vrActualizarBs         = _vrActualizarBs;
+window._confirmarVentaRapida   = _confirmarVentaRapida;
+window.pagoRapido              = pagoRapido;
+window._verificarAuthLibre     = _verificarAuthLibre;
+window._abrirPrecioLibre       = _abrirPrecioLibre;
+window._confirmarPrecioLibre   = _confirmarPrecioLibre;
 
 function renderCart() {
   const items = STATE.cart;
@@ -3028,7 +3055,6 @@ function renderCart() {
     stext('cartTotal', '$0.00');
     stext('cartTotalBs', fmtLocal(0));
     sstyle('vueltoInfo','display','none');
-    actualizarBtnCobrar();
     return;
   }
 
@@ -3054,7 +3080,16 @@ function renderCart() {
   stext('cartTotalBs', fmtLocal(total * STATE.tasa) + ' · Tasa ' + STATE.tasa);
   renderPaymentBtns();
   calcVuelto();
-  actualizarBtnCobrar();
+  // Mostrar/ocultar botón cobrar según si hay método seleccionado
+  var btnCobrar = document.getElementById('btnCobrar');
+  if (btnCobrar) {
+    if (STATE.payMethod) {
+      btnCobrar.style.display = 'block';
+      btnCobrar.textContent = '✅ Cobrar — ' + STATE.payMethod;
+    } else {
+      btnCobrar.style.display = 'none';
+    }
+  }
 }
 
 function changeQty(prodId, delta) {
@@ -3162,94 +3197,26 @@ function renderPaymentBtns() {
 }
 
 function actualizarBtnCobrar() {
+  var isMobile     = window.innerWidth <= 768;
   var tieneCarrito = STATE.cart && STATE.cart.length > 0;
-  var msg = document.getElementById('noPayMethodMsg');
-  var btn = document.getElementById('btnCobrar');
+  var msg  = document.getElementById('noPayMethodMsg');
+  var btn  = document.getElementById('btnCobrar');
   var btnR = document.getElementById('btnCobroRapido');
   if (msg) msg.style.display = (tieneCarrito && !STATE.payMethod) ? 'block' : 'none';
   if (btn) {
     if (STATE.payMethod && tieneCarrito) {
-      btn.style.cssText = 'display:block!important;flex:1;font-size:17px;font-weight:900;padding:16px';
+      btn.style.cssText = 'flex:1;font-size:17px;font-weight:900;padding:16px';
       btn.textContent = '✅ COBRAR — ' + STATE.payMethod;
+    } else if (isMobile) {
+      // En móvil: siempre visible, ajusta el texto según el estado
+      btn.style.cssText = 'flex:1;font-size:16px;font-weight:900;padding:14px';
+      btn.textContent = tieneCarrito ? '👆 Selecciona método de pago' : '✅ COBRAR';
     } else {
       btn.style.display = 'none';
     }
   }
   if (btnR) btnR.style.display = tieneCarrito ? 'block' : 'none';
 }
-
-function pagoRapido() {
-  if (window._adminUnlocked) { _abrirPrecioLibre(); return; }
-  var viejo = document.getElementById('_modalAuthLibre'); if (viejo) viejo.remove();
-  var m = document.createElement('div');
-  m.id = '_modalAuthLibre';
-  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
-  m.innerHTML = '<div style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:28px;width:100%;max-width:320px;text-align:center">'
-    + '<div style="font-size:32px;margin-bottom:10px">🔐</div>'
-    + '<div style="font-weight:800;font-size:15px;margin-bottom:4px">Precio Libre</div>'
-    + '<div style="font-size:12px;color:var(--text2);margin-bottom:16px">Para agregar productos sin inventario</div>'
-    + '<input id="_authLibreInput" type="password" placeholder="Contraseña admin" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:15px;text-align:center;letter-spacing:3px;margin-bottom:8px;outline:none" onkeydown="if(event.key===\'Enter\') _verificarAuthLibre()">'
-    + '<div id="_authLibreErr" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:10px"></div>'
-    + '<div style="display:flex;gap:8px">'
-    + '<button onclick="document.getElementById(\'_modalAuthLibre\').remove()" style="flex:1;padding:11px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">Cancelar</button>'
-    + '<button onclick="_verificarAuthLibre()" style="flex:2;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer">Entrar →</button>'
-    + '</div></div>';
-  document.body.appendChild(m);
-  setTimeout(function(){ var f=document.getElementById('_authLibreInput'); if(f) f.focus(); }, 80);
-}
-
-function _verificarAuthLibre() {
-  var inp = document.getElementById('_authLibreInput');
-  var err = document.getElementById('_authLibreErr');
-  var pw = inp ? inp.value.trim() : '';
-  if (['ZYNC2024admin','admin','zync','a2k2026'].indexOf(pw) < 0) {
-    if (err) err.textContent = '❌ Contraseña incorrecta';
-    if (inp) { inp.value=''; inp.focus(); }
-    return;
-  }
-  document.getElementById('_modalAuthLibre').remove();
-  window._adminUnlocked = true;
-  _abrirPrecioLibre();
-}
-window._verificarAuthLibre = _verificarAuthLibre;
-
-function _abrirPrecioLibre() {
-  var viejo = document.getElementById('_modalPrecioLibre'); if (viejo) viejo.remove();
-  var m = document.createElement('div');
-  m.id = '_modalPrecioLibre';
-  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
-  m.innerHTML = '<div style="background:var(--card);border:2px solid var(--warn);border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">'
-    + '<div style="font-size:28px;text-align:center;margin-bottom:4px">⚡</div>'
-    + '<div style="font-weight:800;font-size:15px;text-align:center;margin-bottom:2px;color:var(--warn)">Precio Libre</div>'
-    + '<div style="font-size:11px;color:var(--text2);text-align:center;margin-bottom:16px">Producto no registrado en inventario</div>'
-    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nombre del producto</label>'
-    + '<input id="_plNombre" type="text" placeholder="Ej: Jabón La Llave 200g" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;outline:none"></div>'
-    + '<div style="margin-bottom:6px"><label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Precio en $ (USD)</label>'
-    + '<input id="_plPrecio" type="number" step="0.01" min="0.01" placeholder="0.00"'
-    + ' oninput="(function(){var v=parseFloat(document.getElementById(\'_plPrecio\').value)||0;var el=document.getElementById(\'_plBs\');if(el)el.textContent=v>0?(\'Bs \'+(v*(STATE.tasa||1)).toFixed(2)):\'\';})();"'
-    + ' style="width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:2px solid var(--warn);background:var(--bg2);color:var(--text);font-size:22px;font-weight:700;text-align:center;font-family:var(--display);outline:none"></div>'
-    + '<div id="_plBs" style="text-align:center;font-size:14px;font-weight:700;color:var(--warn);min-height:22px;margin-bottom:16px"></div>'
-    + '<div style="display:flex;gap:10px">'
-    + '<button onclick="document.getElementById(\'_modalPrecioLibre\').remove()" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--bg3);color:var(--text2);font-weight:700;font-size:14px;cursor:pointer">Cancelar</button>'
-    + '<button onclick="_confirmarPrecioLibre()" style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--warn);color:#000;font-weight:800;font-size:14px;cursor:pointer">⚡ Agregar al Carrito</button>'
-    + '</div></div>';
-  document.body.appendChild(m);
-  setTimeout(function(){ var f=document.getElementById('_plNombre'); if(f) f.focus(); }, 80);
-}
-window._abrirPrecioLibre = _abrirPrecioLibre;
-
-function _confirmarPrecioLibre() {
-  var nombre = (document.getElementById('_plNombre')||{}).value || '';
-  var precio = parseFloat((document.getElementById('_plPrecio')||{}).value) || 0;
-  if (!nombre.trim()) { showToast('Ingresa el nombre del producto','warn'); return; }
-  if (precio <= 0) { showToast('Ingresa un precio válido','warn'); return; }
-  var id = Date.now();
-  STATE.cart.push({ productoId: id, nombre: nombre.trim(), emoji: '⚡', precio: precio, qty: 1, subtotal: precio, esLibre: true });
-  renderCart();
-  document.getElementById('_modalPrecioLibre').remove();
-  showToast('⚡ ' + nombre.trim() + ' → $' + precio.toFixed(2) + ' | Bs ' + (precio*(STATE.tasa||1)).toFixed(2), 'success');
-}
-window._confirmarPrecioLibre = _confirmarPrecioLibre;
 
 function selectPayMethodByIndex(i) {
   var methods = window._PAY_METHODS_ACTIVE;
@@ -3597,10 +3564,6 @@ function openAddProduct(id) {
     document.getElementById('prod-stock').value = p.stock;
     document.getElementById('prod-stockMin').value = p.stockMin;
     document.getElementById('prod-unidad').value = p.unidad;
-    window._prodFotoBase64 = p.foto || null;
-    var _imgP = document.getElementById('prod-foto-preview'), _iconP = document.getElementById('prod-foto-icon'), _clearP = document.getElementById('prod-foto-clear');
-    if (p.foto) { if (_imgP) { _imgP.src = p.foto; _imgP.style.display = 'block'; } if (_iconP) _iconP.style.display = 'none'; if (_clearP) _clearP.style.display = 'block'; }
-    else { if (_imgP) { _imgP.src = ''; _imgP.style.display = 'none'; } if (_iconP) _iconP.style.display = 'block'; if (_clearP) _clearP.style.display = 'none'; }
   } else {
     ['prod-id','prod-nombre','prod-emoji','prod-codigo','prod-costo','prod-precio','prod-stock','prod-stockMin','prod-costo-bulto','prod-unidades-bulto','prod-cant-bultos','prod-ganancia-pct','calc-total-unidades'].forEach(function(fid){
       var el = document.getElementById(fid); if(el) el.value = '';
@@ -3610,9 +3573,6 @@ function openAddProduct(id) {
     document.getElementById('prod-unidad').value = 'und';
     var res = document.getElementById('calc-resultado'); if(res) res.style.display='none';
     var iva = document.getElementById('prod-iva'); if(iva) iva.checked = false;
-    window._prodFotoBase64 = null;
-    var _imgN = document.getElementById('prod-foto-preview'), _iconN = document.getElementById('prod-foto-icon'), _clearN = document.getElementById('prod-foto-clear');
-    if (_imgN) { _imgN.src = ''; _imgN.style.display = 'none'; } if (_iconN) _iconN.style.display = 'block'; if (_clearN) _clearN.style.display = 'none';
     // Auto-emoji para Bebidas al abrir
     var emojiEl = document.getElementById('prod-emoji');
     if (emojiEl && !emojiEl.value.trim()) emojiEl.value = CAT_ICONS['Bebidas'] || '🥤';
@@ -3671,59 +3631,16 @@ function calcDesdeManual() {
   var costo  = elCM  ? (parseFloat(elCM.value)  || 0) : 0;
   var margen = elMM  ? (parseFloat(elMM.value)  || 0) : 0;
   if (costo <= 0 || margen <= 0 || margen >= 100) return;
+  // Formula correcta: PVP = costo / (1 - margen/100)
   var pvp = costo / (1 - (margen / 100));
   var gananciaUnit = pvp - costo;
-  var elRes = document.getElementById('manual-resultado');
-  if (elRes) {
-    elRes.style.display = 'block';
-    elRes.innerHTML = 'Costo: <strong style="color:var(--text2)">$' + costo.toFixed(3) + '</strong>' +
-      ' → PVP: <strong style="color:var(--neon)">$' + pvp.toFixed(2) + '</strong>' +
-      ' | Ganancia: <strong style="color:var(--warn)">$' + gananciaUnit.toFixed(3) + '</strong> por unidad';
-  }
+  // Rellenar campos principales
   var elCosto  = document.getElementById('prod-costo');
   var elPrecio = document.getElementById('prod-precio');
   if (elCosto)  elCosto.value  = costo.toFixed(3);
   if (elPrecio) elPrecio.value = pvp.toFixed(2);
   calcMargenDesdePrecio();
 }
-
-function aplicarDesdeManual() {
-  calcDesdeManual();
-  var pvpEl = document.getElementById('prod-precio');
-  if (pvpEl && pvpEl.value) showToast('✅ Precio $' + parseFloat(pvpEl.value).toFixed(2) + ' aplicado al producto', 'success');
-}
-window.aplicarDesdeManual = aplicarDesdeManual;
-
-function cargarFotoProducto(input) {
-  var file = input.files[0];
-  if (!file) return;
-  if (file.size > 500000) { showToast('Foto muy grande. Máx 500KB.', 'warn'); input.value = ''; return; }
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    window._prodFotoBase64 = e.target.result;
-    var img = document.getElementById('prod-foto-preview');
-    var icon = document.getElementById('prod-foto-icon');
-    var clr = document.getElementById('prod-foto-clear');
-    if (img) { img.src = e.target.result; img.style.display = 'block'; }
-    if (icon) icon.style.display = 'none';
-    if (clr) clr.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
-}
-window.cargarFotoProducto = cargarFotoProducto;
-
-function limpiarFoto() {
-  window._prodFotoBase64 = null;
-  var img = document.getElementById('prod-foto-preview');
-  var icon = document.getElementById('prod-foto-icon');
-  var clr = document.getElementById('prod-foto-clear');
-  if (img) { img.src = ''; img.style.display = 'none'; }
-  if (icon) icon.style.display = 'block';
-  if (clr) clr.style.display = 'none';
-  var inp = document.getElementById('prod-foto-input');
-  if (inp) inp.value = '';
-}
-window.limpiarFoto = limpiarFoto;
 
 // ── CALCULO INVERSO: usuario escribe precio → calcular margen real ──
 function calcMargenDesdePrecio() {
@@ -3900,7 +3817,6 @@ function saveProduct() {
     stock: parseInt(document.getElementById('prod-stock').value) || 0,
     stockMin: parseInt(document.getElementById('prod-stockMin').value) || 5,
     unidad: document.getElementById('prod-unidad').value,
-    foto: window._prodFotoBase64 || null,
   };
 
   if (existingId) {
@@ -4079,31 +3995,15 @@ function renderClientes() {
 
   var tbody = document.getElementById('clienteTable');
   if (!tbody) return;
-  // Default: mostrar TODOS los clientes
-  if (window._clientesVerTodos === undefined) window._clientesVerTodos = true;
-  var _verTodos = window._clientesVerTodos;
+  var _verTodos = window._clientesVerTodos === true;
   var _deudores = clientes.filter(function(c){ return (c.deuda||0) > 0; });
   var _alDia    = clientes.filter(function(c){ return (c.deuda||0) <= 0; });
-  // Ordenar: primero deudores (mayor deuda), luego al día (más recientes)
-  _deudores.sort(function(a, b) { return (b.deuda||0) - (a.deuda||0); });
-  _alDia.sort(function(a, b) {
-    return (b.ultimaVenta ? new Date(b.ultimaVenta).getTime() : 0) - (a.ultimaVenta ? new Date(a.ultimaVenta).getTime() : 0);
-  });
-  var _lista = _verTodos ? _deudores.concat(_alDia) : _deudores;
-  // Actualizar estilo de los botones de filtro
-  var btnT = document.getElementById('btnVerTodos');
-  var btnF = document.getElementById('btnVerFiados');
-  if (btnT) { btnT.className = _verTodos ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'; }
-  if (btnF) { btnF.className = _verTodos ? 'btn btn-outline btn-sm' : 'btn btn-primary btn-sm'; }
-  // Sin límite de altura: el page-body (overflow-y:auto) maneja el scroll completo en móvil
-  var _wrap = tbody.closest('.table-wrap');
-  if (_wrap) { _wrap.style.maxHeight = ''; _wrap.style.overflowY = ''; }
+  var _lista    = _verTodos ? clientes : _deudores;
   function _fila(c) {
     var deuda = c.deuda || 0;
     var bc = deuda > (c.limite||50) ? 'badge-red' : deuda > 0 ? 'badge-yellow' : 'badge-green';
     var bt = deuda > (c.limite||50) ? 'Límite excedido' : deuda > 0 ? 'Con fiado' : 'Al día';
-    var rowStyle = deuda > 0 ? '' : 'opacity:0.7';
-    return '<tr style="' + rowStyle + '">' +
+    return '<tr>' +
       '<td><div style="font-weight:600">' + c.nombre + '</div><div style="font-size:11px;color:var(--text2)">' + (c.cedula||'') + '</div></td>' +
       '<td>' + (c.telefono||'—') + '</td>' +
       '<td><strong class="' + (deuda>0?'text-danger':'text-muted') + '">$' + deuda.toFixed(2) + '</strong></td>' +
@@ -4116,7 +4016,17 @@ function renderClientes() {
       '</div></td></tr>';
   }
   var _vacio = _verTodos ? 'Sin clientes registrados' : 'Sin fiados activos';
-  tbody.innerHTML = _lista.map(_fila).join('') || ('<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text2)">' + _vacio + '</td></tr>');
+  var _rows = _lista.map(_fila).join('') || ('<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text2)">' + _vacio + '</td></tr>');
+  if (!_verTodos && _alDia.length > 0) {
+    _rows += '<tr><td colspan="6" style="text-align:center;padding:8px;border-top:1px solid var(--border)">' +
+      '<button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="window._clientesVerTodos=true;renderClientes()">' +
+      '👥 Ver ' + _alDia.length + ' cliente' + (_alDia.length>1?'s':'') + ' al día (sin deuda)</button></td></tr>';
+  } else if (_verTodos) {
+    _rows += '<tr><td colspan="6" style="text-align:center;padding:8px;border-top:1px solid var(--border)">' +
+      '<button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="window._clientesVerTodos=false;renderClientes()">' +
+      '🔍 Mostrar solo fiados activos</button></td></tr>';
+  }
+  tbody.innerHTML = _rows;
 }
 
 function openAddCliente() {
@@ -4179,55 +4089,26 @@ function verFiado(id) {
   var c = (DB.get('clientes') || []).find(function(x){ return x.id === id; });
   if (!c) return;
   var ventas = (DB.get('ventas') || []).filter(function(v){ return v.cliente === id; });
-  var pagos = c.pagos || [];
-  var deuda = c.deuda || 0;
-  var totalComprado = ventas.reduce(function(s,v){ return s + v.totalUSD; }, 0);
-  var totalPagado = pagos.reduce(function(s,p){ return s + p.monto; }, 0);
   stext('modalFiadoTitle', 'Fiado — ' + c.nombre);
-
-  var htmlAbonos = pagos.length
-    ? pagos.slice(-10).reverse().map(function(p) {
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">' +
-          '<div><div style="font-size:12px;color:var(--text1)">' + new Date(p.fecha).toLocaleDateString('es-VE') + '</div>' +
-          '<div style="font-size:11px;color:var(--text2)">' + (p.metodo || 'Efectivo $') + '</div></div>' +
-          '<div style="text-align:right"><div style="color:var(--neon);font-weight:700;font-size:14px">-$' + p.monto.toFixed(2) + '</div>' +
-          '<div style="font-size:11px;color:var(--text2)">Saldo: $' + (p.saldo || 0).toFixed(2) + '</div></div>' +
-        '</div>';
-      }).join('')
-    : '<p style="font-size:12px;color:var(--text2);padding:8px 0;text-align:center">Sin abonos registrados aún</p>';
-
-  var htmlVentas = ventas.length
-    ? ventas.slice(-5).reverse().map(function(v){
-        return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">' +
-          '<span style="font-size:12px">' + new Date(v.fecha).toLocaleDateString('es-VE') + '</span>' +
-          '<span style="color:var(--warn);font-weight:700">+$' + v.totalUSD.toFixed(2) + '</span></div>';
-      }).join('')
-    : '<p style="font-size:12px;color:var(--text2);padding:8px 0;text-align:center">Sin compras fiadas</p>';
-
   document.getElementById('modalFiadoBody').innerHTML =
-    '<div class="alert ' + (deuda > 0 ? 'alert-warn' : 'alert-success') + '" style="margin-bottom:12px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">' +
-        '<span style="font-size:13px">Deuda actual</span>' +
-        '<strong style="font-size:20px;color:' + (deuda > 0 ? 'var(--danger)' : 'var(--neon)') + '">$' + deuda.toFixed(2) + '</strong>' +
-      '</div>' +
-      '<div style="font-size:11px;color:var(--text2);margin-top:4px;display:flex;gap:12px">' +
-        '<span>Límite: <strong>$' + (c.limite || 50) + '</strong></span>' +
-        (totalPagado > 0 ? '<span>Pagado: <strong style="color:var(--neon)">$' + totalPagado.toFixed(2) + '</strong></span>' : '') +
-        (totalComprado > 0 ? '<span>Comprado: <strong>$' + totalComprado.toFixed(2) + '</strong></span>' : '') +
-      '</div>' +
+    '<div class="alert ' + ((c.deuda||0) > 0 ? 'alert-warn' : 'alert-success') + '">' +
+      '<strong>Deuda actual: $' + (c.deuda||0).toFixed(2) + '</strong> · Límite: $' + c.limite +
     '</div>' +
-    '<div class="form-group"><label class="form-label">💵 Registrar Abono ($)</label>' +
+    '<div class="form-group"><label class="form-label">Registrar Pago ($)</label>' +
       '<input type="number" id="pago-monto" class="form-input" step="0.01" placeholder="0.00"></div>' +
     '<div class="form-group"><label class="form-label">Método de Pago</label>' +
       '<select id="pago-metodo" class="form-select">' +
         '<option>Efectivo $</option><option>Efectivo Bs</option>' +
-        '<option>Punto Crédito</option><option>Punto Débito</option><option>Zelle</option><option>Pago Móvil</option><option>Transferencia Bs</option>' +
+        '<option>Punto Crédito</option><option>Zelle</option><option>Pago Móvil</option>' +
       '</select></div>' +
-    '<div style="font-weight:700;font-size:11px;color:var(--text2);letter-spacing:1px;margin:14px 0 6px">📋 HISTORIAL DE ABONOS</div>' +
-    htmlAbonos +
-    '<div style="font-weight:700;font-size:11px;color:var(--text2);letter-spacing:1px;margin:14px 0 6px">🛒 COMPRAS FIADAS</div>' +
-    htmlVentas;
-
+    '<div class="card-title mb-2 mt-3">Historial de compras fiadas</div>' +
+    (ventas.length
+      ? ventas.slice(-5).reverse().map(function(v){
+          return '<div class="flex justify-between" style="padding:6px 0;border-bottom:1px solid var(--border)">' +
+            '<span style="font-size:12px">' + new Date(v.fecha).toLocaleDateString('es-VE') + '</span>' +
+            '<span class="text-accent font-bold">$' + v.totalUSD.toFixed(2) + '</span></div>';
+        }).join('')
+      : '<p class="text-muted text-sm">Sin ventas fiadas</p>');
   document.getElementById('modalFiado').dataset.clienteId = id;
   openModal('modalFiado');
 }
@@ -4235,19 +4116,15 @@ function verFiado(id) {
 function registrarPago() {
   var id = parseInt(document.getElementById('modalFiado').dataset.clienteId);
   var monto = parseFloat(document.getElementById('pago-monto').value) || 0;
-  if (!monto || monto <= 0) return showToast('Ingresa el monto del abono','warn');
-  var metodoEl = document.getElementById('pago-metodo');
-  var metodo = metodoEl ? metodoEl.value : 'Efectivo $';
+  if (!monto) return showToast('Ingresa el monto del pago','warn');
   var clientes = DB.get('clientes') || [];
   var c = clientes.find(function(x){ return x.id === id; });
   if (!c) return;
-  c.deuda = Math.max(0, (c.deuda || 0) - monto);
-  if (!c.pagos) c.pagos = [];
-  c.pagos.push({ fecha: Date.now(), monto: monto, metodo: metodo, saldo: c.deuda });
+  c.deuda = Math.max(0, (c.deuda||0) - monto);
   DB.set('clientes', clientes);
   closeModal('modalFiado');
   renderClientes();
-  showToast('✅ Abono de $' + monto.toFixed(2) + ' registrado · Saldo: $' + c.deuda.toFixed(2), 'success');
+  showToast('✅ Pago de $' + monto.toFixed(2) + ' registrado','success');
 }
 
 function renderReportes() {
@@ -5261,7 +5138,6 @@ function qaRun() {
 var CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 var SECRET_PRO=_dc([66,80,82,79,50,48,50,54,65,50,75]);
 var SECRET_DEMO=_dc([66,80,68,51,77,79,50,48,50,54]);
-var SECRET_DEVICE=_dc([66,80,68,69,86,50,48,50,54,65,50,75]);
 function djb2(s){var h=5381;for(var i=0;i<s.length;i++){h=((h<<5)+h)^s.charCodeAt(i);h=h>>>0;}return h;}
 function toB(n,len){var r='',b=CHARS.length;for(var i=0;i<len;i++){r=CHARS[n%b]+r;n=Math.floor(n/b);}return r;}
 
@@ -5275,31 +5151,11 @@ function generateDemoCode(neg, dias) {
 function verifyDemoSignature(code) {
   var p = code.split('-');
   if (p[0] !== 'DEMO' || p.length < 3) return false;
-
-  // Formato panel actual: DEMO-S1-S2-EXPD  (4 partes, expiry embebido)
-  // o device-locked:      DEMO-S1-S2-EXPD-DV (5 partes)
-  if (p.length >= 4) {
-    var sv = p[3]; // expiry day encoded
-    if (p[2] === toB(djb2(p[1] + SECRET_DEMO + sv), 4)) {
-      // Verificar expiry
-      var b32 = CHARS.length, expDay = 0;
-      for (var ci = 0; ci < sv.length; ci++) expDay = expDay * b32 + CHARS.indexOf(sv[ci]);
-      var today = Math.floor(Date.now() / 86400000);
-      if (today > expDay) return false; // vencido
-      // Si tiene device lock (5 partes), verificar device
-      if (p.length >= 5) {
-        var did = (DEVICE_ID || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-        var expectedDv = toB(djb2(did + SECRET_DEVICE), 4);
-        return p[4] === expectedDv;
-      }
-      return true;
-    }
-  }
-
-  // Formato legado 3 partes: DEMO-S1-S2
-  for (var d = 1; d <= 30; d++) {
+  // Verificar con dias 1-7 (nuevo formato con dias embebidos)
+  for (var d = 1; d <= 7; d++) {
     if (p[2] === toB(djb2(p[1] + SECRET_DEMO + String(d)), 4)) return true;
   }
+  // Formato clásico sin dias
   if (p[2] === toB(djb2(p[1] + SECRET_DEMO), 4)) return true;
   return false;
 }
@@ -5502,8 +5358,11 @@ function closeModal(id) {
 // ── COBRO / PROCESARVENTA ──
 function abrirCobro() {
   if (!STATE.cart.length) { showToast('Agrega productos al carrito', 'warn'); return; }
-  if (!STATE.payMethod)   { showToast('Selecciona un método de pago', 'warn'); return; }
-  if (STATE.payMethod === 'Pago Mixto') { _abrirPagoMixto(); return; }
+  if (!STATE.payMethod)   { showToast('👆 Selecciona un método de pago primero', 'warn');
+    var pb = document.getElementById('paymentBtns');
+    if (pb) { pb.style.animation='none'; pb.style.border='2px solid var(--warn)'; pb.style.borderRadius='10px'; setTimeout(function(){ if(pb){ pb.style.border=''; pb.style.animation=''; } }, 1500); }
+    return;
+  }
   // Llenar resumen de cobro
   var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
   var resumen = document.getElementById('cobroResumen');
@@ -5537,140 +5396,6 @@ function abrirCobro() {
 
 // alias para compatibilidad
 function procesarVenta() { abrirCobro(); }
-
-// ── PAGO MIXTO ──
-var _mixtoLines = [];
-function _getMixtoOpts() {
-  var pais = (DB.get('config') || {}).pais || 'VE';
-  var P = PAISES[pais] || PAISES['VE'];
-  return (P.metodosDisponibles || []).filter(function(m){ return m.id !== 'mixto' && m.id !== 'fiado'; });
-}
-function _abrirPagoMixto() {
-  var viejo = document.getElementById('_modalPagoMixto'); if (viejo) viejo.remove();
-  var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
-  _mixtoLines = [{ metodo: '', monto: 0 }];
-  var mets = _getMixtoOpts();
-  var optsHtml = mets.map(function(m){ return '<option value="'+m.label+'">'+m.icon+' '+m.label+'</option>'; }).join('');
-  var clientes = DB.get('clientes') || [];
-  var cliOpts = '<option value="">— Sin cliente —</option>' + clientes.map(function(cl){ return '<option value="'+cl.id+'">'+cl.nombre+(cl.deuda>0?' (debe $'+cl.deuda.toFixed(2)+')':'')+'</option>'; }).join('');
-  var modal = document.createElement('div');
-  modal.id = '_modalPagoMixto';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10002;display:flex;align-items:center;justify-content:center;padding:16px';
-  modal.innerHTML = '<div style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:22px;width:100%;max-width:440px;max-height:92vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.6)">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
-    +'<span style="font-weight:900;font-size:17px;color:var(--accent)">🔀 Pago Mixto</span>'
-    +'<button onclick="document.getElementById(\'_modalPagoMixto\').remove()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:22px;line-height:1;z-index:20000;position:relative">✕</button>'
-    +'</div>'
-    +'<div style="background:var(--bg2);border-radius:10px;padding:12px;margin-bottom:14px;text-align:center">'
-    +'<div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Total a cobrar</div>'
-    +'<div style="font-size:26px;font-weight:900;color:var(--neon)">$'+total.toFixed(2)+'</div>'
-    +'<div style="font-size:12px;color:var(--text2)">'+fmtLocal(total*STATE.tasa)+'</div>'
-    +'</div>'
-    +'<div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">Métodos de pago:</div>'
-    +'<div id="_mixtoLineas"></div>'
-    +'<button onclick="_agregarLineaMixto()" style="width:100%;margin-top:6px;padding:10px;border-radius:10px;border:1.5px dashed var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">+ Agregar método</button>'
-    +'<div id="_mixtoResumen" style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg2);font-size:13px;min-height:40px"></div>'
-    +'<div style="margin-top:10px;font-size:12px;color:var(--text2)">'
-    +'Cliente: <select id="_mixtoCliente" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 8px;font-size:12px;margin-left:4px">'+cliOpts+'</select>'
-    +'</div>'
-    +'<div style="display:flex;gap:8px;margin-top:14px">'
-    +'<button onclick="document.getElementById(\'_modalPagoMixto\').remove()" style="flex:1;padding:13px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px">Cancelar</button>'
-    +'<button id="_mixtoConfirmarBtn" onclick="_confirmarPagoMixto()" style="flex:2;padding:13px;border-radius:10px;border:none;background:var(--neon);color:#000;font-weight:900;cursor:pointer;font-size:14px;opacity:0.35;pointer-events:none">✅ Confirmar Cobro</button>'
-    +'</div>'
-    +'</div>';
-  document.body.appendChild(modal);
-  _renderMixtoLineas();
-}
-function _renderMixtoLineas() {
-  var container = document.getElementById('_mixtoLineas'); if (!container) return;
-  var mets = _getMixtoOpts();
-  var optsHtml = mets.map(function(m){ return '<option value="'+m.label+'">'+m.icon+' '+m.label+'</option>'; }).join('');
-  container.innerHTML = _mixtoLines.map(function(line, i){
-    return '<div style="display:flex;gap:7px;margin-bottom:8px;align-items:center">'
-      +'<select onchange="_mixtoSetMetodo('+i+',this.value)" style="flex:2;padding:9px 7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px">'
-      +'<option value="">— Método —</option>'+optsHtml
-      +'</select>'
-      +'<input type="number" placeholder="$0.00" value="'+(line.monto>0?line.monto:'')+'" min="0" step="0.01" oninput="_mixtoSetMonto('+i+',this.value)" style="flex:1;padding:9px 7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px">'
-      +(i>0?'<button onclick="_mixtoRemLine('+i+')" style="padding:7px 10px;border-radius:8px;border:none;background:rgba(255,59,48,0.15);color:var(--danger);cursor:pointer;font-size:15px;flex-shrink:0">✕</button>':'<div style="width:36px"></div>')
-      +'</div>';
-  }).join('');
-  _mixtoLines.forEach(function(line, i){
-    var sel = container.querySelectorAll('select')[i];
-    if (sel && line.metodo) sel.value = line.metodo;
-  });
-  _actualizarResumenMixto();
-}
-function _mixtoSetMetodo(i, val) { if (_mixtoLines[i]) _mixtoLines[i].metodo = val; _actualizarResumenMixto(); }
-function _mixtoSetMonto(i, val)  { if (_mixtoLines[i]) _mixtoLines[i].monto = parseFloat(val)||0; _actualizarResumenMixto(); }
-function _mixtoRemLine(i)        { _mixtoLines.splice(i,1); _renderMixtoLineas(); }
-function _agregarLineaMixto()    { _mixtoLines.push({metodo:'',monto:0}); _renderMixtoLineas(); }
-function _actualizarResumenMixto() {
-  var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
-  var validas = _mixtoLines.filter(function(l){ return l.metodo && l.monto>0; });
-  var sumado = _mixtoLines.reduce(function(s,l){ return s+(l.monto||0); }, 0);
-  var pendiente = total - sumado;
-  var resumen = document.getElementById('_mixtoResumen');
-  var btnOk = document.getElementById('_mixtoConfirmarBtn');
-  if (resumen) {
-    var lineasStr = validas.map(function(l){ return '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+l.metodo+'</span><span style="color:var(--text)">$'+l.monto.toFixed(2)+'</span></div>'; }).join('');
-    var color = Math.abs(pendiente)<0.01 ? 'var(--neon)' : (pendiente<0 ? 'var(--danger)' : 'var(--warn)');
-    var pendLbl = Math.abs(pendiente)<0.01 ? '✅ Completo' : (pendiente<0 ? 'Exceso: $'+Math.abs(pendiente).toFixed(2) : 'Pendiente: $'+pendiente.toFixed(2));
-    resumen.innerHTML = (lineasStr||'<div style="color:var(--text3);font-size:12px">Agrega al menos un método arriba</div>')
-      +'<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:700">'
-      +'<span>Ingresado:</span><span style="color:var(--neon)">$'+sumado.toFixed(2)+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;font-weight:700">'
-      +'<span>'+pendLbl+':</span><span style="color:'+color+'">$'+Math.abs(pendiente).toFixed(2)+'</span></div>';
-  }
-  var ok = validas.length>0 && sumado>=total-0.005;
-  if (btnOk) { btnOk.style.opacity=ok?'1':'0.35'; btnOk.style.pointerEvents=ok?'auto':'none'; }
-}
-function _confirmarPagoMixto() {
-  var total = STATE.cart.reduce(function(s,i){ return s+(i.subtotal||0); }, 0);
-  var validas = _mixtoLines.filter(function(l){ return l.metodo && l.monto>0; });
-  if (!validas.length) { showToast('Agrega al menos un método de pago','warn'); return; }
-  var sumado = validas.reduce(function(s,l){ return s+(l.monto||0); }, 0);
-  if (sumado < total-0.01) { showToast('El monto $'+sumado.toFixed(2)+' es menor al total $'+total.toFixed(2),'warn'); return; }
-  var clienteId = parseInt((document.getElementById('_mixtoCliente')||{}).value) || null;
-  var detalle = validas.map(function(l){ return l.metodo+': $'+l.monto.toFixed(2); }).join(' | ');
-  var venta = {
-    id: Date.now(),
-    fecha: new Date().toISOString(),
-    items: STATE.cart.map(function(i){ return Object.assign({},i); }),
-    totalUSD: total,
-    totalBs: total*STATE.tasa,
-    metodo: 'Pago Mixto',
-    metodoDetalle: detalle,
-    mixtoLineas: validas,
-    cliente: clienteId,
-    notas: detalle,
-    tasa: STATE.tasa,
-  };
-  var ventas = DB.get('ventas') || []; ventas.push(venta); DB.set('ventas', ventas);
-  var prods = DB.get('productos') || [];
-  STATE.cart.forEach(function(item){
-    var p = prods.find(function(pr){ return pr.id===item.productoId; });
-    if (p) p.stock = Math.max(0, p.stock-item.qty);
-  });
-  DB.set('productos', prods);
-  if (DB.get('caja_estado') && DB.get('caja_estado').abierta) {
-    var movs = DB.get('caja_movimientos') || [];
-    validas.forEach(function(l){
-      var esUSD = l.metodo==='Efectivo $'; var esBs = l.metodo==='Efectivo Bs';
-      movs.push({ id: Date.now()+Math.random(), fecha: new Date().toISOString(), tipo:'entrada', monto:l.monto,
-        descripcion:'Venta Mixta #'+venta.id.toString().slice(-5)+' ('+l.metodo+')',
-        metodo: esUSD?'Efectivo $': esBs?'Efectivo Bs':'Electrónico', esEfectivo:esUSD||esBs, moneda:esBs?'BS':'USD' });
-    });
-    DB.set('caja_movimientos', movs);
-  }
-  var modal = document.getElementById('_modalPagoMixto'); if (modal) modal.remove();
-  STATE.ultimaVentaId = venta.id;
-  STATE.cart = [];
-  STATE.payMethod = null;
-  try { abrirGavetaDinero(); } catch(e) {}
-  showRecibo(venta);
-  renderCart();
-  renderPosProducts();
-}
 
 // ── DATOS DE MUESTRA ──
 function loadSampleData() {
@@ -6762,18 +6487,11 @@ window._siguienteNumControl = _siguienteNumControl;
 window._verificarPasswordAdmin = _verificarPasswordAdmin;
 window.abrirCaja = abrirCaja;
 window.abrirCobro = abrirCobro;
-window._abrirPagoMixto = _abrirPagoMixto;
-window._mixtoSetMetodo = _mixtoSetMetodo;
-window._mixtoSetMonto = _mixtoSetMonto;
-window._mixtoRemLine = _mixtoRemLine;
-window._agregarLineaMixto = _agregarLineaMixto;
-window._confirmarPagoMixto = _confirmarPagoMixto;
 window.abrirDevolucion = abrirDevolucion;
 window.abrirGavetaDinero = abrirGavetaDinero;
 window.abrirNuevoProveedor = abrirNuevoProveedor;
 window.activarConCodigoPro = activarConCodigoPro;
 window.actualizarBtnCobrar = actualizarBtnCobrar;
-window.pagoRapido = pagoRapido;
 window.actualizarHwBadge = actualizarHwBadge;
 window.actualizarHwLabel = actualizarHwLabel;
 window.actualizarVenceEl = actualizarVenceEl;
@@ -8029,3 +7747,500 @@ window.initV9 = initV9;
     </div>
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MÓDULO A2K: GESTIÓN DE EMPLEADOS Y BLOQUEO ANTI-EMPLEADO
+     Bodega Pro v9.0 — A2K Digital Studio
+═══════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function isEmpleado() {
+    return !!(window.STATE && window.STATE.user && window.STATE.user.role === 'empleado');
+  }
+
+  function hashSimple(str) {
+    var h = 0;
+    for (var i = 0; i < str.length; i++) {
+      h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    }
+    return h.toString(36);
+  }
+
+  // ── Mostrar sección empleado en login si hay licencia registrada ──
+  function checkMostrarLoginEmpleado() {
+    var lic = typeof DB !== 'undefined' ? DB.get('license') : null;
+    var wrap = document.getElementById('empleadoLoginWrap');
+    if (!wrap) return;
+    if (lic && lic.deviceId) {
+      wrap.style.display = 'block';
+    }
+  }
+
+  // ── Login empleado ────────────────────────────────────────────
+  window.doLoginEmpleado = function() {
+    var user = (document.getElementById('emp-user') || {}).value || '';
+    var pass = (document.getElementById('emp-pass') || {}).value || '';
+    user = user.trim();
+    if (!user || !pass) {
+      if (typeof showLoginAlert === 'function') showLoginAlert('Ingresa usuario y contraseña de empleado', 'error');
+      return;
+    }
+    var lic = DB.get('license');
+    if (!lic || !lic.deviceId) {
+      if (typeof showLoginAlert === 'function') showLoginAlert('Este dispositivo no tiene licencia registrada. Pide al dueño que active el sistema primero.', 'error');
+      return;
+    }
+    var empleados = DB.get('empleados') || [];
+    var passHash = hashSimple(pass);
+    var emp = empleados.find(function(e) {
+      return e.usuario === user && (e.passHash === passHash || e.password === pass) && e.activo;
+    });
+    if (!emp) {
+      if (typeof showLoginAlert === 'function') showLoginAlert('Usuario o contraseña incorrectos', 'error');
+      return;
+    }
+    var negocio = lic.negocio || (DB.get('config') || {}).negocio || 'Mi Negocio';
+    var session = {
+      negocio: negocio,
+      user: emp.nombre || emp.usuario,
+      empleadoId: emp.id,
+      role: 'empleado',
+      deviceId: lic.deviceId,
+      loginAt: new Date().toISOString()
+    };
+    DB.set('session', session);
+    window.STATE.user = session;
+    if (typeof startApp === 'function') startApp();
+  };
+
+  // ── Renderizar lista de empleados en config ──────────────────
+  function renderEmpleados() {
+    var lista = document.getElementById('empleados-lista');
+    if (!lista) return;
+    var empleados = DB.get('empleados') || [];
+    if (!empleados.length) {
+      lista.innerHTML = '<div style="font-size:12px;color:var(--text2);text-align:center;padding:16px 0">Sin empleados registrados aún</div>';
+      return;
+    }
+    lista.innerHTML = empleados.map(function(e) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap">'
+        + '<div style="display:flex;align-items:center;gap:10px">'
+        + '<div style="width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff">'
+        + (e.nombre || e.usuario).charAt(0).toUpperCase()
+        + '</div>'
+        + '<div>'
+        + '<div style="font-weight:600;font-size:13px">' + (e.nombre || e.usuario) + '</div>'
+        + '<div style="font-size:11px;color:var(--text2)">@' + e.usuario + '</div>'
+        + '</div></div>'
+        + '<div style="display:flex;gap:6px;align-items:center">'
+        + '<span class="badge ' + (e.activo ? 'badge-green' : 'badge-red') + '" style="font-size:10px">' + (e.activo ? 'Activo' : 'Inactivo') + '</span>'
+        + '<button class="btn btn-sm btn-outline" onclick="abrirModalEmpleado(\'' + e.id + '\')">✏️</button>'
+        + '<button class="btn btn-sm btn-danger" onclick="eliminarEmpleado(\'' + e.id + '\')">🗑️</button>'
+        + '</div></div>';
+    }).join('');
+  }
+
+  // ── Modal crear/editar empleado ──────────────────────────────
+  window.abrirModalEmpleado = function(id) {
+    var emp = null;
+    if (id) {
+      emp = (DB.get('empleados') || []).find(function(e) { return e.id === id; });
+      if (!emp) return;
+    }
+    var m = document.getElementById('modalEmpleadoA2K');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'modalEmpleadoA2K';
+      m.className = 'modal-overlay';
+      m.style.display = 'none';
+      document.body.appendChild(m);
+    }
+    m.innerHTML = '<div class="modal" style="max-width:380px">'
+      + '<div class="modal-header"><span class="modal-title">' + (id ? '✏️ Editar Empleado' : '👷 Nuevo Empleado') + '</span>'
+      + '<button class="btn-close" onclick="document.getElementById(\'modalEmpleadoA2K\').style.display=\'none\'">✕</button></div>'
+      + '<div class="modal-body">'
+      + '<div class="form-group"><label class="form-label">Nombre Completo <span style="color:var(--danger)">*</span></label>'
+      + '<input type="text" id="emp-modal-nombre" class="form-input" placeholder="Ej: María González" value="' + (emp ? (emp.nombre || '') : '') + '"></div>'
+      + '<div class="form-group"><label class="form-label">Usuario (para iniciar sesión) <span style="color:var(--danger)">*</span></label>'
+      + '<input type="text" id="emp-modal-usuario" class="form-input" placeholder="cajero01" value="' + (emp ? emp.usuario : '') + '" autocomplete="off"></div>'
+      + '<div class="form-group"><label class="form-label">' + (id ? 'Nueva Contraseña (dejar vacío para no cambiar)' : 'Contraseña <span style="color:var(--danger)">*</span>') + '</label>'
+      + '<input type="password" id="emp-modal-pass" class="form-input" placeholder="••••••" autocomplete="new-password"></div>'
+      + '<div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:10px;cursor:pointer">'
+      + '<input type="checkbox" id="emp-modal-activo"' + (emp ? (emp.activo ? ' checked' : '') : ' checked') + '>'
+      + ' <span>Empleado Activo</span></label></div>'
+      + '<input type="hidden" id="emp-modal-id" value="' + (id || '') + '">'
+      + '</div>'
+      + '<div class="modal-footer">'
+      + '<button class="btn btn-ghost" onclick="document.getElementById(\'modalEmpleadoA2K\').style.display=\'none\'">Cancelar</button>'
+      + '<button class="btn btn-primary" onclick="guardarEmpleado()">💾 Guardar</button>'
+      + '</div></div>';
+    m.style.display = 'flex';
+    setTimeout(function() {
+      var el = document.getElementById('emp-modal-nombre');
+      if (el) el.focus();
+    }, 100);
+  };
+
+  window.guardarEmpleado = function() {
+    var nombre  = (document.getElementById('emp-modal-nombre')  || {}).value || '';
+    var usuario = (document.getElementById('emp-modal-usuario') || {}).value || '';
+    var pass    = (document.getElementById('emp-modal-pass')    || {}).value || '';
+    var activo  = (document.getElementById('emp-modal-activo')  || {}).checked;
+    var editId  = (document.getElementById('emp-modal-id')      || {}).value || '';
+    nombre  = nombre.trim();
+    usuario = usuario.trim().toLowerCase().replace(/\s+/g, '');
+    if (!nombre || !usuario) { showToast('Nombre y usuario son obligatorios', 'warn'); return; }
+    if (!editId && !pass) { showToast('La contraseña es obligatoria para nuevos empleados', 'warn'); return; }
+    // Validar usuario único
+    var empleados = DB.get('empleados') || [];
+    var duplicado = empleados.find(function(e) { return e.usuario === usuario && e.id !== editId; });
+    if (duplicado) { showToast('Ese nombre de usuario ya existe', 'warn'); return; }
+    if (editId) {
+      var idx = empleados.findIndex(function(e) { return e.id === editId; });
+      if (idx !== -1) {
+        empleados[idx].nombre  = nombre;
+        empleados[idx].usuario = usuario;
+        empleados[idx].activo  = activo;
+        if (pass) empleados[idx].passHash = hashSimple(pass);
+      }
+    } else {
+      empleados.push({ id: 'emp_' + Date.now(), nombre: nombre, usuario: usuario, passHash: hashSimple(pass), activo: activo });
+    }
+    DB.set('empleados', empleados);
+    document.getElementById('modalEmpleadoA2K').style.display = 'none';
+    renderEmpleados();
+    checkMostrarLoginEmpleado();
+    showToast('Empleado guardado', 'success');
+  };
+
+  window.eliminarEmpleado = function(id) {
+    if (!confirm('¿Eliminar este empleado?')) return;
+    var empleados = (DB.get('empleados') || []).filter(function(e) { return e.id !== id; });
+    DB.set('empleados', empleados);
+    renderEmpleados();
+    showToast('Empleado eliminado', 'success');
+  };
+
+  // ── Aplicar modo empleado en la UI ──────────────────────────
+  function aplicarModoEmpleado() {
+    var paginasBloqueadas = ['reportes', 'configuracion', 'avances', 'proveedores'];
+    // Badge en nombre de usuario
+    var un2 = document.getElementById('userName2');
+    if (un2) un2.innerHTML = (window.STATE.user.user || 'Empleado')
+      + ' <span style="font-size:9px;background:var(--warn);color:#000;border-radius:4px;padding:1px 5px;font-weight:800;margin-left:4px">EMPLEADO</span>';
+    // Opacar nav items bloqueados
+    paginasBloqueadas.forEach(function(pag) {
+      var navEl = document.querySelector('[data-page="' + pag + '"]');
+      if (navEl) {
+        navEl.style.opacity = '0.25';
+        navEl.style.pointerEvents = 'none';
+        navEl.title = 'Acceso restringido';
+      }
+    });
+    // Ocultar botón Agregar Producto en POS
+    var btnProdPos = document.querySelector('[onclick="openAddProduct()"]');
+    if (btnProdPos) btnProdPos.style.display = 'none';
+  }
+
+  function ocultarBotonesEdicionInventario() {
+    // Botón "Nuevo Producto" en la página inventario
+    var btnNuevoProd = document.querySelector('#page-inventario [onclick="openAddProduct()"]');
+    if (btnNuevoProd) btnNuevoProd.style.display = 'none';
+  }
+
+  function ocultarBotonesCaja() {
+    var abrirBtn = document.querySelector('[onclick="abrirCaja()"]');
+    var cerrarBtn = document.querySelector('[onclick="cerrarCaja()"]');
+    if (abrirBtn) abrirBtn.style.display = 'none';
+    if (cerrarBtn) cerrarBtn.style.display = 'none';
+  }
+
+  function ocultarBotonesClientes() {
+    var addBtn = document.querySelector('#page-clientes [onclick="openAddCliente()"]');
+    if (addBtn) addBtn.style.display = 'none';
+  }
+
+  // Bloquear con PIN — Inventario
+  window.bloquearBotonesInventarioPIN = function() {
+    ocultarBotonesEdicionInventario();
+    var tbody = document.getElementById('invTable');
+    if (!tbody) return;
+    var rows = tbody.querySelectorAll('tr');
+    rows.forEach(function(row) {
+      var lastCell = row.querySelector('td:last-child');
+      if (!lastCell) return;
+      var btns = lastCell.querySelectorAll('button');
+      btns.forEach(function(btn) {
+        var oc = btn.getAttribute('onclick') || '';
+        if (!oc || btn._pinWrapped) return;
+        btn._pinWrapped = true;
+        btn.removeAttribute('onclick');
+        btn.addEventListener('click', (function(captured){ return function() {
+          if (typeof window.pedirPinDueno === 'function') {
+            window.pedirPinDueno('modificar inventario', function() { eval(captured); });
+          }
+        }; })(oc));
+        btn.style.opacity = '0.55';
+        btn.title = '🔒 Requiere PIN del dueño';
+      });
+    });
+  };
+
+  // Bloquear con PIN — Caja
+  window.bloquearBotonesCajaPIN = function() {
+    [['[onclick="abrirCaja()"]', 'abrir caja', function(){ abrirCaja(); }, '🔒 Abrir Caja'],
+     ['[onclick="cerrarCaja()"]', 'cerrar caja', function(){ cerrarCaja(); }, '🔒 Cerrar Caja']
+    ].forEach(function(item) {
+      var btn = document.querySelector(item[0]);
+      if (!btn || btn._pinWrapped) return;
+      btn._pinWrapped = true;
+      btn.removeAttribute('onclick');
+      var cb = item[2], desc = item[1], lbl = item[3];
+      btn.addEventListener('click', function() {
+        if (typeof window.pedirPinDueno === 'function') window.pedirPinDueno(desc, cb);
+      });
+      btn.innerHTML = lbl;
+      btn.style.opacity = '0.7';
+    });
+  };
+
+  // Bloquear con PIN — Clientes
+  window.bloquearBotonesClientesPIN = function() {
+    var addBtn = document.querySelector('#page-clientes [onclick="openAddCliente()"]');
+    if (addBtn && !addBtn._pinWrapped) {
+      addBtn._pinWrapped = true;
+      addBtn.removeAttribute('onclick');
+      addBtn.addEventListener('click', function() {
+        if (typeof window.pedirPinDueno === 'function') window.pedirPinDueno('agregar cliente', function() { openAddCliente(); });
+      });
+      addBtn.innerHTML = '🔒 + Nuevo Cliente';
+      addBtn.style.opacity = '0.7';
+    }
+  };
+
+  // ── Override renderInventario para bloquear con PIN ──────────
+  (function() {
+    var origRI = window.renderInventario;
+    if (!origRI) return;
+    window.renderInventario = function() {
+      origRI.apply(this, arguments);
+      if (!isEmpleado()) return;
+      setTimeout(function() {
+        if (typeof window.bloquearBotonesInventarioPIN === 'function') window.bloquearBotonesInventarioPIN();
+      }, 80);
+    };
+  })();
+
+  // ── Override showPage para bloquear páginas ──────────────────
+  (function() {
+    var origSP = window.showPage;
+    if (!origSP) return;
+    window.showPage = function(page, el) {
+      var bloqueadas = ['reportes', 'configuracion', 'avances', 'proveedores'];
+      if (isEmpleado() && bloqueadas.includes(page)) {
+        if (typeof window.pedirPinDueno === 'function') {
+          window.pedirPinDueno('Acceder a ' + page, function() { origSP.call(window, page, el); });
+        } else {
+          if (typeof showToast === 'function') showToast('🔒 Acceso restringido — solo el administrador', 'warn');
+        }
+        return;
+      }
+      origSP.call(this, page, el);
+      if (!isEmpleado()) return;
+      if (page === 'inventario') setTimeout(bloquearBotonesInventarioPIN, 150);
+      if (page === 'caja')       setTimeout(bloquearBotonesCajaPIN, 150);
+      if (page === 'clientes')   setTimeout(bloquearBotonesClientesPIN, 150);
+    };
+  })();
+
+  // ── Override startApp para inicializar módulo ─────────────────
+  (function() {
+    var origSA = window.startApp;
+    if (!origSA) return;
+    window.startApp = function() {
+      origSA.apply(this, arguments);
+      // Renderizar lista de empleados si estamos en config (por si startApp re-renderiza)
+      setTimeout(function() {
+        renderEmpleados();
+        checkMostrarLoginEmpleado();
+        if (isEmpleado()) aplicarModoEmpleado();
+      }, 300);
+    };
+  })();
+
+  // ── Hook showPage para renderizar empleados al entrar a config ─
+  (function() {
+    var origSP2 = window.showPage;
+    if (!origSP2) return;
+    window.showPage = function(page, el) {
+      origSP2.call(this, page, el);
+      if (page === 'configuracion') setTimeout(renderEmpleados, 100);
+    };
+  })();
+
+  // ── DOMContentLoaded: mostrar login empleado si aplica ───────
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkMostrarLoginEmpleado);
+  } else {
+    setTimeout(checkMostrarLoginEmpleado, 500);
+  }
+
+  // Exponer funciones globales necesarias
+  window.isEmpleado        = isEmpleado;
+  window.renderEmpleados   = renderEmpleados;
+  window.aplicarModoEmpleado = aplicarModoEmpleado;
+
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MÓDULO A2K: PIN DE DESBLOQUEO DEL DUEÑO
+     Bodega Pro v9.0 — A2K Digital Studio
+═══════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  function hashPin(str) {
+    var h = 5381;
+    for (var i = 0; i < str.length; i++) {
+      h = (Math.imul(h, 33) ^ str.charCodeAt(i)) >>> 0;
+    }
+    return h.toString(36);
+  }
+
+  // ── Guardar clave del dueño ──────────────────────────────────
+  window.guardarPinDueno = function() {
+    var pin     = (document.getElementById('pin-dueno-input-cfg')   || {}).value || '';
+    var confirm = (document.getElementById('pin-dueno-confirm-cfg') || {}).value || '';
+    if (pin.length < 4) { showToast('La clave debe tener mínimo 4 caracteres', 'warn'); return; }
+    if (pin !== confirm) { showToast('Las claves no coinciden', 'warn'); return; }
+    DB.set('dueno_pin', hashPin(pin));
+    var inp = document.getElementById('pin-dueno-input-cfg');   if(inp) inp.value = '';
+    var cnf = document.getElementById('pin-dueno-confirm-cfg'); if(cnf) cnf.value = '';
+    actualizarEstadoPinDueno();
+    showToast('✅ Clave del dueño activada', 'success');
+  };
+
+  window.borrarPinDueno = function() {
+    if (!confirm('¿Quitar la clave del dueño? Los empleados no podrán desbloquear funciones.')) return;
+    DB.del('dueno_pin');
+    actualizarEstadoPinDueno();
+    showToast('Clave eliminada', 'success');
+  };
+
+  function actualizarEstadoPinDueno() {
+    var pin = DB.get('dueno_pin');
+    var statusEl = document.getElementById('pin-dueno-status');
+    var borrarBtn = document.getElementById('btn-borrar-pin-dueno');
+    if (statusEl) {
+      statusEl.innerHTML = pin
+        ? '✅ <strong style="color:var(--success)">Clave activa</strong> — el sistema pedirá esta clave a los empleados'
+        : '⭕ Sin clave configurada — los empleados verán solo mensaje de restricción';
+      statusEl.style.background = pin ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)';
+    }
+    if (borrarBtn) borrarBtn.style.display = pin ? 'inline-flex' : 'none';
+  }
+
+  // ── Modal pedir PIN del dueño ────────────────────────────────
+  window.pedirPinDueno = function(descripcion, callback) {
+    var pinGuardado = DB.get('dueno_pin');
+    if (!pinGuardado) {
+      showToast('🔒 Acción bloqueada — el dueño no ha configurado su clave', 'warn');
+      return;
+    }
+    var m = document.getElementById('modalPinDuenoA2K');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'modalPinDuenoA2K';
+      m.className = 'modal-overlay';
+      m.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99998;align-items:center;justify-content:center;backdrop-filter:blur(6px)';
+      document.body.appendChild(m);
+    }
+    m._callback  = callback;
+    m._intentos  = 0;
+    m.innerHTML  =
+      '<div class="modal" style="max-width:340px;text-align:center">'
+      + '<div style="font-size:44px;margin-bottom:8px">🔑</div>'
+      + '<div style="font-family:var(--display);font-weight:800;font-size:18px;color:var(--accent);margin-bottom:4px">Autorización del Dueño</div>'
+      + '<div style="font-size:12px;color:var(--text2);margin-bottom:20px">Acción: <strong style="color:var(--text)">' + descripcion + '</strong></div>'
+      + '<input type="password" id="pin-dueno-modal-input" class="form-input" placeholder="Clave del dueño" maxlength="20" autocomplete="off"'
+      + '  style="text-align:center;font-size:18px;letter-spacing:6px;margin-bottom:8px"'
+      + '  onkeydown="if(event.key===\'Enter\') window.verificarPinDueno()">'
+      + '<div id="pin-dueno-modal-error" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:14px"></div>'
+      + '<div style="display:flex;gap:10px;justify-content:center">'
+      + '  <button class="btn btn-ghost" onclick="window.cerrarModalPinDueno()">Cancelar</button>'
+      + '  <button class="btn btn-primary" onclick="window.verificarPinDueno()">🔓 Desbloquear</button>'
+      + '</div></div>';
+    m.style.display = 'flex';
+    setTimeout(function() {
+      var inp = document.getElementById('pin-dueno-modal-input');
+      if (inp) inp.focus();
+    }, 120);
+  };
+
+  window.verificarPinDueno = function() {
+    var m   = document.getElementById('modalPinDuenoA2K');
+    var inp = document.getElementById('pin-dueno-modal-input');
+    var err = document.getElementById('pin-dueno-modal-error');
+    if (!m || !inp) return;
+    var ingresado   = inp.value;
+    var pinGuardado = DB.get('dueno_pin');
+    if (hashPin(ingresado) === pinGuardado) {
+      m.style.display = 'none';
+      inp.value = '';
+      var cb = m._callback;
+      m._callback = null;
+      if (typeof cb === 'function') cb();
+    } else {
+      m._intentos = (m._intentos || 0) + 1;
+      inp.value = '';
+      inp.style.borderColor = 'var(--danger)';
+      setTimeout(function() { inp.style.borderColor = ''; }, 1000);
+      if (err) {
+        err.textContent = m._intentos >= 3
+          ? '❌ Clave incorrecta (' + m._intentos + ' intentos)'
+          : '❌ Clave incorrecta';
+      }
+      inp.focus();
+    }
+  };
+
+  window.cerrarModalPinDueno = function() {
+    var m = document.getElementById('modalPinDuenoA2K');
+    if (m) { m.style.display = 'none'; m._callback = null; }
+    var inp = document.getElementById('pin-dueno-modal-input');
+    if (inp) inp.value = '';
+  };
+
+  // ── Hook startApp para actualizar estado del PIN en config ───
+  (function() {
+    var _orig = window.startApp;
+    if (!_orig) return;
+    window.startApp = function() {
+      _orig.apply(this, arguments);
+      setTimeout(actualizarEstadoPinDueno, 400);
+    };
+  })();
+
+  // ── Hook showPage para actualizar estado al abrir config ─────
+  (function() {
+    var _origSP = window.showPage;
+    if (!_origSP) return;
+    window.showPage = function(page, el) {
+      _origSP.call(this, page, el);
+      if (page === 'configuracion') setTimeout(actualizarEstadoPinDueno, 150);
+    };
+  })();
+
+  window.guardarPinDueno         = window.guardarPinDueno;
+  window.borrarPinDueno          = window.borrarPinDueno;
+  window.pedirPinDueno           = window.pedirPinDueno;
+  window.verificarPinDueno       = window.verificarPinDueno;
+  window.cerrarModalPinDueno     = window.cerrarModalPinDueno;
+
+})();
+</script>
