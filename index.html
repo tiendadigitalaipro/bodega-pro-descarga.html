@@ -2433,9 +2433,10 @@ function doLogin() {
   const isMaster = MASTER.includes(code);
   const issuedLic = issuedLicenses.find(function(l){ return l.code === code && l.activo; });
 
-  // Verificar firma matemática (cliente en otra PC)
-  const hasFirma = verifyLicenseSignature(code);
-  if (!isMaster && !issuedLic && !hasFirma) {
+  // Verificar firma matemática — PRO y DEMO (cliente en otra PC)
+  const hasFirma     = verifyLicenseSignature(code);
+  const hasFirmaDemo = (typeof verifyDemoSignature==='function') && verifyDemoSignature(code);
+  if (!isMaster && !issuedLic && !hasFirma && !hasFirmaDemo) {
     return showLoginAlert('❌ Código de activación inválido. Verifica e intenta de nuevo.', 'error');
   }
   // Verificar estado: bloqueada, pausada o vencida PRO
@@ -5138,6 +5139,7 @@ function qaRun() {
 var CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 var SECRET_PRO=_dc([66,80,82,79,50,48,50,54,65,50,75]);
 var SECRET_DEMO=_dc([66,80,68,51,77,79,50,48,50,54]);
+var SECRET_DEVICE=_dc([66,68,69,86,50,48,50,54,65,50,75]);
 function djb2(s){var h=5381;for(var i=0;i<s.length;i++){h=((h<<5)+h)^s.charCodeAt(i);h=h>>>0;}return h;}
 function toB(n,len){var r='',b=CHARS.length;for(var i=0;i<len;i++){r=CHARS[n%b]+r;n=Math.floor(n/b);}return r;}
 
@@ -5151,11 +5153,24 @@ function generateDemoCode(neg, dias) {
 function verifyDemoSignature(code) {
   var p = code.split('-');
   if (p[0] !== 'DEMO' || p.length < 3) return false;
-  // Verificar con dias 1-7 (nuevo formato con dias embebidos)
-  for (var d = 1; d <= 7; d++) {
+  // Formato panel actual: DEMO-S1-S2-EXPD (4 partes) o device-locked DEMO-S1-S2-EXPD-DV (5 partes)
+  if (p.length >= 4) {
+    var sv = p[3];
+    if (p[2] === toB(djb2(p[1] + SECRET_DEMO + sv), 4)) {
+      var b32=CHARS.length, expDay=0;
+      for (var ci=0;ci<sv.length;ci++) expDay=expDay*b32+CHARS.indexOf(sv[ci]);
+      if (Math.floor(Date.now()/86400000) > expDay) return false;
+      if (p.length >= 5) {
+        var did=(DEVICE_ID||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+        return p[4] === toB(djb2(did+SECRET_DEVICE), 4);
+      }
+      return true;
+    }
+  }
+  // Formato legado 3 partes: DEMO-S1-S2
+  for (var d = 1; d <= 30; d++) {
     if (p[2] === toB(djb2(p[1] + SECRET_DEMO + String(d)), 4)) return true;
   }
-  // Formato clásico sin dias
   if (p[2] === toB(djb2(p[1] + SECRET_DEMO), 4)) return true;
   return false;
 }
