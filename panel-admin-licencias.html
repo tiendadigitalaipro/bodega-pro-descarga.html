@@ -537,6 +537,16 @@ function generateDemoCode(neg,dias){
   var s2=toB(djb2(s1+SECRET_DEMO+sv),4);
   return 'DEMO-'+s1+'-'+s2+'-'+sv;
 }
+function generateDemoCodeLocked(neg,dias,deviceId){
+  dias=dias||5;
+  var did=(deviceId||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  var expDay=Math.floor((Date.now()+dias*86400000)/86400000);
+  var sv=toB(expDay%(CHARS.length*CHARS.length*CHARS.length*CHARS.length),4);
+  var s1=toB(djb2((neg||'').toUpperCase()+Date.now().toString()),4);
+  var s2=toB(djb2(s1+SECRET_DEMO+sv),4);
+  var dv=toB(djb2(did+SECRET_DEVICE),4);
+  return 'DEMO-'+s1+'-'+s2+'-'+sv+'-'+dv;
+}
 function extraerVenceEnDePRO(code){
   var p=code.split('-');if(p.length!==4||p[0]!=='BPRO')return null;
   var sv=p[2],b=CHARS.length,da=0;
@@ -645,9 +655,11 @@ function generarLicenciaDemo(){
   var negocio=((document.getElementById('demo-negocio')||{}).value||'').trim();
   var telefono=((document.getElementById('demo-telefono')||{}).value||'').trim();
   var deviceId=((document.getElementById('demo-device-id')||{}).value||'').trim().toUpperCase();
-  var dias=5;
+  var diasEl=document.getElementById('demo-dias');
+  var dias=diasEl&&!diasEl.disabled?parseInt(diasEl.value)||5:5;
   if(!negocio){showToast('Ingresa el nombre del negocio','warn');return;}
-  var code=generateDemoCode(negocio,dias);
+  if(!deviceId){showToast('Ingresa el Device ID del cliente','warn');document.getElementById('demo-device-id').focus();return;}
+  var code=deviceId.length>=8?generateDemoCodeLocked(negocio,dias,deviceId):generateDemoCode(negocio,dias);
   var vence=new Date();vence.setDate(vence.getDate()+dias);
   var lics=getLicenses();
   var lic={id:Date.now(),code:code,negocio:negocio,telefono:telefono||null,

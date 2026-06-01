@@ -2422,8 +2422,9 @@ function doLogin() {
   const issuedLic = issuedLicenses.find(function(l){ return l.code === code && l.activo; });
 
   // Verificar firma matemática (cliente en otra PC)
-  const hasFirma = verifyLicenseSignature(code);
-  if (!isMaster && !issuedLic && !hasFirma) {
+  const hasFirma     = verifyLicenseSignature(code);
+  const hasFirmaDemo = (typeof verifyDemoSignature==='function') && verifyDemoSignature(code);
+  if (!isMaster && !issuedLic && !hasFirma && !hasFirmaDemo) {
     return showLoginAlert('❌ Código de activación inválido. Verifica e intenta de nuevo.', 'error');
   }
   // Verificar estado: bloqueada, pausada o vencida PRO
@@ -2909,13 +2910,26 @@ function _abrirVentaRapida() {
     +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Nombre del artículo</label>'
     +'<input id="_vrNombre" type="text" placeholder="Ej: Jabón La Llave 200g" autocomplete="off" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;outline:none">'
     +'</div>'
-    /* PRECIO EN Bs */
+    /* PRECIO DUAL USD + Bs */
     +'<div style="margin-bottom:6px">'
-    +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Precio en '+simb+' (Bolívares)</label>'
-    +'<input id="_vrPrecio" type="number" placeholder="0.00" min="0.01" step="0.5" oninput="_vrActualizarBs()" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1.5px solid rgba(212,175,55,0.5);background:var(--bg2);color:#D4AF37;font-size:22px;font-weight:700;font-family:var(--display);outline:none">'
+    +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Precio <span style="color:var(--danger)">*</span> — ingresa en la moneda que sabes:</label>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div>'
+    +'<label style="font-size:11px;color:#4ade80;font-weight:700;display:block;margin-bottom:4px">💵 USD</label>'
+    +'<input id="_vrPrecioUSD" type="number" min="0.01" step="0.01" placeholder="0.00"'
+    +' oninput="(function(){var v=parseFloat(document.getElementById(\'_vrPrecioUSD\').value);var t=STATE.tasa||1;var bs=document.getElementById(\'_vrPrecioBS\');if(!isNaN(v)&&v>0){bs.value=(v*t).toFixed(2);}else{bs.value=\'\';}  _vrActualizarBs();})();"'
+    +' style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:2px solid #4ade80;background:var(--bg2);color:var(--text);font-size:16px;font-weight:700;font-family:var(--display);outline:none">'
     +'</div>'
-    /* PREVIEW USD */
-    +'<div id="_vrBsPreview" style="text-align:center;font-size:13px;color:var(--neon);font-weight:700;min-height:22px;margin-bottom:12px"></div>'
+    +'<div>'
+    +'<label style="font-size:11px;color:#D4AF37;font-weight:700;display:block;margin-bottom:4px">🇻🇪 Bs</label>'
+    +'<input id="_vrPrecioBS" type="number" min="0.01" step="0.5" placeholder="0.00"'
+    +' oninput="(function(){var v=parseFloat(document.getElementById(\'_vrPrecioBS\').value);var t=STATE.tasa||1;var usd=document.getElementById(\'_vrPrecioUSD\');if(!isNaN(v)&&v>0){usd.value=(v/t).toFixed(4);}else{usd.value=\'\';}  _vrActualizarBs();})();"'
+    +' style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:2px solid #D4AF37;background:var(--bg2);color:#D4AF37;font-size:16px;font-weight:700;font-family:var(--display);outline:none">'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    /* PREVIEW TOTAL */
+    +'<div id="_vrBsPreview" style="text-align:center;font-size:12px;color:var(--neon);font-weight:700;min-height:20px;margin-bottom:4px"></div>'
     /* CANTIDAD */
     +'<div style="margin-bottom:12px">'
     +'<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:6px">Cantidad</label>'
@@ -2936,30 +2950,31 @@ function _abrirVentaRapida() {
   setTimeout(function(){ var f=document.getElementById('_vrNombre'); if(f) f.focus(); }, 80);
 }
 function _vrActualizarBs() {
-  var precioBs = parseFloat((document.getElementById('_vrPrecio')||{}).value) || 0;
-  var cant     = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
-  var tasa     = STATE.tasa || 1;
-  var prev     = document.getElementById('_vrBsPreview');
+  var usd  = parseFloat((document.getElementById('_vrPrecioUSD')||{}).value) || 0;
+  var bs   = parseFloat((document.getElementById('_vrPrecioBS')||{}).value) || 0;
+  var cant = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
+  var tasa = STATE.tasa || 1;
+  var prev = document.getElementById('_vrBsPreview');
   if (!prev) return;
-  if (precioBs > 0) {
-    var usd = precioBs / tasa;
-    var totalBs = precioBs * cant;
-    var totalUsd = usd * cant;
-    prev.innerHTML = '= <strong>$' + usd.toFixed(2) + '</strong> USD por unidad'
-      + (cant > 1 ? ' &nbsp;|&nbsp; Total: $' + totalUsd.toFixed(2) + ' / ' + fmtLocal(totalBs) : '');
+  var precioUsd = usd > 0 ? usd : (bs > 0 ? bs / tasa : 0);
+  var precioBs  = bs  > 0 ? bs  : (usd > 0 ? usd * tasa : 0);
+  if (precioUsd > 0 && cant > 1) {
+    prev.innerHTML = 'Total: <strong>$' + (precioUsd * cant).toFixed(2) + '</strong> · Bs ' + fmtLocal(precioBs * cant);
   } else {
     prev.textContent = '';
   }
 }
 function _confirmarVentaRapida() {
-  var nombre  = ((document.getElementById('_vrNombre')||{}).value||'').trim();
-  var precioBs = parseFloat((document.getElementById('_vrPrecio')||{}).value) || 0;
-  var cant    = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
-  var nota    = ((document.getElementById('_vrNota')||{}).value||'').trim();
-  var tasa    = STATE.tasa || 1;
+  var nombre   = ((document.getElementById('_vrNombre')||{}).value||'').trim();
+  var usd      = parseFloat((document.getElementById('_vrPrecioUSD')||{}).value) || 0;
+  var bs       = parseFloat((document.getElementById('_vrPrecioBS')||{}).value) || 0;
+  var cant     = parseInt((document.getElementById('_vrCant')||{}).value) || 1;
+  var nota     = ((document.getElementById('_vrNota')||{}).value||'').trim();
+  var tasa     = STATE.tasa || 1;
   if (!nombre) { showToast('Escribe el nombre del artículo','warn'); return; }
-  if (precioBs <= 0) { showToast('Ingresa el precio en Bolívares','warn'); return; }
-  var precioUsd = parseFloat((precioBs / tasa).toFixed(4));
+  if (usd <= 0 && bs <= 0) { showToast('Ingresa el precio en $ o en Bs','warn'); return; }
+  var precioUsd = usd > 0 ? parseFloat(usd.toFixed(4)) : parseFloat((bs / tasa).toFixed(4));
+  var precioBs  = bs  > 0 ? bs : parseFloat((usd * tasa).toFixed(2));
   var subtotal  = parseFloat((precioUsd * cant).toFixed(2));
   STATE.cart.push({
     productoId: Date.now(),
@@ -5246,6 +5261,7 @@ function qaRun() {
 var CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 var SECRET_PRO=_dc([66,80,82,79,50,48,50,54,65,50,75]);
 var SECRET_DEMO=_dc([66,80,68,51,77,79,50,48,50,54]);
+var SECRET_DEVICE=_dc([66,80,68,69,86,50,48,50,54,65,50,75]);
 function djb2(s){var h=5381;for(var i=0;i<s.length;i++){h=((h<<5)+h)^s.charCodeAt(i);h=h>>>0;}return h;}
 function toB(n,len){var r='',b=CHARS.length;for(var i=0;i<len;i++){r=CHARS[n%b]+r;n=Math.floor(n/b);}return r;}
 
@@ -5259,11 +5275,31 @@ function generateDemoCode(neg, dias) {
 function verifyDemoSignature(code) {
   var p = code.split('-');
   if (p[0] !== 'DEMO' || p.length < 3) return false;
-  // Verificar con dias 1-7 (nuevo formato con dias embebidos)
-  for (var d = 1; d <= 7; d++) {
+
+  // Formato panel actual: DEMO-S1-S2-EXPD  (4 partes, expiry embebido)
+  // o device-locked:      DEMO-S1-S2-EXPD-DV (5 partes)
+  if (p.length >= 4) {
+    var sv = p[3]; // expiry day encoded
+    if (p[2] === toB(djb2(p[1] + SECRET_DEMO + sv), 4)) {
+      // Verificar expiry
+      var b32 = CHARS.length, expDay = 0;
+      for (var ci = 0; ci < sv.length; ci++) expDay = expDay * b32 + CHARS.indexOf(sv[ci]);
+      var today = Math.floor(Date.now() / 86400000);
+      if (today > expDay) return false; // vencido
+      // Si tiene device lock (5 partes), verificar device
+      if (p.length >= 5) {
+        var did = (DEVICE_ID || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        var expectedDv = toB(djb2(did + SECRET_DEVICE), 4);
+        return p[4] === expectedDv;
+      }
+      return true;
+    }
+  }
+
+  // Formato legado 3 partes: DEMO-S1-S2
+  for (var d = 1; d <= 30; d++) {
     if (p[2] === toB(djb2(p[1] + SECRET_DEMO + String(d)), 4)) return true;
   }
-  // Formato clásico sin dias
   if (p[2] === toB(djb2(p[1] + SECRET_DEMO), 4)) return true;
   return false;
 }
