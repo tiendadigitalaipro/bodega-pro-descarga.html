@@ -173,18 +173,25 @@ Especiales: Fiado, Pago Mixto
 
 ## 📤 REPOSITORIO GITHUB
 
-- **Repo:** `tiendadigitalaipro/bodega-pro-descarga.html`
-- **URL:** `https://github.com/tiendadigitalaipro/bodega-pro-descarga.html`
+- **Repo:** `tiendadigitalaipro/bodega-pro-v9` *(renombrado el 2026-06-02, antes: `bodega-pro-descarga.html`)*
+- **URL:** `https://github.com/tiendadigitalaipro/bodega-pro-v9`
+- **GitHub Pages:** `https://tiendadigitalaipro.github.io/bodega-pro-v9/`
 - **Branch:** `main`
-- **Ruta local:** `C:\Users\ASUS\Downloads\bodega-pro-descarga.html-main (1)\bodega-pro-descarga.html-main\`
+- **Ruta local:** `C:\Users\ASUS\github clone\bodega-pro-v9\`
 
-Para subir cambios directamente:
+Para subir cambios:
 ```bash
-cd "C:\Users\ASUS\Downloads\bodega-pro-descarga.html-main (1)\bodega-pro-descarga.html-main"
-git add index.html
+cd "C:\Users\ASUS\github clone\bodega-pro-v9"
+git add panel-admin-licencias.html
 git commit -m "descripción del cambio"
 git push origin main
 ```
+
+### Panel de Licencias — Importar Backup
+El archivo `panel-admin-licencias.html` tiene un botón **"Importar Backup"** (visible solo en modo admin logueado).
+- Selecciona un `.json` generado por el backup automático (`bodega-backup-auto-*.json`)
+- Función expuesta: `importarBackupBP(jsonData)` — parsea el JSON y escribe todas las claves con prefijo `bp_` en localStorage
+- También disponible en el hub: `a2kdigitalstudio.online/admin.html` → panel Bodega Pro
 
 ---
 

@@ -95,6 +95,13 @@ button,input,select{font-family:var(--font)}
   cursor:pointer;transition:all .2s;white-space:nowrap;
 }
 .btn-logout:hover{background:rgba(239,68,68,.08)}
+.btn-backup{
+  display:flex;align-items:center;gap:6px;padding:7px 14px;
+  border-radius:8px;border:1px solid var(--neon,#00e5ff);
+  background:transparent;color:var(--neon,#00e5ff);font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.btn-backup:hover{background:rgba(0,229,255,.08)}
 
 /* ═══ LAYOUT ═══ */
 .page-wrap{max-width:1100px;margin:0 auto;padding:24px 20px 48px}
@@ -301,6 +308,7 @@ button,input,select{font-family:var(--font)}
       <div class="lic-badge">🔒 LICENCIAS · NO TRANSFERIBLES</div>
       <span class="time-label" id="reloj"></span>
       <button class="btn-theme" onclick="toggleTheme()" id="btnTheme" title="Cambiar tema">🌙</button>
+      <button class="btn-backup" id="btnImportarBackup" onclick="triggerImportBackup()" title="Importar datos de backup JSON">📥 Importar Backup</button>
       <button class="btn-logout" onclick="cerrarSesion()">🔒 Cerrar sesión</button>
     </div>
   </nav>
@@ -918,6 +926,43 @@ function showToast(msg,tipo){
   var c=document.getElementById('toastWrap');if(!c)return;
   var t=document.createElement('div');t.className='toast '+(tipo||'ok');t.textContent=msg;
   c.appendChild(t);setTimeout(function(){if(t.parentNode)t.remove();},3200);
+}
+
+// ── IMPORTAR BACKUP ──
+function importarBackupBP(jsonData){
+  try{
+    var data=typeof jsonData==='string'?JSON.parse(jsonData):jsonData;
+    var count=0,err=0;
+    Object.keys(data).forEach(function(k){
+      var key=k.startsWith('bp_')?k:'bp_'+k;
+      try{
+        localStorage.setItem(key,typeof data[k]==='string'?data[k]:JSON.stringify(data[k]));
+        count++;
+      }catch(e){err++;}
+    });
+    showToast('✅ Backup importado: '+count+' claves'+(err?' ('+err+' omitidas)':''),'ok');
+    renderLicTable();
+    actualizarStats();
+  }catch(e){
+    showToast('❌ Error al importar: '+e.message,'err');
+  }
+}
+function triggerImportBackup(){
+  var input=document.getElementById('_backupFileInput');
+  if(!input){
+    input=document.createElement('input');
+    input.type='file';input.id='_backupFileInput';
+    input.accept='.json';input.style.display='none';
+    input.addEventListener('change',function(){
+      var file=this.files[0];if(!file)return;
+      var reader=new FileReader();
+      reader.onload=function(e){importarBackupBP(e.target.result);};
+      reader.readAsText(file);
+      this.value='';
+    });
+    document.body.appendChild(input);
+  }
+  input.click();
 }
 
 // ── INIT ──
