@@ -419,7 +419,8 @@ canvas{max-width:100%!important}
   body>*:not(#printRoot){display:none!important}
   #printRoot{display:block!important;position:fixed;top:0;left:0}
   body{width:80mm;margin:0;padding:0;background:#fff;color:#000;
-       font-family:'Courier New',monospace;font-size:12px}
+       font-family:'Courier New',monospace;font-size:12px;
+       -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
   .receipt{width:74mm;padding:0;margin:0}
   .modal-overlay,.sidebar,.topbar{display:none!important}
 }
@@ -573,7 +574,8 @@ canvas{max-width:100%!important}
   @page{size:80mm auto;margin:0mm 3mm}
   body>*:not(#printRoot){display:none!important}
   #printRoot{display:block!important}
-  body{width:80mm;margin:0;padding:0;background:#fff;color:#000;font-family:'Courier New',monospace;font-size:12px}
+  body{width:80mm;margin:0;padding:0;background:#fff;color:#000;font-family:'Courier New',monospace;font-size:12px;
+       -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
   .receipt{width:74mm;padding:0;margin:0}
 }
 @media(max-width:768px){
@@ -804,12 +806,6 @@ body.has-banner { padding-top:38px; }
         </div>
         <p style="display:none" id="_emp_placeholder">
         </p>
-        <div style="text-align:center;margin-top:10px">
-          <button onclick="(function(e){e.preventDefault();e.stopPropagation();var m=document.getElementById('modalAdminPw');if(m){var i=document.getElementById('adminPwInput');var er=document.getElementById('adminPwError');if(i)i.value='';if(er)er.style.display='none';m.style.cssText='display:flex!important;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999999;align-items:center;justify-content:center';setTimeout(function(){if(i)i.focus();},100);}})(event)"
-            style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;text-decoration:underline;font-family:var(--font)">
-            🔑 Acceso Admin A2K
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -1929,6 +1925,21 @@ body.has-banner { padding-top:38px; }
   </div>
 </div>
 
+<!-- MODAL: FIADO -->
+<div class="modal-overlay" id="modalFiado">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title" id="modalFiadoTitle">Fiado</span>
+      <button class="btn-close" onclick="closeModal('modalFiado')">✕</button>
+    </div>
+    <div class="modal-body" id="modalFiadoBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalFiado')">Cancelar</button>
+      <button class="btn btn-neon" onclick="registrarPago()">✅ Registrar Pago</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: COBRO -->
 <div class="modal-overlay" id="modalCobro">
   <div class="modal" style="max-width:420px">
@@ -2291,7 +2302,8 @@ const PAYMENT_METHODS = [
   { id: 'apolo',         label: 'Apolo Pay',           icon: '🚀', currency: 'USD' },
   { id: 'mixto',         label: 'Pago Mixto',          icon: '🔀', currency: 'MIX' },
   { id: 'fiado',         label: 'Fiado',               icon: '📝', currency: 'BS'  },
-  { id: 'biopago', label: 'Bio Pago', icon: '🟢', currency: 'BS'  },
+  { id: 'biopago',      label: 'Bio Pago',          icon: '🟢', currency: 'BS'  },
+  { id: 'paguelofacil', label: 'Pagar con Tarjeta', icon: '💳', currency: 'USD' },
 ];
 
 const CAT_ICONS = {
@@ -2425,7 +2437,7 @@ function doLogin() {
       return;
     }
     // Código inválido
-    return showLoginAlert('Codigo de activacion invalido. Verifica e intenta de nuevo.', 'error');
+    return showLoginAlert('❌ Código inválido o de versión anterior.\nSolicita un código nuevo a A2K Digital Studio: +58 416 411 7331', 'error');
   }
 
   // Primera activación en este device — verificar código
@@ -2433,11 +2445,11 @@ function doLogin() {
   const isMaster = MASTER.includes(code);
   const issuedLic = issuedLicenses.find(function(l){ return l.code === code && l.activo; });
 
-  // Verificar firma matemática — PRO y DEMO (cliente en otra PC)
+  // Verificar firma matemática — PRO o DEMO (cliente en otra PC, sin localStorage)
   const hasFirma     = verifyLicenseSignature(code);
-  const hasFirmaDemo = (typeof verifyDemoSignature==='function') && verifyDemoSignature(code);
+  const hasFirmaDemo = (typeof verifyDemoSignature === 'function') && verifyDemoSignature(code);
   if (!isMaster && !issuedLic && !hasFirma && !hasFirmaDemo) {
-    return showLoginAlert('❌ Código de activación inválido. Verifica e intenta de nuevo.', 'error');
+    return showLoginAlert('❌ Código inválido o generado en una versión anterior.\nSolicita un código nuevo a A2K Digital Studio: +58 416 411 7331', 'error');
   }
   // Verificar estado: bloqueada, pausada o vencida PRO
   if (!isMaster) {
@@ -3301,6 +3313,28 @@ function confirmarVenta() {
   if (STATE.payMethod === 'Fiado' && !clienteId) {
     showToast('⚠️ Selecciona un cliente para registrar el fiado','warn');
     return;
+  }
+
+  // ── PágueloFácil: genera link de cobro y lo abre en nueva pestaña ──────────
+  if (STATE.payMethod === 'Pagar con Tarjeta') {
+    var _pfConcepto = STATE.cart.slice(0, 2).map(function(i) { return i.nombre; }).join(', ') || 'Venta POS';
+    var _pfRef = 'REF-PF-' + Date.now();
+    fetch('http://localhost:5000/pago-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ monto: total, concepto: _pfConcepto, referencia: _pfRef }),
+      mode: 'cors'
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.ok && d.link) {
+        window.open(d.link, '_blank');
+        showToast('💳 Enlace de pago generado — ' + d.ref, 'success');
+      } else {
+        showToast('⚠️ ' + (d.error || 'No se pudo generar el enlace de pago'), 'warn');
+      }
+    }).catch(function() {
+      showToast('⚠️ Jarvis no responde en localhost:5000 — verifica que esté corriendo', 'warn');
+    });
+    // Continúa con el flujo normal: registra la venta y muestra el recibo
   }
 
   const venta = {
@@ -5077,7 +5111,9 @@ function imprimirReciboTermico(venta) {
   var ctrlHtml = ctrl?'<div style="text-align:center;font-size:10px">Control: N-'+ctrl+'</div>':'';
   var html='<html><head><style>'
     +'@page{size:80mm auto;margin:0mm 3mm}'
-    +'body{font-family:"Courier New",monospace;font-size:12px;width:74mm;margin:0;padding:0;color:#000}'
+    +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}'
+    +'body{font-family:"Courier New",monospace;font-size:12px;width:74mm;margin:0;padding:0;color:#000!important;background:#fff!important}'
+    +'@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}'
     +'</style></head><body>'
     +logoHtml
     +'<div style="text-align:center;font-weight:900;font-size:14px">'+negocioNombre+'</div>'
@@ -5139,7 +5175,6 @@ function qaRun() {
 var CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 var SECRET_PRO=_dc([66,80,82,79,50,48,50,54,65,50,75]);
 var SECRET_DEMO=_dc([66,80,68,51,77,79,50,48,50,54]);
-var SECRET_DEVICE=_dc([66,68,69,86,50,48,50,54,65,50,75]);
 function djb2(s){var h=5381;for(var i=0;i<s.length;i++){h=((h<<5)+h)^s.charCodeAt(i);h=h>>>0;}return h;}
 function toB(n,len){var r='',b=CHARS.length;for(var i=0;i<len;i++){r=CHARS[n%b]+r;n=Math.floor(n/b);}return r;}
 
@@ -5153,25 +5188,18 @@ function generateDemoCode(neg, dias) {
 function verifyDemoSignature(code) {
   var p = code.split('-');
   if (p[0] !== 'DEMO' || p.length < 3) return false;
-  // Formato panel actual: DEMO-S1-S2-EXPD (4 partes) o device-locked DEMO-S1-S2-EXPD-DV (5 partes)
-  if (p.length >= 4) {
-    var sv = p[3];
-    if (p[2] === toB(djb2(p[1] + SECRET_DEMO + sv), 4)) {
-      var b32=CHARS.length, expDay=0;
-      for (var ci=0;ci<sv.length;ci++) expDay=expDay*b32+CHARS.indexOf(sv[ci]);
-      if (Math.floor(Date.now()/86400000) > expDay) return false;
-      if (p.length >= 5) {
-        var did=(DEVICE_ID||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-        return p[4] === toB(djb2(did+SECRET_DEVICE), 4);
-      }
-      return true;
-    }
-  }
-  // Formato legado 3 partes: DEMO-S1-S2
+  // Formato 3 partes: DEMO-S1-S2  (generado por panel actual)
   for (var d = 1; d <= 30; d++) {
     if (p[2] === toB(djb2(p[1] + SECRET_DEMO + String(d)), 4)) return true;
   }
   if (p[2] === toB(djb2(p[1] + SECRET_DEMO), 4)) return true;
+  // Formato 4 partes: DEMO-S1-S2-S3  (generado por versiones anteriores)
+  if (p.length >= 4) {
+    for (var d2 = 1; d2 <= 30; d2++) {
+      if (p[3] === toB(djb2(p[1] + p[2] + SECRET_DEMO + String(d2)), 4)) return true;
+    }
+    if (p[3] === toB(djb2(p[1] + p[2] + SECRET_DEMO), 4)) return true;
+  }
   return false;
 }
 function getLicenses(){return DB.get('licenses_issued')||[];}
