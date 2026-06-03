@@ -1878,6 +1878,22 @@ body.has-banner { padding-top:38px; }
           <option value="paq">Paquete</option>
         </select>
       </div>
+      <!-- FOTO DEL PRODUCTO -->
+      <div class="form-group" style="margin-top:4px">
+        <label class="form-label">📷 Foto del Producto</label>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px">
+          <div id="prod-foto-preview" style="display:none;position:relative;flex-shrink:0">
+            <img id="prod-foto-img" src="" alt="" style="width:80px;height:80px;border-radius:12px;object-fit:cover;border:2px solid var(--accent);display:block">
+            <button type="button" onclick="eliminarFotoProducto()" style="position:absolute;top:-7px;right:-7px;background:#ef4444;border:none;color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;line-height:1;padding:0;z-index:10">✕</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button type="button" class="btn btn-outline" style="font-size:13px" onclick="document.getElementById('prod-foto-input').click()">📁 Elegir de galería</button>
+            <button type="button" class="btn btn-ghost" style="font-size:13px" onclick="document.getElementById('prod-foto-camara').click()">📷 Tomar foto</button>
+          </div>
+        </div>
+        <input type="file" id="prod-foto-input" accept="image/*" style="display:none" onchange="seleccionarFotoProducto(this)">
+        <input type="file" id="prod-foto-camara" accept="image/*" capture="environment" style="display:none" onchange="seleccionarFotoProducto(this)">
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalProducto')">Cancelar</button>
@@ -3554,7 +3570,8 @@ function renderInventario() {
     var bt = p.stock === 0 ? 'Sin stock' : p.stock <= p.stockMin ? 'Stock bajo' : 'Normal';
     var dotColor = p.stock===0?'var(--danger)':p.stock<=p.stockMin?'var(--warn)':'var(--success)';
     return '<tr>' +
-      '<td><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">' + p.emoji + '</span>' +
+      '<td><div style="display:flex;align-items:center;gap:8px">' +
+        (p.imagen ? '<img src="'+p.imagen+'" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0">' : '<span style="font-size:20px">'+p.emoji+'</span>') +
         '<div><div style="font-weight:600">' + p.nombre + '</div>' +
         '<div style="font-size:11px;color:var(--text2)">' + (p.codigo||'—') + '</div></div></div></td>' +
       '<td><span class="badge badge-purple">' + p.categoria + '</span></td>' +
@@ -3599,6 +3616,8 @@ function openAddProduct(id) {
     document.getElementById('prod-stock').value = p.stock;
     document.getElementById('prod-stockMin').value = p.stockMin;
     document.getElementById('prod-unidad').value = p.unidad;
+    prodImagenTemp = p.imagen || null;
+    if (prodImagenTemp) { _mostrarPrevFoto(prodImagenTemp); } else { eliminarFotoProducto(); }
   } else {
     ['prod-id','prod-nombre','prod-emoji','prod-codigo','prod-costo','prod-precio','prod-stock','prod-stockMin','prod-costo-bulto','prod-unidades-bulto','prod-cant-bultos','prod-ganancia-pct','calc-total-unidades'].forEach(function(fid){
       var el = document.getElementById(fid); if(el) el.value = '';
@@ -3611,11 +3630,61 @@ function openAddProduct(id) {
     // Auto-emoji para Bebidas al abrir
     var emojiEl = document.getElementById('prod-emoji');
     if (emojiEl && !emojiEl.value.trim()) emojiEl.value = CAT_ICONS['Bebidas'] || '🥤';
+    eliminarFotoProducto();
   }
   openModal('modalProducto');
 }
 
 function editProduct(id) { openAddProduct(id); }
+
+var prodImagenTemp = null;
+
+function _mostrarPrevFoto(src) {
+  var prev = document.getElementById('prod-foto-preview');
+  var img  = document.getElementById('prod-foto-img');
+  if (prev && img) { img.src = src; prev.style.display = 'block'; }
+}
+
+function eliminarFotoProducto() {
+  prodImagenTemp = null;
+  var prev  = document.getElementById('prod-foto-preview');
+  var img   = document.getElementById('prod-foto-img');
+  var inp1  = document.getElementById('prod-foto-input');
+  var inp2  = document.getElementById('prod-foto-camara');
+  if (prev)  prev.style.display = 'none';
+  if (img)   img.src = '';
+  if (inp1)  inp1.value = '';
+  if (inp2)  inp2.value = '';
+}
+
+function seleccionarFotoProducto(input) {
+  var file = input && input.files && input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    // Comprimir si pesa más de 300 KB
+    if (dataUrl.length > 300000) {
+      var canvas = document.createElement('canvas');
+      var imgEl  = new Image();
+      imgEl.onload = function() {
+        var max = 400;
+        var w = imgEl.width, h = imgEl.height;
+        if (w > max) { h = Math.round(h * max / w); w = max; }
+        if (h > max) { w = Math.round(w * max / h); h = max; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(imgEl, 0, 0, w, h);
+        prodImagenTemp = canvas.toDataURL('image/jpeg', 0.75);
+        _mostrarPrevFoto(prodImagenTemp);
+      };
+      imgEl.src = dataUrl;
+    } else {
+      prodImagenTemp = dataUrl;
+      _mostrarPrevFoto(prodImagenTemp);
+    }
+  };
+  reader.readAsDataURL(file);
+}
 
 function calcPrecioBsPreview() {
   var elPrecio = document.getElementById('prod-precio');
@@ -3852,6 +3921,7 @@ function saveProduct() {
     stock: parseInt(document.getElementById('prod-stock').value) || 0,
     stockMin: parseInt(document.getElementById('prod-stockMin').value) || 5,
     unidad: document.getElementById('prod-unidad').value,
+    imagen: prodImagenTemp || null,
   };
 
   if (existingId) {
