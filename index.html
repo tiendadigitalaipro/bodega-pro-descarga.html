@@ -2438,7 +2438,7 @@ function doLogin() {
         var issuedAll2 = getLicenses();
         var demoLic2 = issuedAll2.find(function(l){ return l.code===code && l.tipo==='DEMO'; });
         if (demoLic2) { venceEn = demoLic2.venceEn; }
-        else { var vd2=new Date(); vd2.setDate(vd2.getDate()+3); venceEn=vd2.toISOString(); }
+        else { var _ev2=extraerVenceEnDeDemo(code); if(_ev2){venceEn=_ev2;}else{var vd2=new Date();vd2.setDate(vd2.getDate()+3);venceEn=vd2.toISOString();} }
       }
       DB.set('license', {
         code: code, deviceId: DEVICE_ID,
@@ -2501,7 +2501,7 @@ function doLogin() {
       venceEn = demoLic.venceEn;
     } else {
       // No está en la lista — dar 3 días desde hoy (demo desconocida)
-      var vd=new Date(); vd.setDate(vd.getDate()+3); venceEn=vd.toISOString();
+      var _ev=extraerVenceEnDeDemo(code); if(_ev){venceEn=_ev;}else{var vd=new Date();vd.setDate(vd.getDate()+3);venceEn=vd.toISOString();}
     }
   }
 
@@ -5258,6 +5258,8 @@ function generateDemoCode(neg, dias) {
 function verifyDemoSignature(code) {
   var p = code.split('-');
   if (p[0] !== 'DEMO' || p.length < 3) return false;
+  // Admin Hub format: DEMO-S1-S2-SV or DEMO-S1-S2-SV-DV
+  if (p.length >= 4 && p[2] === toB(djb2(p[1] + SECRET_DEMO + p[3]), 4)) return true;
   // Formato 3 partes: DEMO-S1-S2  (generado por panel actual)
   for (var d = 1; d <= 30; d++) {
     if (p[2] === toB(djb2(p[1] + SECRET_DEMO + String(d)), 4)) return true;
@@ -5271,6 +5273,15 @@ function verifyDemoSignature(code) {
     if (p[3] === toB(djb2(p[1] + p[2] + SECRET_DEMO), 4)) return true;
   }
   return false;
+}
+function extraerVenceEnDeDemo(code) {
+  var p = code.split('-');
+  if (p[0] !== 'DEMO' || p.length < 4) return null;
+  if (p[2] !== toB(djb2(p[1] + SECRET_DEMO + p[3]), 4)) return null;
+  var b = CHARS.length, n = 0;
+  for (var i = 0; i < p[3].length; i++) n = n * b + CHARS.indexOf(p[3][i]);
+  var v = new Date(n * 86400000); v.setHours(23, 59, 59, 999);
+  return v.toISOString();
 }
 function getLicenses(){return DB.get('licenses_issued')||[];}
 function saveLicenses(l){DB.set('licenses_issued',l);}
